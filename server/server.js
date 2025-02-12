@@ -11,9 +11,13 @@ const settingsRoutes = require('./Routes/settingsRoutes.js')
 
 dotenv.config();
 
+const corsOptions = {
+    origin: 'https://hustlemuscle.netlify.app',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Add any methods you use
+    credentials: true, // If you use cookies or authentication
+};
 
-app.use(cors())
-
+app.use(cors(corsOptions));
 
 const PORT = process.env.PORT;
 const uri = process.env.DB_URI;
