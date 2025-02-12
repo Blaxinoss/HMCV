@@ -4,9 +4,9 @@ import { useForm } from "react-hook-form"; // Import watch and setValue
 import { useTranslation } from "react-i18next"; // Import useTranslation
 import { useDispatch, useSelector } from "react-redux";
 import * as yup from "yup";
-import { addTrainee } from "../slices/subscriptionSlice";
-import Message from "../utils/Message";
-import useMessageHook from "../utils/useMessageHook";
+import { addTrainee } from "../../slices/subscriptionSlice";
+import Message from "../../utils/Message";
+import useMessageHook from "../../utils/useMessageHook";
 
 const schema = yup.object().shape({
 	name: yup.string().required("Name is required"),
