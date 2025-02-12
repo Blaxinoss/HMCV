@@ -44,7 +44,7 @@ function App() {
 							<Route path="/trainees" element={<SubscriptionPage />} />
 							<Route path="/expenses" element={<ExpenseManager />} />
 
-							<Route path="/dashboard" element={<Dashboard />} />
+							<Route path="/" element={<Dashboard />} />
 							<Route path='/allUsers' element={<AllUsers />} />
 							<Route path='/userDetails/:phone' element={<UserDetails />} />
 							<Route path="/settings" element={<Settings />} />

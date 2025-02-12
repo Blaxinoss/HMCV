@@ -51,7 +51,7 @@ function Navbar() {
 									<ul className="  flex flex-col transition-[hover] text-xs lg:gap-20 md:text-[1.1rem]  text-center">
 										<Link
 											className="text-white  hover:bg-blue-600 p-3 hover:p-3  rounded-md cursor-pointer hover:duration-300"
-											to='/dashboard'
+											to='/'
 											onClick={() => setMobileMenu(false)}
 										>
 											{t("navbar.dashboard")}
@@ -96,7 +96,7 @@ function Navbar() {
 					<ul className=" hidden md:flex  transition-[hover] text-xs lg:gap-20 md:text-[1.1rem]">
 						<Link
 							className=" text-white  hover:bg-blue-600 p-3 hover:p-3  rounded-md cursor-pointer hover:duration-300"
-							to='/dashboard'
+							to='/'
 						>
 							{t("navbar.dashboard")}
 						</Link>
