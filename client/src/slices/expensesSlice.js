@@ -6,22 +6,22 @@ const API_BASE_URL = import.meta.env.VITE_REACT_APP_API_BASE_URL;
 
 // Async Thunks
 export const fetchExpenses = createAsyncThunk('expenses/fetchExpenses', async () => {
-    const response = await axios.get(`${API_BASE_URL}/expenses`);
+    const response = await axios.get(`https://hmcv.vercel.app/api/expenses`);
     return response.data;
 });
 
 export const addExpense = createAsyncThunk('expenses/addExpense', async (expense) => {
-    const response = await axios.post(`${API_BASE_URL}/expenses`, expense);
+    const response = await axios.post(`https://hmcv.vercel.app/api/expenses`, expense);
     return response.data;
 });
 
 export const editExpense = createAsyncThunk('expenses/editExpense', async ({ id, updatedExpense }) => {
-    const response = await axios.post(`${API_BASE_URL}/expenses/%{id}`, updatedExpense);
+    const response = await axios.post(`https://hmcv.vercel.app/api/expenses/%{id}`, updatedExpense);
     return response.data;
 });
 
 export const deleteExpense = createAsyncThunk('expenses/deleteExpense', async (id) => {
-    await axios.delete(`${API_BASE_URL}/expenses/%{id}`);
+    await axios.delete(`https://hmcv.vercel.app/api/expenses/%{id}`);
     return id;
 });
 

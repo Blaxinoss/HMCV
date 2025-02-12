@@ -1,13 +1,12 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import axios from 'axios';
-const API_BASE_URL = import.meta.env.VITE_REACT_APP_API_BASE_URL;
 
 // Fetch all users
 export const fetchUsers = createAsyncThunk(
     'user/fetchUsers',
     async (_, { rejectWithValue }) => {
         try {
-            const response = await axios.get('${API_BASE_URL}/settings');  // GET request to fetch users
+            const response = await axios.get('https://hmcv.vercel.app/api/settings');  // GET request to fetch users
             return response.data;  // Data returned from server
         } catch (error) {
             return rejectWithValue(error.response?.data?.message || error.message);  // Error handling
@@ -20,7 +19,7 @@ export const registerUser = createAsyncThunk(
     'user/register',
     async ({ username, password }, { rejectWithValue }) => {
         try {
-            const response = await axios.post('${API_BASE_URL}/settings', { username, password });
+            const response = await axios.post('https://hmcv.vercel.app/api/settings', { username, password });
             return response.data;  // Data returned from server
         } catch (error) {
             return rejectWithValue(error.response?.data?.message || error.message);  // Error handling
@@ -33,7 +32,7 @@ export const updateUser = createAsyncThunk(
     'user/update',
     async ({ userId, username, password }, { rejectWithValue }) => {
         try {
-            const response = await axios.put(`${API_BASE_URL}/settings/${userId}`, { username, password });
+            const response = await axios.put(`https://hmcv.vercel.app/api/settings/${userId}`, { username, password });
             return response.data;  // Data returned from server
         } catch (error) {
             return rejectWithValue(error.response?.data?.message || error.message);  // Error handling

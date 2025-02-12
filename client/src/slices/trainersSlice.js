@@ -1,12 +1,11 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from 'axios';
-const API_BASE_URL = import.meta.env.VITE_REACT_APP_API_BASE_URL;
 
 
 
 export const fetchTrainer = createAsyncThunk('trainer/fetchTrainers', async (_, thunkAPI) => {
     try {
-        const response = await axios.get(`${API_BASE_URL}/trainers`)
+        const response = await axios.get(`https://hmcv.vercel.app/api/trainers`)
         return response.data
     } catch (error) {
         return thunkAPI.rejectWithValue('Failed to fetch trainers')
@@ -16,7 +15,7 @@ export const fetchTrainer = createAsyncThunk('trainer/fetchTrainers', async (_, 
 export const deleteTrainer = createAsyncThunk('trainers/deleteTrainers', async (id, thunkAPI) => {
     try {
         // Instead of deleting, update the trainer with isDeleted: true
-        await axios.put(`${API_BASE_URL}/trainers/${id}`, { deleteFlag: true });
+        await axios.put(`https://hmcv.vercel.app/api/trainers/${id}`, { deleteFlag: true });
         return id;
     } catch (error) {
         return thunkAPI.rejectWithValue('Failed to mark trainer as deleted');
@@ -27,7 +26,7 @@ export const deleteTrainer = createAsyncThunk('trainers/deleteTrainers', async (
 
 export const addTrainer = createAsyncThunk('trainer/addTrainer', async (trainerData, thunkAPI) => {
     try {
-        const response = await axios.post('${API_BASE_URL}/trainers', trainerData)
+        const response = await axios.post('https://hmcv.vercel.app/api/trainers', trainerData)
         return response.data
     } catch (error) {
         return thunkAPI.rejectWithValue(`Failed to add trainer ${error.message}`, error.message);
@@ -39,7 +38,7 @@ export const updateTrainer = createAsyncThunk(
     'trainers/updateTrainer',
     async ({ id, updatedData }, thunkAPI) => {
         try {
-            const response = await axios.put(`${API_BASE_URL}/trainers/${id}`, updatedData);
+            const response = await axios.put(`https://hmcv.vercel.app/api/trainers/${id}`, updatedData);
             return response.data; // Updated trainer object
         } catch (error) {
             return thunkAPI.rejectWithValue('Failed to update trainer');
