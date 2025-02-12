@@ -1,5 +1,5 @@
 const express = require('express');
-const User = require('../model/User'); // Ensure this is correct
+const User = require('../models/User'); // Ensure this is correct
 const router = express.Router();
 const bcrypt = require("bcrypt");
 
@@ -7,6 +7,10 @@ const bcrypt = require("bcrypt");
 // GET /api/settings
 router.get('/', async (req, res) => {
     try {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
         const users = await User.find();
         res.status(200).json(users);
     } catch (error) {

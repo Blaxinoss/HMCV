@@ -1,10 +1,13 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from 'axios';
+const API_BASE_URL = import.meta.env.VITE_REACT_APP_API_BASE_URL;
+
 
 
 export const fetchTrainee = createAsyncThunk('trainee/fetchTrainees', async (_, thunkAPI) => {
     try {
-        const response = await axios.get('https://hustlemuscle.vercel.app/api/trainees')
+
+        const response = await axios.get(`${API_BASE_URL}/trainees`);
         return response.data
     } catch (error) {
         return thunkAPI.rejectWithValue('Failed to fetch trainees')
@@ -14,7 +17,7 @@ export const fetchTrainee = createAsyncThunk('trainee/fetchTrainees', async (_, 
 export const deleteTrainee = createAsyncThunk('trainees/deleteTrainees', async (id, thunkAPI) => {
     try {
         // Instead of deleting, update the trainee with isDeleted: true
-        await axios.put(`https://hustlemuscle.vercel.app/api/trainees/${id}`, { deleteFlag: true });
+        await axios.put(`${API_BASE_URL}/trainees/${id}`, { deleteFlag: true });
         return id;
     } catch (error) {
         return thunkAPI.rejectWithValue('Failed to mark trainee as deleted');
@@ -24,7 +27,7 @@ export const deleteTrainee = createAsyncThunk('trainees/deleteTrainees', async (
 
 export const freezeTrainee = createAsyncThunk('trainees/freezeTrainees', async (id, thunkAPI) => {
     try {
-        const response = await axios.put(`https://hustlemuscle.vercel.app/api/trainees/${id}/freeze`)
+        const response = await axios.put(`${API_BASE_URL}/trainees/${id}/freeze`)
         console.log(response.data); // Check if the response includes the updated subscriptionEndDate
         return response.data; // Make sure you return the correct data here
 
@@ -36,7 +39,7 @@ export const freezeTrainee = createAsyncThunk('trainees/freezeTrainees', async (
 
 export const addTrainee = createAsyncThunk('trainee/addTrainee', async (traineeData, thunkAPI) => {
     try {
-        const response = await axios.post('https://hustlemuscle.vercel.app/api/trainees', traineeData)
+        const response = await axios.post(`${API_BASE_URL}/trainees`, traineeData)
         return response.data
     } catch (error) {
         return thunkAPI.rejectWithValue(`Failed to add trainee ${error.message}`, error.message);
@@ -48,7 +51,7 @@ export const updateTrainee = createAsyncThunk(
     'trainees/updateTrainee',
     async ({ id, updatedData }, thunkAPI) => {
         try {
-            const response = await axios.put(`https://hustlemuscle.vercel.app/api/trainees/${id}`, updatedData);
+            const response = await axios.put(`${API_BASE_URL}/trainees/${id}`, updatedData);
             return response.data; // Updated trainee object
         } catch (error) {
             return thunkAPI.rejectWithValue('Failed to update trainee');

@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo } from 'react';
+import { useTranslation } from "react-i18next";
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchTrainee } from '../slices/subscriptionSlice';
 import SubscriptionForm from './SubscriptionForm';
 import SubscriptionTable from './SubscriptionTable';
-import { useTranslation } from "react-i18next";
 
 const SubscriptionPage = () => {
 	const { t } = useTranslation();

@@ -1,5 +1,5 @@
 const express = require('express');
-const Expense = require('../model/Expense'); // Ensure the model file path is correct
+const Expense = require('../models/Expense'); // Ensure the model file path is correct
 const router = express.Router();
 
 // Get All Expenses

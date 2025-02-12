@@ -49,7 +49,7 @@ function Settings() {
       <section>
         <h3 className="my-5 text-2xl font-semibold">{t('settings.accounts')}</h3>
         <ul className="space-y-5">
-          {users.map((user) => (
+          {Array.isArray(users) && users.map((user) => (
             user.username !== 'gho2' &&
             <li
               className="p-5 bg-slate-700 rounded-md shadow-lg flex justify-between items-center transition-transform transform hover:scale-[1.009]"
