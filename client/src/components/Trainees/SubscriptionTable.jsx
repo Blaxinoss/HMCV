@@ -1,17 +1,21 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
-import { deleteTrainee, freezeTrainee, updateTrainee } from '../slices/subscriptionSlice';
+import {
+	deleteTrainee,
+	freezeTrainee,
+	updateTrainee,
+} from '../../slices/subscriptionSlice';
 
 const SubscriptionTable = ({ subscriptions, short }) => {
 	const dispatch = useDispatch();
 	const { t } = useTranslation(); // Access the translation function
 	const [editingRowId, setEditingRowId] = useState(null);
 	const [editableValues, setEditableValues] = useState({});
-	const { error, status } = useSelector((state) => state.trainees);
+	const { error, status } = useSelector(state => state.trainees);
 
 	// Start editing a row
-	const handleEditClick = (sub) => {
+	const handleEditClick = sub => {
 		setEditingRowId(sub._id); // Set the current row in edit mode
 		setEditableValues(sub); // Populate the editable values
 	};
@@ -28,16 +32,16 @@ const SubscriptionTable = ({ subscriptions, short }) => {
 	};
 
 	// Update editable values on input change
-	const handleInputChange = (e) => {
+	const handleInputChange = e => {
 		const { name, value } = e.target;
 		setEditableValues({ ...editableValues, [name]: value });
 	};
 
-	const handleFreezeTrainee = (id) => {
+	const handleFreezeTrainee = id => {
 		dispatch(freezeTrainee(id));
 	};
 
-	const handleDelete = (id) => {
+	const handleDelete = id => {
 		dispatch(deleteTrainee(id));
 	};
 
@@ -50,31 +54,64 @@ const SubscriptionTable = ({ subscriptions, short }) => {
 					<tr>
 						{short ? (
 							<>
-								<th className="rtl:text-right px-4 py-2 text-left text-sm font-medium">{t('subscription.name')}</th>
-								<th className="rtl:text-right  px-4 py-2 text-left text-sm font-medium">{t('subscription.finishDate')}</th>
-								<th className="rtl:text-right  px-4 py-2 text-left text-sm font-medium">{t('subscription.phone')}</th>
-								<th className="rtl:text-right  px-4 py-2 text-left text-sm font-medium">{t('subscription.remaining')}</th>
-								<th className="rtl:text-right px-4 py-2 text-center text-sm font-medium">{t('subscription.freeze')}</th>
+								<th className="rtl:text-right px-4 py-2 text-left text-sm font-medium">
+									{t('subscription.name')}
+								</th>
+								<th className="rtl:text-right  px-4 py-2 text-left text-sm font-medium">
+									{t('subscription.finishDate')}
+								</th>
+								<th className="rtl:text-right  px-4 py-2 text-left text-sm font-medium">
+									{t('subscription.phone')}
+								</th>
+								<th className="rtl:text-right  px-4 py-2 text-left text-sm font-medium">
+									{t('subscription.remaining')}
+								</th>
+								<th className="rtl:text-right px-4 py-2 text-center text-sm font-medium">
+									{t('subscription.freeze')}
+								</th>
 							</>
 						) : (
 							<>
-								<th className="rtl:text-right  px-4 py-2 text-left text-sm font-medium">{t('subscription.name')}</th>
-								<th className="rtl:text-right  px-4 py-2 text-left text-sm font-medium">{t('subscription.finishDate')}</th>
-								<th className="rtl:text-right  px-4 py-2 text-left text-sm font-medium">{t('subscription.totalCost')}</th>
-								<th className="rtl:text-right  px-4 py-2 text-left text-sm font-medium">{t('subscription.phone')}</th>
-								<th className="rtl:text-right  px-4 py-2 text-left text-sm font-medium">{t('subscription.startDate')}</th>
-								<th className="rtl:text-right px-4 py-2 text-left text-sm font-medium">{t('subscription.paid')}</th>
-								<th className="rtl:text-right px-4 py-2 text-left text-sm font-medium">{t('subscription.remaining')}</th>
-								<th className="rtl:text-right px-4 py-2 text-left text-sm font-medium">{t('subscription.discount')}</th>
-								<th className=" px-4 py-2 text-center text-sm font-medium">{t('subscription.freeze')}</th>
-								<th className="px-4 py-2  text-center text-sm font-medium">{t('subscription.actions')}</th>
+								<th className="rtl:text-right  px-4 py-2 text-left text-sm font-medium">
+									{t('subscription.name')}
+								</th>
+								<th className="rtl:text-right  px-4 py-2 text-left text-sm font-medium">
+									{t('subscription.finishDate')}
+								</th>
+								<th className="rtl:text-right  px-4 py-2 text-left text-sm font-medium">
+									{t('subscription.totalCost')}
+								</th>
+								<th className="rtl:text-right  px-4 py-2 text-left text-sm font-medium">
+									{t('subscription.phone')}
+								</th>
+								<th className="rtl:text-right  px-4 py-2 text-left text-sm font-medium">
+									{t('subscription.startDate')}
+								</th>
+								<th className="rtl:text-right px-4 py-2 text-left text-sm font-medium">
+									{t('subscription.paid')}
+								</th>
+								<th className="rtl:text-right px-4 py-2 text-left text-sm font-medium">
+									{t('subscription.remaining')}
+								</th>
+								<th className="rtl:text-right px-4 py-2 text-left text-sm font-medium">
+									{t('subscription.discount')}
+								</th>
+								<th className=" px-4 py-2 text-center text-sm font-medium">
+									{t('subscription.freeze')}
+								</th>
+								<th className="px-4 py-2  text-center text-sm font-medium">
+									{t('subscription.actions')}
+								</th>
 							</>
 						)}
 					</tr>
 				</thead>
 				<tbody className="overflow-auto">
-					{subscriptions.map((sub) => (
-						<tr key={sub._id} className="border-t bg-gray-800 text-white transition-colors h-16 items-center">
+					{subscriptions.map(sub => (
+						<tr
+							key={sub._id}
+							className="border-t bg-gray-800 text-white transition-colors h-16 items-center"
+						>
 							{editingRowId === sub._id ? (
 								<>
 									{/* Editable Inputs */}
@@ -82,7 +119,7 @@ const SubscriptionTable = ({ subscriptions, short }) => {
 										<input
 											type="text"
 											name="name"
-											value={editableValues.name || ""}
+											value={editableValues.name || ''}
 											onChange={handleInputChange}
 											className="w-full border border-gray-300 rounded px-2 py-1 text-black"
 											placeholder={t('subscription.namePlaceholder')}
@@ -92,7 +129,7 @@ const SubscriptionTable = ({ subscriptions, short }) => {
 										<input
 											type="text"
 											name="phone"
-											value={editableValues.phone || ""}
+											value={editableValues.phone || ''}
 											onChange={handleInputChange}
 											className="w-full border border-gray-300 rounded px-2 py-1 text-black"
 											placeholder={t('subscription.phonePlaceholder')}
@@ -102,7 +139,11 @@ const SubscriptionTable = ({ subscriptions, short }) => {
 										<input
 											type="date"
 											name="subscriptionStartDate"
-											value={new Date(editableValues.subscriptionStartDate).toISOString().split("T")[0]}
+											value={
+												new Date(editableValues.subscriptionStartDate)
+													.toISOString()
+													.split('T')[0]
+											}
 											onChange={handleInputChange}
 											className="w-full border border-gray-300 rounded px-2 py-1 text-black"
 										/>
@@ -111,7 +152,11 @@ const SubscriptionTable = ({ subscriptions, short }) => {
 										<input
 											type="date"
 											name="subscriptionEndDate"
-											value={new Date(editableValues.subscriptionEndDate).toISOString().split("T")[0]}
+											value={
+												new Date(editableValues.subscriptionEndDate)
+													.toISOString()
+													.split('T')[0]
+											}
 											onChange={handleInputChange}
 											className="w-full border border-gray-300 rounded px-2 py-1 text-black"
 										/>
@@ -120,7 +165,7 @@ const SubscriptionTable = ({ subscriptions, short }) => {
 										<input
 											type="number"
 											name="totalCost"
-											value={editableValues.totalCost || ""}
+											value={editableValues.totalCost || ''}
 											onChange={handleInputChange}
 											className="w-full border border-gray-300 rounded px-2 py-1 text-black"
 											placeholder={t('subscription.totalCostPlaceholder')}
@@ -130,7 +175,7 @@ const SubscriptionTable = ({ subscriptions, short }) => {
 										<input
 											type="number"
 											name="paid"
-											value={editableValues.paid || ""}
+											value={editableValues.paid || ''}
 											onChange={handleInputChange}
 											className="w-full border border-gray-300 rounded px-2 py-1 text-black"
 											placeholder={t('subscription.paidPlaceholder')}
@@ -140,7 +185,7 @@ const SubscriptionTable = ({ subscriptions, short }) => {
 										<input
 											type="number"
 											name="remaining"
-											value={editableValues.remaining || ""}
+											value={editableValues.remaining || ''}
 											onChange={handleInputChange}
 											className="w-full border border-gray-300 rounded px-2 py-1 text-black"
 											placeholder={t('subscription.remainingPlaceholder')}
@@ -150,7 +195,7 @@ const SubscriptionTable = ({ subscriptions, short }) => {
 										<input
 											type="number"
 											name="discount"
-											value={editableValues.discount || ""}
+											value={editableValues.discount || ''}
 											onChange={handleInputChange}
 											className="w-full border border-gray-300 rounded px-2 py-1 text-black"
 											placeholder={t('subscription.discountPlaceholder')}
@@ -177,50 +222,62 @@ const SubscriptionTable = ({ subscriptions, short }) => {
 									{short ? (
 										<>
 											<td className="px-4 py-2">{sub.name}</td>
-											<td className="px-4 py-2">{new Date(sub.subscriptionEndDate).toLocaleDateString()}</td>
+											<td className="px-4 py-2">
+												{new Date(sub.subscriptionEndDate).toLocaleDateString()}
+											</td>
 											<td className="px-4 py-2">{sub.phone}</td>
 											<td className="px-4 py-2">{sub.remaining}</td>
 
 											{/* Freeze Button */}
-											{new Date() < new Date(sub.subscriptionEndDate) && !sub.isSession ?
-												(<td className="px-4 py-2 text-center rtl:text-right ">
+											{new Date() < new Date(sub.subscriptionEndDate) &&
+											!sub.isSession ? (
+												<td className="px-4 py-2 text-center rtl:text-right ">
 													<button
 														onClick={() => handleFreezeTrainee(sub._id)}
-														className={`btn px-3 py-1 rounded text-white ${sub.accountFreezeStatus ? "bg-green-500 hover:bg-green-600" : "bg-blue-400 hover:bg-blue-400"}`}
+														className={`btn px-3 py-1 rounded text-white ${sub.accountFreezeStatus ? 'bg-green-500 hover:bg-green-600' : 'bg-blue-400 hover:bg-blue-400'}`}
 													>
-														{sub.accountFreezeStatus ? t('subscription.unfreeze') : t('subscription.freeze')}
+														{sub.accountFreezeStatus
+															? t('subscription.unfreeze')
+															: t('subscription.freeze')}
 													</button>
-												</td>) : (
-													<td className="px-4 py-2 text-center rtl:text-right ">
-
-													</td>
-												)}
+												</td>
+											) : (
+												<td className="px-4 py-2 text-center rtl:text-right "></td>
+											)}
 										</>
 									) : (
 										<>
 											<td className="px-4 py-2">{sub.name}</td>
-											<td className="px-4 py-2">{new Date(sub.subscriptionEndDate).toLocaleDateString()}</td>
+											<td className="px-4 py-2">
+												{new Date(sub.subscriptionEndDate).toLocaleDateString()}
+											</td>
 											<td className="px-4 py-2">{sub.totalCost}</td>
 											<td className="px-4 py-2">{sub.phone}</td>
-											<td className="px-4 py-2">{new Date(sub.subscriptionStartDate).toLocaleDateString()}</td>
+											<td className="px-4 py-2">
+												{new Date(
+													sub.subscriptionStartDate
+												).toLocaleDateString()}
+											</td>
 											<td className="px-4 py-2">{sub.paid}</td>
 											<td className="px-4 py-2">{sub.remaining}</td>
 											<td className="px-4 py-2">{sub.discount}</td>
 
 											{/* Freeze Button */}
-											{new Date() < new Date(sub.subscriptionEndDate) && !sub.isSession ?
-												(<td className="px-4 py-2 text-center rtl:text-right ">
+											{new Date() < new Date(sub.subscriptionEndDate) &&
+											!sub.isSession ? (
+												<td className="px-4 py-2 text-center rtl:text-right ">
 													<button
 														onClick={() => handleFreezeTrainee(sub._id)}
-														className={`btn px-3 py-1 rounded text-white ${sub.accountFreezeStatus ? "bg-green-500 hover:bg-green-600" : "bg-blue-400 hover:bg-blue-400"}`}
+														className={`btn px-3 py-1 rounded text-white ${sub.accountFreezeStatus ? 'bg-green-500 hover:bg-green-600' : 'bg-blue-400 hover:bg-blue-400'}`}
 													>
-														{sub.accountFreezeStatus ? t('subscription.unfreeze') : t('subscription.freeze')}
+														{sub.accountFreezeStatus
+															? t('subscription.unfreeze')
+															: t('subscription.freeze')}
 													</button>
-												</td>) : (
-													<td className="px-4 py-2 text-center rtl:text-right ">
-
-													</td>
-												)}
+												</td>
+											) : (
+												<td className="px-4 py-2 text-center rtl:text-right "></td>
+											)}
 
 											{/* Actions (Edit/Delete) */}
 											<td className="px-4 py-2 ">
