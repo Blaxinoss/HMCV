@@ -35,7 +35,7 @@ const Header = ({ notificationsArray, openNotifications, setOpenNotifications })
                     </button>
                 </div>
                 <div className="w-[3rem] h-[3rem] rounded-full overflow-hidden">
-                    <img src="/Mo.png" alt="Profile" className="w-full h-full" />
+                    <img src="" alt="Profile" className="w-full h-full" />
                 </div>
             </div>
         </div>

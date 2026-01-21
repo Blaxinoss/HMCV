@@ -6,7 +6,7 @@ export const fetchUsers = createAsyncThunk(
     'user/fetchUsers',
     async (_, { rejectWithValue }) => {
         try {
-            const response = await axios.get('https://hmcv.vercel.app/api/settings');  // GET request to fetch users
+            const response = await axios.get('http://localhost:5000/api/settings');  // GET request to fetch users
             return response.data;  // Data returned from server
         } catch (error) {
             return rejectWithValue(error.response?.data?.message || error.message);  // Error handling
@@ -19,7 +19,7 @@ export const registerUser = createAsyncThunk(
     'user/register',
     async ({ username, password }, { rejectWithValue }) => {
         try {
-            const response = await axios.post('https://hmcv.vercel.app/api/settings', { username, password });
+            const response = await axios.post('http://localhost:5000/api/settings', { username, password });
             return response.data;  // Data returned from server
         } catch (error) {
             return rejectWithValue(error.response?.data?.message || error.message);  // Error handling
@@ -32,7 +32,7 @@ export const updateUser = createAsyncThunk(
     'user/update',
     async ({ userId, username, password }, { rejectWithValue }) => {
         try {
-            const response = await axios.put(`https://hmcv.vercel.app/api/settings/${userId}`, { username, password });
+            const response = await axios.put(`http://localhost:5000/api/settings/${userId}`, { username, password });
             return response.data;  // Data returned from server
         } catch (error) {
             return rejectWithValue(error.response?.data?.message || error.message);  // Error handling
