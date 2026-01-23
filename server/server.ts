@@ -3,11 +3,13 @@ import type { Express } from 'express';
 import mongoose, { mongo } from 'mongoose';
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
+import cors from 'cors'
 import traineeRoutes from './src/Routes/traineeRoutes.js';
 import expensesRoutes from './src/Routes/expensesRoutes.js';
 import trainersRoutes from './src/Routes/trainersRoutes.js';
 import settingsRoutes from './src/Routes/settingsRoutes.js';
 import automationRoutes from './src/Routes/AutomationRoutes.js';
+import dashboardRoutes from './src/Routes/dashboradRoutes.js'
 import authRoutes from './src/Routes/authRoutes.js';
 import requireApi from './midware/requireApi.js';
 import User from './src/models/User.js';
@@ -25,6 +27,15 @@ const app: Express = express();
 
 // Middleware
 app.use(bodyParser.json());
+
+
+// أو الحل الاحترافي (تسمح فقط للـ Frontend بتاعك)
+app.use(cors({
+    origin: 'http://localhost:5173', // عنوان الـ Vite بتاعك
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true
+}));
+
 
 // Get configuration from environment
 const PORT = process.env.PORT || 5000;
@@ -59,6 +70,7 @@ app.use('/api/expenses', verifyToken, requireAdmin, expensesRoutes);
 app.use('/api/trainers', verifyToken, requireAdmin, trainersRoutes);
 app.use('/api/settings', verifyToken, requireAdmin, settingsRoutes);
 app.use('/api/automate', requireApi, automationRoutes);
+app.use('/api/dashboard', verifyToken, requireAdmin, dashboardRoutes)
 
 // Health check endpoint
 app.get('/health', (req, res) => {

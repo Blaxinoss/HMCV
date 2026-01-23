@@ -11,7 +11,7 @@ import { type ICoupon, DiscountType } from '../models/Coupons.js'
 router.get('/', async (req: Request, res: Response) => {
     try {
         const trainees = await Trainees.find();
-        res.status(200).json(trainees); // Standard is 200 for GET, 201 is usually for Create
+        res.status(200).json({ success: true, data: trainees }); // Standard is 200 for GET, 201 is usually for Create
     } catch (error: any) {
         res.status(400).json({ error: error.message });
     }
@@ -35,6 +35,8 @@ router.post('/', async (req: Request, res: Response) => {
             subscriptionStartDate,
             subscriptionEndDate,
             totalCost,
+            isSession,
+            sessionsCount,
             paid,
             couponCode
         } = req.body;
@@ -70,6 +72,11 @@ router.post('/', async (req: Request, res: Response) => {
         }
 
 
+        if (isSession && !sessionsCount) {
+            res.status(400).json({ success: false, message: "Sessions is checked but no session count is provided" })
+            return;
+        }
+
         const remainingAmount = (totalCost - discountAmount) - paid;
 
         const newTrainee = new Trainees({
@@ -79,6 +86,8 @@ router.post('/', async (req: Request, res: Response) => {
             subscriptionStartDate,
             subscriptionEndDate,
             totalCost,
+            isSession,
+            sessionsRemaining: isSession ? sessionsCount : 0,
             discount: discountAmount,
             paid,
             remaining: remainingAmount,
@@ -107,7 +116,7 @@ router.post('/', async (req: Request, res: Response) => {
         }
 
 
-        res.status(201).json(savedTrainee);
+        res.status(201).json({ success: true, data: savedTrainee });
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
@@ -204,9 +213,36 @@ router.post("/check-in/:id", async (req: Request, res: Response) => {
 
     let warnings = [];
 
-    if (trainee.subscriptionEndDate && new Date(trainee.subscriptionEndDate) < today) {
-        warnings.push("Subscription Expired");
+    // ---------------------------------------------------------
+    // Session Case
+    // -----------------------------------------------------
+    if (trainee.isSession) {
+
+
+
+        if (trainee.sessionsRemaining <= 0) {
+            return res.status(400).json({
+                error: "No sessions left! Please renew. 🎟️",
+                remaining: 0
+            });
+        }
+
+        trainee.sessionsRemaining -= 1;
+
+        if (trainee.subscriptionEndDate && new Date(trainee.subscriptionEndDate) < today) {
+            warnings.push("Session Pack Expired (Date)");
+        }
+
+
+    } else {
+        // ---------------------------------------------------------
+        // Normal CASE
+        // -----------------------------------------------------
+        if (trainee.subscriptionEndDate && new Date(trainee.subscriptionEndDate) < today) {
+            warnings.push("Subscription Expired 📅");
+        }
     }
+
 
     if (trainee.remaining > 0) {
         warnings.push(`Has Debt: ${trainee.remaining}`);
@@ -218,8 +254,14 @@ router.post("/check-in/:id", async (req: Request, res: Response) => {
 
     return res.status(200).json({
         success: true,
-        message: "User checked in successfully",
-        alerts: warnings.length > 0 ? warnings : null
+        message: trainee.isSession
+            ? `Checked in! Sessions left: ${trainee.sessionsRemaining}`
+            : "User checked in successfully",
+        alerts: warnings.length > 0 ? warnings : null,
+        data: {
+            sessionsRemaining: trainee.sessionsRemaining,
+            lastAttendance: trainee.lastAttendance
+        }
     });
 });
 
@@ -231,7 +273,7 @@ router.get('/:id', async (req: Request, res: Response) => {
             res.status(404).json({ error: 'Trainee not found' });
             return;
         }
-        res.status(200).json(trainee);
+        res.status(200).json({ success: true, data: trainee });
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
@@ -295,7 +337,8 @@ router.post('/:id/renew', async (req: Request, res: Response): Promise<void> => 
             durationInDays, // مدة التجديد (30 يوم مثلاً)
             totalCost,      // سعر الباقة الجديد
             paid,           // المبلغ المدفوع الآن
-            couponCode      // الكوبون (اختياري)
+            couponCode,      // الكوبون (اختياري)
+            sessionsCount
         } = req.body;
 
         const trainee = await Trainees.findById(id);
@@ -373,6 +416,21 @@ router.post('/:id/renew', async (req: Request, res: Response): Promise<void> => 
         trainee.paid = paid;
         trainee.remaining = remainingAmount; // تحديث المتبقي
         trainee.usedCoupon = finalUsedCouponCode || trainee.usedCoupon; // سجل الكوبون الجديد
+
+
+        if (trainee.isSession) {
+            if (!sessionsCount) {
+                res.status(400).json({ error: "Please provide sessionsCount for session-based renewal" });
+                return;
+            }
+            // بنضيف الحصص الجديدة على القديمة (أو ممكن تخليه يساوي الجديدة بس حسب سياستك)
+            // غالباً في التجديد بنصفر القديم ونبدأ باقة جديدة، أو بنزود عليها.
+            // هنا هنفترض إنها باقة جديدة:
+            trainee.sessionsRemaining = sessionsCount;
+
+            // لو عايز تراكمي: trainee.sessionsRemaining += sessionsCount;
+        }
+
 
         // فك التجميد لو كان مجمد
         trainee.accountFreezeStatus = false;

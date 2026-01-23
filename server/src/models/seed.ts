@@ -1,159 +1,169 @@
-import mongoose from 'mongoose'
-mongoose.connect("mongodb://localhost:27017/HMCV");
+import mongoose from 'mongoose';
+import Trainees from './Trainees.js';
 
-const TraineeSchema = new mongoose.Schema({
-    name: String,
-    phone: String,
-    memberId: String,
-    subscriptionEndDate: Date,
-    lastAttendance: Date,
-    remaining: Number,
-    crmInfo: {
-        whatsappOptIn: Boolean,
-        lastMessageSent: Date,
-        lastMessageType: String
+// 1. الاتصال بقاعدة البيانات
+const seedData = async () => {
+    try {
+        await mongoose.connect("mongodb://localhost:27017/HMCV");
+        console.log('📦 Connected to MongoDB...');
+
+        // 1. مسح البيانات القديمة (اختياري)
+        await Trainees.deleteMany({});
+        console.log('🧹 Cleared old data...');
+
+        // دوال مساعدة للتواريخ
+        const today = new Date();
+        const futureDate = (days: number) => new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+        const pastDate = (days: number) => new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+        const trainees = [
+            // ---------------------------------------------------------
+            // 1. المشترك المثالي (Active Time-Based)
+            // ---------------------------------------------------------
+            {
+                memberId: 101,
+                name: "أحمد كمال (مثالي)",
+                phone: "01012345678",
+                subscriptionStartDate: pastDate(5),
+                subscriptionEndDate: futureDate(25),
+                totalCost: 500,
+                paid: 500,
+                remaining: 0,
+                discount: 0,
+                isSession: false, // اشتراك شهري
+                sessionsRemaining: 0,
+                accountFreezeStatus: false,
+                attendanceHistory: [
+                    { checkIn: pastDate(4) },
+                    { checkIn: pastDate(2) },
+                    { checkIn: today }
+                ],
+                lastAttendance: today,
+                crmInfo: { whatsappOptIn: true, lastMessageSent: pastDate(5), lastMessageType: "welcome" }
+            },
+
+            // ---------------------------------------------------------
+            // 2. نظام حصص - رصيد كافي (Active Session)
+            // ---------------------------------------------------------
+            {
+                memberId: 102,
+                name: "سارة حسن (حصص)",
+                phone: "01123456789",
+                subscriptionStartDate: pastDate(2),
+                subscriptionEndDate: futureDate(60), // صلاحية طويلة
+                totalCost: 800,
+                paid: 800,
+                remaining: 0,
+                isSession: true, // ✅ نظام حصص
+                sessionsRemaining: 12, // ✅ رصيد 12 حصة
+                attendanceHistory: [{ checkIn: pastDate(1) }],
+                crmInfo: { whatsappOptIn: true }
+            },
+
+            // ---------------------------------------------------------
+            // 3. نظام حصص - رصيد منخفض (Low Session Warning)
+            // ---------------------------------------------------------
+            {
+                memberId: 103,
+                name: "كريم مجدي (قرب يخلص)",
+                phone: "01234567890",
+                subscriptionStartDate: pastDate(20),
+                subscriptionEndDate: futureDate(10),
+                totalCost: 600,
+                paid: 600,
+                remaining: 0,
+                isSession: true,
+                sessionsRemaining: 1, // ⚠️ فاضله حصة واحدة
+                attendanceHistory: [
+                    { checkIn: pastDate(10) },
+                    { checkIn: pastDate(5) },
+                    { checkIn: pastDate(2) }
+                ],
+                crmInfo: { whatsappOptIn: false }
+            },
+
+            // ---------------------------------------------------------
+            // 4. مديون (Debt)
+            // ---------------------------------------------------------
+            {
+                memberId: 104,
+                name: "محمود سعيد (مديون)",
+                phone: "01555555555",
+                subscriptionStartDate: today,
+                subscriptionEndDate: futureDate(30),
+                totalCost: 1000, // اشتراك غالي
+                paid: 200,       // دفع جزء بسيط
+                remaining: 800,  // 💸 عليه 800 جنيه
+                isSession: false,
+                crmInfo: { whatsappOptIn: true, lastMessageType: "payment_reminder" }
+            },
+
+            // ---------------------------------------------------------
+            // 5. مجمد (Frozen)
+            // ---------------------------------------------------------
+            {
+                memberId: 105,
+                name: "علياء عادل (مجمد)",
+                phone: "01099999999",
+                subscriptionStartDate: pastDate(10),
+                subscriptionEndDate: futureDate(20),
+                totalCost: 500,
+                paid: 500,
+                remaining: 0,
+                accountFreezeStatus: true, // 🧊 مجمد
+                freezeStartDate: pastDate(2), // متجمد من يومين
+                isSession: false,
+                crmInfo: { whatsappOptIn: true }
+            },
+
+            // ---------------------------------------------------------
+            // 6. منتهي الصلاحية (Expired Time)
+            // ---------------------------------------------------------
+            {
+                memberId: 106,
+                name: "خالد جمال (منتهي)",
+                phone: "01111111111",
+                subscriptionStartDate: pastDate(35),
+                subscriptionEndDate: pastDate(5), // 📅 خلص من 5 أيام
+                totalCost: 400,
+                paid: 400,
+                remaining: 0,
+                isSession: false,
+                crmInfo: { whatsappOptIn: true, lastMessageType: "renewal_reminder" }
+            },
+
+            // ---------------------------------------------------------
+            // 7. مستخدم كوبون (Coupon User)
+            // ---------------------------------------------------------
+            {
+                memberId: 107,
+                name: "رامي سمير (كوبون)",
+                phone: "01222222222",
+                subscriptionStartDate: today,
+                subscriptionEndDate: futureDate(30),
+                totalCost: 1000,
+                discount: 200, // خصم 200 جنيه
+                paid: 800,
+                remaining: 0,
+                usedCoupon: "SUMMER20",
+                appliedDiscount: {
+                    hasCustomDiscount: true,
+                    discountValue: 200,
+                    discountType: 'fixed',
+                    reason: 'Summer Offer'
+                },
+                isSession: false,
+                crmInfo: { whatsappOptIn: true }
+            }
+        ];
+
+        await Trainees.insertMany(trainees);
+        console.log('🌱 Database Seeded Successfully with 7 Diverse Users!');
+        process.exit();
+    } catch (error) {
+        console.error('❌ Seeding Failed:', error);
+        process.exit(1);
     }
-});
-
-const Trainees = mongoose.model("Trainees", TraineeSchema);
-
-const today = new Date();
-
-const daysAgo = (d: any) => {
-    const date = new Date();
-    date.setDate(today.getDate() - d);
-    return date;
 };
 
-const daysFromNow = (d: any) => {
-    const date = new Date();
-    date.setDate(today.getDate() + d);
-    return date;
-};
-
-const data = [
-
-    // --------------------------------------------------
-    // ✅ EXPIRING
-    // --------------------------------------------------
-    {
-        name: "Ahmed Expiring",
-        phone: "+201000000001",
-        memberId: "M001",
-        subscriptionEndDate: daysFromNow(2),
-        remaining: 0,
-        lastAttendance: daysAgo(1),
-        crmInfo: {
-            whatsappOptIn: true,
-            lastMessageSent: daysAgo(2)
-        }
-    },
-
-    // --------------------------------------------------
-    // ❌ SHOULD NOT APPEAR (expiring but message sent today)
-    // --------------------------------------------------
-    {
-        name: "Blocked Expiring",
-        phone: "+201000000002",
-        memberId: "M002",
-        subscriptionEndDate: daysFromNow(1),
-        remaining: 0,
-        lastAttendance: daysAgo(1),
-        crmInfo: {
-            whatsappOptIn: true,
-            lastMessageSent: today
-        }
-    },
-
-    // --------------------------------------------------
-    // ✅ DEBT
-    // --------------------------------------------------
-    {
-        name: "Sara Debt",
-        phone: "+201000000003",
-        memberId: "M003",
-        subscriptionEndDate: daysFromNow(15),
-        remaining: 300,
-        lastAttendance: daysAgo(2),
-        crmInfo: {
-            whatsappOptIn: true,
-            lastMessageSent: daysAgo(5)
-        }
-    },
-
-    // --------------------------------------------------
-    // ❌ SHOULD NOT APPEAR (recent debt message)
-    // --------------------------------------------------
-    {
-        name: "Blocked Debt",
-        phone: "+201000000004",
-        memberId: "M004",
-        subscriptionEndDate: daysFromNow(10),
-        remaining: 500,
-        lastAttendance: daysAgo(1),
-        crmInfo: {
-            whatsappOptIn: true,
-            lastMessageSent: daysAgo(1)
-        }
-    },
-
-    // --------------------------------------------------
-    // ✅ ABSENCE (never sent absent message)
-    // --------------------------------------------------
-    {
-        name: "Omar Absent",
-        phone: "+201000000005",
-        memberId: "M005",
-        subscriptionEndDate: daysFromNow(20),
-        remaining: 0,
-        lastAttendance: daysAgo(10),
-        crmInfo: {
-            whatsappOptIn: true,
-            lastMessageType: "promo",
-            lastMessageSent: daysAgo(20)
-        }
-    },
-
-    // --------------------------------------------------
-    // ✅ ABSENCE (sent absent long ago)
-    // --------------------------------------------------
-    {
-        name: "Mona Absent Old",
-        phone: "+201000000006",
-        memberId: "M006",
-        subscriptionEndDate: daysFromNow(30),
-        remaining: 0,
-        lastAttendance: daysAgo(9),
-        crmInfo: {
-            whatsappOptIn: true,
-            lastMessageType: "absent",
-            lastMessageSent: daysAgo(20)
-        }
-    },
-
-    // --------------------------------------------------
-    // ❌ SHOULD NOT APPEAR (recent absent message)
-    // --------------------------------------------------
-    {
-        name: "Blocked Absent",
-        phone: "+201000000007",
-        memberId: "M007",
-        subscriptionEndDate: daysFromNow(30),
-        remaining: 0,
-        lastAttendance: daysAgo(10),
-        crmInfo: {
-            whatsappOptIn: true,
-            lastMessageType: "absent",
-            lastMessageSent: daysAgo(5)
-        }
-    }
-];
-
-async function seed() {
-    await Trainees.deleteMany({});
-    await Trainees.insertMany(data);
-    console.log("✅ Trainees seeded & covering all automation cases");
-    process.exit();
-}
-
-seed();
+seedData();

@@ -3,10 +3,18 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 // Define Expense Interface
 export interface IExpense extends Document {
     name: string;
-    category: 'Salary' | 'Fixing' | 'Bills' | 'Place Expenses';
+    category: 'Bills' | 'Rent' | 'Utilities' |
+    'Equipment' |
+    'Marketing' |
+    'Salaries' |
+    'Maintenance' |
+    'Insurance' |
+    'Supplies' |
+    'Other';
     amount: number;
     dateOfPayment: Date;
     createdAt: Date;
+    description?: String;
 }
 
 // Define Expense Schema
@@ -19,7 +27,14 @@ const expenseSchema = new Schema<IExpense>(
         },
         category: {
             type: String,
-            enum: ['Salary', 'Fixing', 'Bills', 'Place Expenses'],
+            enum: ['Bills', 'Rent', 'Utilities',
+                'Equipment',
+                'Marketing',
+                'Salaries',
+                'Maintenance',
+                'Insurance',
+                'Supplies',
+                'Other'],
             required: true,
         },
         amount: {
@@ -31,6 +46,10 @@ const expenseSchema = new Schema<IExpense>(
             type: Date,
             required: true,
         },
+        description: {
+            type: String,
+            trim: true,
+        }
     },
     {
         timestamps: true,

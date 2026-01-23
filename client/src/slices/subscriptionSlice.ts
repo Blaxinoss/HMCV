@@ -1,0 +1,237 @@
+// src/slices/subscriptionSlice.ts
+
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { TraineesState, Trainee, ApiResponse } from '../types';
+import api from '../utils/api';
+
+export const fetchTrainees = createAsyncThunk<
+  Trainee[],
+  void,
+  { rejectValue: string }
+>(
+  'trainees/fetchTrainees',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get<ApiResponse<Trainee[]>>('/trainees');
+      return response.data.data || [];
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch trainees'
+      );
+    }
+  }
+);
+
+export const addTrainee = createAsyncThunk<
+  Trainee,
+  Omit<Trainee, '_id' | 'createdAt' | 'updatedAt' | 'memberId' | 'paid' | 'discount' | 'remaining' | 'daysLeft'>,
+  { rejectValue: string }
+>(
+  'trainees/addTrainee',
+  async (trainee, { rejectWithValue }) => {
+    try {
+      const response = await api.post<ApiResponse<Trainee>>('/trainees', trainee);
+      return response.data.data || (trainee as any);
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to add trainee'
+      );
+    }
+  }
+);
+
+export const updateTrainee = createAsyncThunk<
+  Trainee,
+  { id: string; data: Partial<Trainee> },
+  { rejectValue: string }
+>(
+  'trainees/updateTrainee',
+  async ({ id, data }, { rejectWithValue }) => {
+    try {
+      const response = await api.put<ApiResponse<Trainee>>(`/trainees/${id}`, data);
+      return response.data.data || (data as any);
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to update trainee'
+      );
+    }
+  }
+);
+
+export const freezeTrainee = createAsyncThunk<
+  Trainee,
+  string,
+  { rejectValue: string }
+>(
+  'trainees/freezeTrainee',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await api.put<ApiResponse<Trainee>>(`/trainees/${id}/freeze`);
+      return response.data.data || {} as any;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to freeze trainee'
+      );
+    }
+  }
+);
+
+export const checkInTrainee = createAsyncThunk<
+  any,
+  string,
+  { rejectValue: string }
+>(
+  'trainees/checkInTrainee',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await api.post(`/trainees/check-in/${id}`);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to check in trainee'
+      );
+    }
+  }
+);
+
+export const deleteTrainee = createAsyncThunk<
+  string,
+  string,
+  { rejectValue: string }
+>(
+  'trainees/deleteTrainee',
+  async (id, { rejectWithValue }) => {
+    try {
+      await api.delete(`/trainees/${id}`);
+      return id;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to delete trainee'
+      );
+    }
+  }
+);
+
+const initialState: TraineesState = {
+  trainees: [],
+  loading: false,
+  error: null,
+};
+
+const subscriptionSlice = createSlice({
+  name: 'trainees',
+  initialState,
+  reducers: {
+    clearError: (state) => {
+      state.error = null;
+    },
+  },
+  extraReducers: (builder) => {
+    // Fetch Trainees
+    builder
+      .addCase(fetchTrainees.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchTrainees.fulfilled, (state, action) => {
+        state.loading = false;
+        state.trainees = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchTrainees.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to fetch trainees';
+      });
+
+    // Add Trainee
+    builder
+      .addCase(addTrainee.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(addTrainee.fulfilled, (state, action) => {
+        state.loading = false;
+        state.trainees.push(action.payload);
+        state.error = null;
+      })
+      .addCase(addTrainee.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to add trainee';
+      });
+
+    // Update Trainee
+    builder
+      .addCase(updateTrainee.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateTrainee.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.trainees.findIndex(t => t._id === action.payload._id);
+        if (index !== -1) {
+          state.trainees[index] = action.payload;
+        }
+        state.error = null;
+      })
+      .addCase(updateTrainee.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to update trainee';
+      });
+
+    // Freeze Trainee
+    builder
+      .addCase(freezeTrainee.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(freezeTrainee.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.trainees.findIndex(t => t._id === action.payload._id);
+        if (index !== -1) {
+          state.trainees[index] = {
+            ...state.trainees[index], // هات الاسم والتليفون وباقي الحاجات القديمة
+            ...action.payload         // وفوقهم حط التحديثات الجديدة (حالة التجميد والتاريخ)
+          };
+        }
+        state.error = null;
+      })
+      .addCase(freezeTrainee.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to freeze trainee';
+      });
+
+    // Check-in Trainee
+    builder
+      .addCase(checkInTrainee.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(checkInTrainee.fulfilled, (state) => {
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(checkInTrainee.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to check in trainee';
+      });
+
+    // Delete Trainee
+    builder
+      .addCase(deleteTrainee.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteTrainee.fulfilled, (state, action) => {
+        state.loading = false;
+        state.trainees = state.trainees.filter(t => t._id !== action.payload);
+        state.error = null;
+      })
+      .addCase(deleteTrainee.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to delete trainee';
+      });
+  },
+});
+
+export const { clearError } = subscriptionSlice.actions;
+export default subscriptionSlice.reducer;

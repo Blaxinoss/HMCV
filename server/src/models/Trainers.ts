@@ -27,7 +27,7 @@ const TrainersSchema = new Schema<ITrainer>(
             unique: true,
             validate: {
                 validator: function (value: number) {
-                    return /\d{12,15}/.test(value.toString());
+                    return /\d{11,15}/.test(value.toString());
                 },
                 message: 'Please provide a valid phone number',
             },

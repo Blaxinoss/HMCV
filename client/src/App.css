@@ -1,39 +1,37 @@
-html,
-body {
-
-  margin: 0;
-  /* Remove default margin */
-  padding: 0;
-  background-color: black;
-  /* Remove default padding */
-}
+/* src/App.css - Main Application Styles */
 
 :root {
-  --dark-purple: #1a1332;
-  --dogwood-rose: #dc1666;
-  --russian-violet: #281650;
-  --raisin-black: #1c1e27;
-  --white: #ffffff;
-  --ghost-white: #f5f7fb;
-  --dark-purple-light: #9a7fbc;
-  --dogwood-rose-light: #eba3b3;
-  --russian-violet-dark: #1b0034;
-  --raisin-black-light: #4a4a4a;
-  /* Consistent with the Tailwind config */
-  --ivory: #fffff0;
-  --cool-gray: #b0c4de;
-  --lavender: #e6e6fa;
-  --peach-puff: #ffdab9;
-  --teal: #008080;
-  --goldenrod: #daa520;
-  --light-red: #ff1414;
-  --gray: #c5c5c5;
-  --gray-light: #cecece;
-  --gray-semi-transparent: #ffffffa6;
-  --gray-overlay: rgba(0, 0, 0, 0.6);
-  --gray-muted: #ffffff2d;
-  ---dark-red: rgba(181, 8, 8, 0.38);
-  --bright-red: rgba(255, 2, 2, 0.336);
-  --shadow-light: rgba(198, 64, 64, 0.411);
-  --shadow-dark: rgba(184, 0, 0, 0.445);
+  --primary: #3b82f6;
+  --primary-dark: #1e40af;
+  --secondary: #8b5cf6;
+  --success: #10b981;
+  --error: #ef4444;
+  --warning: #f59e0b;
+  --info: #06b6d4;
+  --bg-dark: #111827;
+  --bg-darker: #0f172a;
+  --text-light: #f3f4f6;
+  --text-muted: #9ca3af;
+  --border: #374151;
 }
+
+/* 
+--raisin-black-light: #4a4a4a;
+
+--ivory: #fffff0;
+--cool-gray: #b0c4de;
+--lavender: #e6e6fa;
+--peach-puff: #ffdab9;
+--teal: #008080;
+--goldenrod: #daa520;
+--light-red: #ff1414;
+--gray: #c5c5c5;
+--gray-light: #cecece;
+--gray-semi-transparent: #ffffffa6;
+--gray-overlay: rgba(0, 0, 0, 0.6);
+--gray-muted: #ffffff2d;
+---dark-red: rgba(181, 8, 8, 0.38);
+--bright-red: rgba(255, 2, 2, 0.336);
+--shadow-light: rgba(198, 64, 64, 0.411);
+--shadow-dark: rgba(184, 0, 0, 0.445);
+} */

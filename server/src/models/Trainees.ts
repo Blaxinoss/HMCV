@@ -35,6 +35,7 @@ export interface ITrainee {
     accountFreezeStatus: boolean;
     freezeStartDate?: Date | null;
     isSession: boolean;
+    sessionsRemaining: number;
     appliedDiscount: IAppliedDiscount;
     attendanceHistory: IAttendanceEntry[];
     lastAttendance?: Date | null;
@@ -122,6 +123,7 @@ const TraineeSchema = new Schema<ITrainee, TraineeModel, ITraineeMethods, ITrain
             type: Boolean,
             default: false,
         },
+        sessionsRemaining: { type: Number, default: 0 },
         appliedDiscount: {
             hasCustomDiscount: { type: Boolean, default: false },
             discountValue: { type: Number, default: 0 },
