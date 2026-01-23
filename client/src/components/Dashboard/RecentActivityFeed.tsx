@@ -1,8 +1,16 @@
 import React from 'react';
+import {
+    ArrowUpRight,
+    ArrowDownLeft,
+    CreditCard,
+    Calendar,
+    History,
+    ChevronRight
+} from 'lucide-react';
 
 interface Transaction {
     id: string;
-    type: string;
+    type: string; // 'INCOME' or 'EXPENSE'
     label: string;
     amount: number;
     date: Date;
@@ -11,51 +19,96 @@ interface Transaction {
 
 interface RecentActivityFeedProps {
     transactions: Transaction[];
+    onViewAll?: () => void;
 }
 
-const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({ transactions }) => {
+const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({ transactions, onViewAll }) => {
+
+    // Helper for cleaner currency format
+    const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'EGP',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+        }).format(amount);
+    };
+
     return (
-        <div className="bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-xl h-full flex flex-col">
-            <h3 className="text-lg font-bold text-white mb-4">💳 Recent Cash Flow</h3>
+        <div className="bg-gray-900 p-6 rounded-2xl border border-gray-800 shadow-xl h-full flex flex-col">
 
+            {/* Header */}
+            <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <CreditCard className="w-5 h-5 text-blue-500" /> Recent Cash Flow
+                </h3>
+                <span className="text-xs font-medium px-2 py-1 bg-gray-800 rounded-lg text-gray-400 border border-gray-700">
+                    Last {transactions.length}
+                </span>
+            </div>
+
+            {/* List Area */}
             <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
-                {transactions.map((tx) => (
-                    <div
-                        key={tx.id}
-                        className="flex justify-between items-center p-3 rounded-xl bg-gray-700/20 hover:bg-gray-700/40 transition border border-transparent hover:border-gray-600"
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg shadow-lg
-                ${tx.type === 'INCOME' ? 'bg-green-900/50 text-green-400' : 'bg-red-900/50 text-red-400'}`}>
-                                {tx.type === 'INCOME' ? '📥' : '📤'}
-                            </div>
-                            <div>
-                                <p className="text-sm font-bold text-white">{tx.label}</p>
-                                <div className="flex gap-2 items-center">
-                                    <span className="text-xs text-gray-400">
-                                        {tx.date.toLocaleDateString()}
-                                    </span>
-                                    <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-gray-700 text-gray-300">
-                                        {tx.category}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <span className={`font-mono font-bold ${tx.type === 'INCOME' ? 'text-green-400' : 'text-red-400'}`}>
-                            {tx.type === 'INCOME' ? '+' : '-'}${tx.amount.toLocaleString()}
-                        </span>
+                {transactions.length === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center text-gray-500 opacity-60 min-h-[200px]">
+                        <History className="w-12 h-12 mb-3 stroke-1" />
+                        <p>No recent transactions</p>
                     </div>
-                ))}
+                ) : (
+                    transactions.map((tx) => {
+                        const isIncome = tx.type === 'INCOME';
+                        return (
+                            <div
+                                key={tx.id}
+                                className="group flex justify-between items-center p-3 rounded-xl bg-gray-800/30 hover:bg-gray-800 transition-all border border-transparent hover:border-gray-700 cursor-default"
+                            >
+                                <div className="flex items-center gap-4">
+                                    {/* Icon Box */}
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center border shadow-sm transition-colors
+                        ${isIncome
+                                            ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 group-hover:bg-emerald-500/20'
+                                            : 'bg-rose-500/10 border-rose-500/20 text-rose-400 group-hover:bg-rose-500/20'}
+                    `}>
+                                        {isIncome ? <ArrowDownLeft className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
+                                    </div>
 
-                {transactions.length === 0 && (
-                    <div className="text-center py-10 text-gray-500">No recent activity</div>
+                                    {/* Text Info */}
+                                    <div>
+                                        <p className="text-sm font-bold text-white leading-tight mb-1">{tx.label}</p>
+                                        <div className="flex items-center gap-2 text-xs text-gray-400">
+                                            <span className="flex items-center gap-1">
+                                                <Calendar className="w-3 h-3" />
+                                                {tx.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                            </span>
+                                            <span className="w-1 h-1 rounded-full bg-gray-600"></span>
+                                            <span className="uppercase tracking-wider text-[10px] font-medium opacity-80">
+                                                {tx.category}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Amount */}
+                                <span className={`text-sm font-bold font-mono tracking-tight
+                      ${isIncome ? 'text-emerald-400' : 'text-white'}
+                  `}>
+                                    {isIncome ? '+' : '-'}{formatCurrency(tx.amount)}
+                                </span>
+                            </div>
+                        );
+                    })
                 )}
             </div>
 
-            <div className="mt-4 pt-4 border-t border-gray-700 flex justify-between text-xs text-gray-400">
-                <span>* Last 10 transactions</span>
-                <button className="text-blue-400 hover:text-blue-300">View Full Ledger →</button>
+            {/* Footer */}
+            <div className="mt-4 pt-4 border-t border-gray-800 flex justify-center">
+                <button
+                    onClick={onViewAll}
+                    className="text-xs font-semibold text-gray-400 hover:text-white flex items-center gap-1 transition-colors group"
+                >
+                    View Full Ledger
+                    <ChevronRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                </button>
             </div>
         </div>
     );

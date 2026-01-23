@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import Trainees from './Trainees.js';
+import Coupons from './Coupons.js';
 
 // 1. الاتصال بقاعدة البيانات
 const seedData = async () => {
@@ -156,6 +157,18 @@ const seedData = async () => {
                 crmInfo: { whatsappOptIn: true }
             }
         ];
+
+
+        await Coupons.insertOne({
+
+            code: 'SAVE50',
+            discountType: 'FIXED',
+            value: 50, // 50 جنيه خصم
+            expiryDate: new Date(new Date().setMonth(new Date().getMonth() + 1)), // صالح لمدة شهر
+            isActive: true,
+            usageLimit: 100,
+            usedCount: 5
+        })
 
         await Trainees.insertMany(trainees);
         console.log('🌱 Database Seeded Successfully with 7 Diverse Users!');

@@ -112,6 +112,22 @@ export const deleteTrainee = createAsyncThunk<
   }
 );
 
+export const renewTrainee = createAsyncThunk<
+  Trainee,
+  { id: string; data: any },
+  { rejectValue: string }
+>(
+  'trainees/renew',
+  async ({ id, data }, { rejectWithValue }) => {
+    try {
+      const response = await api.post(`/trainees/${id}/renew`, data);
+      return response.data.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.error || 'Renewal failed');
+    }
+  }
+);
+
 const initialState: TraineesState = {
   trainees: [],
   loading: false,
@@ -230,7 +246,27 @@ const subscriptionSlice = createSlice({
         state.loading = false;
         state.error = action.payload || 'Failed to delete trainee';
       });
+
+    builder
+      .addCase(renewTrainee.pending, (state) => {
+        state.loading = true;
+        state.error = null
+      })
+      .addCase(renewTrainee.fulfilled, (state, action) => {
+        const index = state.trainees.findIndex(t => t._id === action.payload._id);
+        if (index !== -1) {
+          state.trainees[index] = action.payload;
+        }
+        state.loading = false;
+      })
+
+      .addCase(renewTrainee.rejected, (state, action) => {
+        state.error = action.payload || "Failed to renew trainee";
+        state.loading = false;
+      })
   },
+
+
 });
 
 export const { clearError } = subscriptionSlice.actions;

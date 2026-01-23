@@ -6,6 +6,7 @@ import { AppDispatch, RootState } from '../../store';
 import { Trainer } from '../../types';
 import useMessage from '../../utils/useMessageHook';
 import toast from 'react-hot-toast';
+import { User, Phone, DollarSign, TrendingDown, Save, X } from 'lucide-react';
 
 interface TrainersFormProps {
   trainer?: Trainer | null;
@@ -30,7 +31,7 @@ const TrainersForm: React.FC<TrainersFormProps> = ({ trainer, onSuccess, onCance
     if (trainer) {
       setFormData({
         name: trainer.name,
-        phone: trainer.phone.toString(), // Convert number to string for input
+        phone: trainer.phone.toString(),
         salary: trainer.salary,
         raise: trainer.raise || 0,
       });
@@ -56,7 +57,7 @@ const TrainersForm: React.FC<TrainersFormProps> = ({ trainer, onSuccess, onCance
     try {
       const payload = {
         ...formData,
-        phone: parseInt(formData.phone), // Ensure it's sent as number
+        phone: parseInt(formData.phone),
       };
 
       if (trainer) {
@@ -73,109 +74,113 @@ const TrainersForm: React.FC<TrainersFormProps> = ({ trainer, onSuccess, onCance
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-gray-800 rounded-xl p-8 border border-gray-700  mx-auto shadow-2xl">
-      <h2 className="text-2xl font-bold mb-6 text-white border-b border-gray-700 pb-4">
-        {trainer ? t('trainers.edit_trainer') : t('trainers.add_new_trainer')}
-      </h2>
+    <form onSubmit={handleSubmit} className="w-full">
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
-        {/* Name */}
-        <div className="md:col-span-2">
-          <label className="block text-sm font-semibold text-gray-300 mb-2">
-            {t('trainers.name')} *
-          </label>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            className="w-full px-4 py-3 bg-gray-900 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
-            placeholder="Ex: Captain Ali"
-            required
-          />
-        </div>
+        {/* Personal Details */}
+        <div className="space-y-6">
+          <h3 className="text-lg font-bold text-gray-300 border-b border-gray-700 pb-2 mb-4">
+            Staff Details
+          </h3>
 
-        {/* Phone */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-300 mb-2">
-            {t('trainers.phone')} *
-          </label>
-          <input
-            type="number"
-            name="phone"
-            value={formData.phone}
-            onChange={handleChange}
-            className="w-full px-4 py-3 bg-gray-900 border border-gray-600 rounded-lg text-white focus:border-blue-500 outline-none transition"
-            placeholder="01xxxxxxxxx"
-            required
-          />
-        </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-400 flex items-center gap-2">
+              <User className="w-4 h-4" /> {t('trainers.name')} <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              className="w-full px-4 py-3 bg-gray-800 rounded-xl border border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-white placeholder-gray-600"
+              placeholder="e.g. Captain Ali"
+              required
+            />
+          </div>
 
-        {/* Salary */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-300 mb-2">
-            {t('trainers.salary')} *
-          </label>
-          <div className="relative">
-            <span className="absolute left-3 top-3 text-gray-500">$</span>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-400 flex items-center gap-2">
+              <Phone className="w-4 h-4" /> {t('trainers.phone')} <span className="text-red-500">*</span>
+            </label>
             <input
               type="number"
-              name="salary"
-              value={formData.salary}
+              name="phone"
+              value={formData.phone}
               onChange={handleChange}
-              className="w-full pl-8 pr-4 py-3 bg-gray-900 border border-gray-600 rounded-lg text-white focus:border-green-500 outline-none transition"
-              min="0"
+              className="w-full px-4 py-3 bg-gray-800 rounded-xl border border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-white placeholder-gray-600"
+              placeholder="01xxxxxxxxx"
               required
             />
           </div>
         </div>
 
-        {/* Raise / Deduction */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-300 mb-2">
-            {t('trainers.deduction', 'Deduction / Raise')}
-          </label>
-          <div className="relative">
-            <span className="absolute left-3 top-3 text-gray-500">-</span>
+        {/* Financial Details */}
+        <div className="space-y-6">
+          <h3 className="text-lg font-bold text-gray-300 border-b border-gray-700 pb-2 mb-4">
+            Payroll Information
+          </h3>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-400 flex items-center gap-2">
+              <DollarSign className="w-4 h-4" /> {t('trainers.salary')} <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              name="salary"
+              value={formData.salary}
+              onChange={handleChange}
+              className="w-full px-4 py-3 bg-gray-800 rounded-xl border border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-white font-mono text-lg"
+              min="0"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-400 flex items-center gap-2">
+              <TrendingDown className="w-4 h-4" /> {t('trainers.deduction', 'Deduction / Raise')}
+            </label>
             <input
               type="number"
               name="raise"
               value={formData.raise}
               onChange={handleChange}
-              className="w-full pl-8 pr-4 py-3 bg-gray-900 border border-gray-600 rounded-lg text-white focus:border-red-500 outline-none transition"
+              className="w-full px-4 py-3 bg-gray-800 rounded-xl border border-gray-700 focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none transition-all text-white font-mono"
               min="0"
             />
+            <p className="text-xs text-gray-500">Positive value subtracts from salary.</p>
           </div>
-          <p className="text-xs text-gray-500 mt-1">
-            * This amount will be subtracted from salary
-          </p>
         </div>
-
-        {/* Net Salary Preview */}
-        <div className="md:col-span-2 bg-gray-700/30 p-4 rounded-lg flex justify-between items-center border border-gray-700">
-          <span className="text-gray-400">Estimated Net Salary:</span>
-          <span className="text-xl font-bold text-green-400">
-            ${Math.max(0, formData.salary - formData.raise)}
-          </span>
-        </div>
-
       </div>
 
-      <div className="flex gap-4 mt-8 justify-end">
+      {/* Net Salary Calculation Box */}
+      <div className="mt-8 bg-gray-800/50 border border-gray-700 p-6 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="text-center md:text-left">
+          <span className="text-gray-400 text-sm uppercase font-bold tracking-wider block">Estimated Net Salary</span>
+          <span className="text-xs text-gray-500">Base Salary - Deduction</span>
+        </div>
+        <div className="text-3xl font-mono font-bold text-green-400">
+          ${Math.max(0, formData.salary - formData.raise).toLocaleString()}
+        </div>
+      </div>
+
+      {/* Buttons */}
+      <div className="flex gap-4 mt-8 justify-end pt-6 border-t border-gray-800">
         <button
           type="button"
           onClick={onCancel}
-          className="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-semibold transition-colors"
+          className="flex items-center gap-2 px-6 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl font-semibold transition-all"
           disabled={loading}
         >
+          <X className="w-5 h-5" />
           {t('common.cancel')}
         </button>
         <button
           type="submit"
-          className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 px-8 py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-xl font-semibold shadow-lg shadow-blue-900/30 transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={loading}
         >
+          <Save className="w-5 h-5" />
           {loading ? t('common.saving') : t('common.save')}
         </button>
       </div>

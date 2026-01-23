@@ -98,14 +98,14 @@ export interface Trainee {
 export interface Coupon {
   _id: string;
   code: string;
-  discountType: 'percentage' | 'fixed';
-  discountValue: number;
-  maxUses: number;
-  currentUses: number;
-  expiryDate: string;
+  discountType: 'PERCENTAGE' | 'FIXED';
+  value: number;
+  expiryDate: Date;
   isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  usageLimit: number | null;
+  usedCount: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 export interface DashboardData {
   cards: {

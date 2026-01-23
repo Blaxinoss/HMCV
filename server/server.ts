@@ -8,8 +8,8 @@ import traineeRoutes from './src/Routes/traineeRoutes.js';
 import expensesRoutes from './src/Routes/expensesRoutes.js';
 import trainersRoutes from './src/Routes/trainersRoutes.js';
 import settingsRoutes from './src/Routes/settingsRoutes.js';
-import automationRoutes from './src/Routes/AutomationRoutes.js';
 import dashboardRoutes from './src/Routes/dashboradRoutes.js'
+import marketingRoutes from './src/Routes/marketingRoutes.js'
 import authRoutes from './src/Routes/authRoutes.js';
 import requireApi from './midware/requireApi.js';
 import User from './src/models/User.js';
@@ -69,8 +69,8 @@ app.use('/api/trainees', verifyToken, requireAdmin, traineeRoutes);
 app.use('/api/expenses', verifyToken, requireAdmin, expensesRoutes);
 app.use('/api/trainers', verifyToken, requireAdmin, trainersRoutes);
 app.use('/api/settings', verifyToken, requireAdmin, settingsRoutes);
-app.use('/api/automate', requireApi, automationRoutes);
 app.use('/api/dashboard', verifyToken, requireAdmin, dashboardRoutes)
+app.use('/api/marketing', verifyToken, requireAdmin, marketingRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

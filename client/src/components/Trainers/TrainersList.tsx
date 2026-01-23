@@ -4,14 +4,14 @@ import { useDispatch } from 'react-redux';
 import { deleteTrainer } from '../../slices/trainersSlice';
 import { AppDispatch } from '../../store';
 import { Trainer } from '../../types';
-import { useConfirmToast } from '../toasters/deleteToaster'; // الهوك اللي عملناه للحذف
+import { useConfirmToast } from '../toasters/deleteToaster';
+import { Edit, Trash2, Phone, DollarSign } from 'lucide-react';
 
 interface TrainersListProps {
     trainers: Trainer[];
     loading: boolean;
     onEdit: (trainer: Trainer) => void;
 }
-
 
 const TrainersList: React.FC<TrainersListProps> = ({ trainers, loading, onEdit }) => {
     const { t } = useTranslation();
@@ -34,75 +34,77 @@ const TrainersList: React.FC<TrainersListProps> = ({ trainers, loading, onEdit }
 
     if (trainers.length === 0) {
         return (
-            <div className="text-center py-20 bg-gray-800 rounded-xl border border-gray-700 border-dashed">
-                <p className="text-6xl mb-4">🏋️‍♂️</p>
-                <p className="text-gray-400 text-lg">{t('trainers.no_trainers', 'No trainers found.')}</p>
+            <div className="flex flex-col items-center justify-center py-20 bg-gray-800/50 rounded-2xl border border-gray-700/50 border-dashed">
+                <div className="text-6xl mb-4 grayscale opacity-50">🏋️‍♂️</div>
+                <p className="text-gray-400 text-lg font-medium">{t('trainers.no_trainers', 'No trainers found.')}</p>
             </div>
         );
     }
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-
             {trainers.map((trainer) => (
-
                 <div
                     key={trainer._id}
-                    className="relative bg-gray-800 rounded-xl border border-gray-700 hover:border-blue-500 transition-all duration-300 shadow-lg group"
+                    className="relative bg-gray-900 rounded-2xl border border-gray-800 hover:border-blue-500/50 transition-all duration-300 shadow-xl group overflow-hidden"
                 >
-
-                    <div className={`absolute top-0 right-0 w-12 h-12 bg-gradient-to-br bg-slate-100 opacity-10 rounded-bl-full transition-opacity group-hover:opacity-20`}></div>
+                    {/* Decorative Gradient BG */}
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-bl-full pointer-events-none group-hover:bg-blue-500/10 transition-colors"></div>
 
                     {/* Header */}
-                    <div className="p-5 border-b border-gray-700 flex justify-between items-start">
-
-                        <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-full bg-blue-900/50 flex items-center justify-center text-blue-400 text-xl font-bold">
-                                {trainer.name.charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">
-                                    {trainer.name}
-                                </h3>
-                                <p className="text-sm text-gray-400 font-mono">{trainer.phone}</p>
+                    <div className="p-6 pb-4 flex items-center gap-4 border-b border-gray-800">
+                        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                            {trainer.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">
+                                {trainer.name}
+                            </h3>
+                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                                <Phone className="w-3 h-3" />
+                                <span>{trainer.phone}</span>
                             </div>
                         </div>
                     </div>
 
-                    {/* Salary Details */}
-                    <div className="p-5 space-y-3">
+                    {/* Salary Grid */}
+                    <div className="p-6 space-y-4">
                         <div className="flex justify-between items-center text-sm">
-                            <span className="text-gray-400">{t('trainers.base_salary', 'Base Salary')}</span>
-                            <span className="text-white font-semibold">${trainer.salary}</span>
+                            <span className="text-gray-400 flex items-center gap-1">
+                                <DollarSign className="w-3 h-3" /> Base Salary
+                            </span>
+                            <span className="text-white font-medium">${trainer.salary.toLocaleString()}</span>
                         </div>
 
                         <div className="flex justify-between items-center text-sm">
-                            <span className="text-gray-400">{t('trainers.deduction', 'Deduction/Raise')}</span>
-                            <span className={`font-semibold ${trainer.raise > 0 ? 'text-red-400' : 'text-gray-500'}`}>
-                                - ${trainer.raise}
+                            <span className="text-gray-400">Deductions</span>
+                            <span className={`font-medium ${trainer.raise > 0 ? 'text-red-400' : 'text-gray-600'}`}>
+                                - ${trainer.raise.toLocaleString()}
                             </span>
                         </div>
 
-                        <div className="pt-3 border-t border-gray-700 flex justify-between items-center">
-                            <span className="text-gray-300 font-medium">{t('trainers.net_salary', 'Net Salary')}</span>
-                            <span className="text-xl font-bold text-green-400">
-                                ${trainer.salaryAfterDiscount ?? (trainer.salary - trainer.raise)}
+                        <div className="pt-4 border-t border-gray-800 flex justify-between items-end">
+                            <span className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Net Pay</span>
+                            <span className="text-2xl font-bold text-green-400 font-mono">
+                                ${(trainer.salaryAfterDiscount ?? (trainer.salary - trainer.raise)).toLocaleString()}
                             </span>
                         </div>
                     </div>
 
-                    {/* Actions */}
-                    <div className="p-4 bg-gray-700/30 rounded-b-xl flex gap-2 justify-end">
+                    {/* Actions Footer */}
+                    <div className="px-6 py-4 bg-gray-800/50 flex gap-3">
                         <button
                             onClick={() => onEdit(trainer)}
-                            className="px-4 py-2 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white rounded-lg text-sm font-semibold transition-all"
+                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white rounded-lg text-sm font-semibold transition-all border border-blue-600/20"
                         >
+                            <Edit className="w-4 h-4" />
                             {t('common.edit')}
                         </button>
                         <button
                             onClick={() => handleDelete(trainer._id)}
-                            className="px-4 py-2 bg-red-600/10 text-red-400 hover:bg-red-600 hover:text-white rounded-lg text-sm font-semibold transition-all"
+                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white rounded-lg text-sm font-semibold transition-all border border-red-600/20"
                         >
+                            <Trash2 className="w-4 h-4" />
                             {t('common.delete')}
                         </button>
                     </div>

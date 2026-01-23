@@ -23,6 +23,7 @@ import { getStoredUser } from './utils/auth';
 import { setUser } from './slices/authSlice';
 import { Toaster } from 'react-hot-toast';
 import AllTrainees from './components/DetailedTrainees/AllTrainees';
+import CRMManager from './components/CRM/CRMManager';
 
 function AppContent() {
   const { i18n } = useTranslation();
@@ -67,6 +68,7 @@ function AppContent() {
           <Route path="/trainees" element={<SubscriptionPage />} />
           <Route path="/expenses" element={<ExpenseManager />} />
           <Route path="/allTrainees" element={<AllTrainees />} />
+          <Route path="/crm" element={<CRMManager />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
 

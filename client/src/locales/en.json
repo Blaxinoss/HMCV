@@ -322,7 +322,8 @@
         "filter_session": "Session Subscription",
         "check_in_message": "Confirm attendance for {{name}}?",
         "confirm_check_in": "Confirm Check-in",
-        "check_in_failed": "Check-in failed"
+        "check_in_failed": "Check-in failed",
+        "final_price": "After Discount "
     },
     "common": {
         "back": "Close",
@@ -343,6 +344,8 @@
         "days": "days",
         "debt": "Debt",
         "freeze": "Freeze",
-        "unfreeze": "Unfreeze"
+        "apply": "Apply",
+        "unfreeze": "Unfreeze",
+        "renew": "Renew"
     }
 }
