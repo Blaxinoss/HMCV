@@ -17,6 +17,10 @@ import {
   Activity
 } from 'lucide-react';
 
+const Skeleton = ({ className }: { className?: string }) => (
+  <div className={`animate-pulse bg-gray-700/50 rounded ${className}`} />
+);
+
 const SubscriptionPage: React.FC = () => {
   const { t } = useTranslation();
   const dispatch = useDispatch<AppDispatch>();
@@ -74,7 +78,7 @@ const SubscriptionPage: React.FC = () => {
           </h1>
           <p className="text-gray-400 mt-1">
             {showForm
-              ? "Fill in the details below."
+              ? t('subscription.form_subtitle')
               : t('subscription.manage_description')}
           </p>
         </div>
@@ -87,7 +91,7 @@ const SubscriptionPage: React.FC = () => {
               className="flex items-center gap-2 px-5 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl font-semibold transition-all border border-gray-700"
             >
               <ArrowLeft className="w-5 h-5" />
-              {t('common.back_to_list')}
+              {t('common.back')}
             </button>
           ) : (
             <button
@@ -110,8 +114,14 @@ const SubscriptionPage: React.FC = () => {
               <Users className="w-8 h-8" />
             </div>
             <div>
-              <p className="text-sm text-gray-400 font-medium">Total Members</p>
-              <h3 className="text-2xl font-bold text-white">{loading ? '...' : stats.total}</h3>
+              <p className="text-sm text-gray-400 font-medium">{t('subscription.total_members_label')}</p>
+              <h3 className="text-2xl font-bold text-white">
+                {loading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : (
+                  stats.total
+                )}
+              </h3>
             </div>
           </div>
 
@@ -121,8 +131,14 @@ const SubscriptionPage: React.FC = () => {
               <Activity className="w-8 h-8" />
             </div>
             <div>
-              <p className="text-sm text-gray-400 font-medium">Active Memberships</p>
-              <h3 className="text-2xl font-bold text-white">{loading ? '...' : stats.active}</h3>
+              <p className="text-sm text-gray-400 font-medium">{t('subscription.active_memberships_label')}</p>
+              <h3 className="text-2xl font-bold text-white">
+                {loading ? (
+                  <Skeleton className="h-8 w-16" /> // ثبّت الارتفاع والعرض
+                ) : (
+                  stats.active
+                )}
+              </h3>
             </div>
           </div>
 
@@ -132,9 +148,9 @@ const SubscriptionPage: React.FC = () => {
               <CreditCard className="w-8 h-8" />
             </div>
             <div>
-              <p className="text-sm text-gray-400 font-medium">Outstanding Debt</p>
+              <p className="text-sm text-gray-400 font-medium">{t('subscription.outstanding_debt_label')}</p>
               <h3 className="text-2xl font-bold text-white font-mono">
-                ${loading ? '...' : stats.debt.toLocaleString()}
+                {loading ? '...' : stats.debt.toLocaleString()} EGP
               </h3>
             </div>
           </div>

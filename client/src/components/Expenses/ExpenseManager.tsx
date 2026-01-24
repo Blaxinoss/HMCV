@@ -67,7 +67,7 @@ const ExpenseManager: React.FC = () => {
           <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500">
             {t('expenses.header')}
           </h1>
-          <p className="text-gray-400 mt-1">Manage and track your gym's operational costs.</p>
+          <p className="text-gray-400 mt-1">{t('expenses.manage_subtitle')}</p>
         </div>
         {!showForm && (
           <button
@@ -87,8 +87,8 @@ const ExpenseManager: React.FC = () => {
             <DollarSign className="w-8 h-8" />
           </div>
           <div>
-            <p className="text-sm text-gray-400">Total Expenses</p>
-            <h3 className="text-2xl font-bold text-white">${stats.total.toLocaleString()}</h3>
+            <p className="text-sm text-gray-400">{t('expenses.total_label')}</p>
+            <h3 className="text-2xl font-bold text-white">{stats.total.toLocaleString()} EGP</h3>
           </div>
         </div>
         <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl flex items-center gap-4 shadow-lg">
@@ -96,7 +96,7 @@ const ExpenseManager: React.FC = () => {
             <Receipt className="w-8 h-8" />
           </div>
           <div>
-            <p className="text-sm text-gray-400">Transaction Count</p>
+            <p className="text-sm text-gray-400">{t('expenses.transaction_count_label')}</p>
             <h3 className="text-2xl font-bold text-white">{stats.count}</h3>
           </div>
         </div>
@@ -105,8 +105,8 @@ const ExpenseManager: React.FC = () => {
             <TrendingUp className="w-8 h-8" />
           </div>
           <div>
-            <p className="text-sm text-gray-400">Average Cost</p>
-            <h3 className="text-2xl font-bold text-white">${stats.avg.toFixed(2)}</h3>
+            <p className="text-sm text-gray-400">{t('expenses.average_cost_label')}</p>
+            <h3 className="text-2xl font-bold text-white">{stats.avg.toFixed(2)} EGP</h3>
           </div>
         </div>
       </div>
@@ -124,7 +124,7 @@ const ExpenseManager: React.FC = () => {
           <Search className="absolute left-3 top-3 w-5 h-5 text-gray-500" />
           <input
             type="text"
-            placeholder="Search by name or description..."
+            placeholder={t('expenses.search_placeholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"

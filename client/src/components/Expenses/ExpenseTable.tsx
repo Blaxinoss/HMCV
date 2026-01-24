@@ -81,10 +81,10 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-200 font-medium">
-                      {expense.name || <span className="text-gray-600 italic">No Name</span>}
+                      {expense.name || <span className="text-gray-600 italic">{t('expenses.no_name')}</span>}
                     </td>
                     <td className="px-6 py-4 text-sm font-bold text-white">
-                      ${expense.amount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {expense.amount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} EGP
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-400">
                       {new Date(expense.dateOfPayment).toLocaleDateString()}

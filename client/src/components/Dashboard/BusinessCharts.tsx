@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
     PieChart, Pie, Cell, AreaChart, Area
@@ -12,12 +13,13 @@ interface BusinessChartsProps {
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
 
 const BusinessCharts: React.FC<BusinessChartsProps> = ({ revenueTrend, expenseBreakdown }) => {
+    const { t } = useTranslation();
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
             {/* 1. Profitability Analysis (Composed Chart) */}
             <div className="lg:col-span-2 bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-xl">
-                <h3 className="text-lg font-bold text-white mb-6">💰 Profitability Waterfall</h3>
+                <h3 className="text-lg font-bold text-white mb-6">{t('charts.profitability_waterfall_title')}</h3>
                 <div className="h-[350px]">
                     <ResponsiveContainer width="100%" height="100%">
                         <ComposedChart data={revenueTrend}>
@@ -29,7 +31,7 @@ const BusinessCharts: React.FC<BusinessChartsProps> = ({ revenueTrend, expenseBr
                             </defs>
                             <CartesianGrid stroke="#374151" strokeDasharray="3 3" vertical={false} />
                             <XAxis dataKey="month" stroke="#9CA3AF" tick={{ fontSize: 12 }} />
-                            <YAxis yAxisId="left" stroke="#9CA3AF" tickFormatter={(val) => `$${val / 1000}k`} />
+                            <YAxis yAxisId="left" stroke="#9CA3AF" tickFormatter={(val) => `${val / 1000}k EGP`} />
                             <YAxis yAxisId="right" orientation="right" stroke="#10B981" tickFormatter={(val) => `${val}%`} />
                             <Tooltip
                                 contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#fff' }}
@@ -48,7 +50,7 @@ const BusinessCharts: React.FC<BusinessChartsProps> = ({ revenueTrend, expenseBr
 
             {/* 2. Expense Allocation (Donut Chart) */}
             <div className="bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-xl">
-                <h3 className="text-lg font-bold text-white mb-6">💸 Where is money going?</h3>
+                <h3 className="text-lg font-bold text-white mb-6">{t('charts.expense_breakdown_title')}</h3>
                 <div className="h-[350px] relative">
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
@@ -71,9 +73,9 @@ const BusinessCharts: React.FC<BusinessChartsProps> = ({ revenueTrend, expenseBr
                     </ResponsiveContainer>
                     {/* Center Text */}
                     <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-[60%] text-center pointer-events-none">
-                        <p className="text-xs text-gray-400">Total Spend</p>
+                        <p className="text-xs text-gray-400">{t('charts.total_spend_label')}</p>
                         <p className="text-xl font-bold text-white">
-                            ${expenseBreakdown.reduce((a, b) => a + b.value, 0).toLocaleString()}
+                            {expenseBreakdown.reduce((a, b) => a + b.value, 0).toLocaleString()} EGP
                         </p>
                     </div>
                 </div>

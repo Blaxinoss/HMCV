@@ -104,6 +104,10 @@ export const getTargets = async (type: string) => {
 export const sendToN8N = async (targets: any[], webhookUrl: string) => {
     if (targets.length === 0) return;
     try {
+        const N8N_API_SECRET = process.env.N8N_API_SECRET
+        if (!N8N_API_SECRET) {
+            throw new Error("Couldn't load n8n API key")
+        }
         await axios.post(webhookUrl, {
             batch: targets,
             timestamp: new Date().toISOString()

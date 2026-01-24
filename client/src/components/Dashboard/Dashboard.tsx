@@ -1,6 +1,7 @@
 // src/components/Dashboard/Dashboard.tsx
 
 import React, { useEffect, useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store';
 import { fetchTrainees } from '../../slices/subscriptionSlice';
@@ -43,6 +44,7 @@ import PeakHoursChart from './PeakHoursChart';
 import RecentActivityFeed from './RecentActivityFeed';
 
 const Dashboard: React.FC = () => {
+  const { t } = useTranslation();
   const dispatch = useDispatch<AppDispatch>();
   const [selectedDate, setSelectedDate] = useState(new Date());
 
@@ -112,9 +114,9 @@ const Dashboard: React.FC = () => {
         </div>
         <div>
           <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500">
-            Business Intelligence Hub
+            {t('dashboard.intelligence_hub_title', 'Business Intelligence Hub')}
           </h1>
-          <p className="text-gray-400 mt-1">Deep dive into financial performance & member retention.</p>
+          <p className="text-gray-400 mt-1">{t('dashboard.subtitle')}</p>
         </div>
       </div>
 
@@ -124,37 +126,37 @@ const Dashboard: React.FC = () => {
       {/* 📊 KPI CARDS (INTENSIVE) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         <StatCard
-          title="Monthly Revenue"
-          value={`$${currentStats.revenue.toLocaleString()}`}
-          subValue="Gross Income"
+          title={t('dashboard.monthly_revenue_title')}
+          value={`${currentStats.revenue.toLocaleString()} EGP`}
+          subValue={t('dashboard.monthly_revenue_subtitle')}
           icon={<DollarSign className="w-6 h-6" />}
           color="blue"
         />
         <StatCard
-          title="Net Profit"
-          value={`$${currentStats.netProfit.toLocaleString()}`}
-          subValue={`${currentStats.profitMargin.toFixed(1)}% Margin`}
+          title={t('dashboard.net_profit_title')}
+          value={`${currentStats.netProfit.toLocaleString()} EGP`}
+          subValue={`${currentStats.profitMargin.toFixed(1)}${t('dashboard.margin_suffix')}`}
           icon={<TrendingUp className="w-6 h-6" />}
           color={currentStats.netProfit >= 0 ? 'green' : 'red'}
         />
         <StatCard
-          title="ARPU"
-          value={`$${currentStats.arpu.toFixed(1)}`}
-          subValue="Avg Revenue / User"
+          title={t('dashboard.arpu_title')}
+          value={`${currentStats.arpu.toFixed(1)} EGP`}
+          subValue={t('dashboard.arpu_subtitle')}
           icon={<CreditCard className="w-6 h-6" />}
           color="purple"
         />
         <StatCard
-          title="Active Members"
+          title={t('dashboard.active_members_title')}
           value={currentStats.activeUsers}
-          subValue={`${currentStats.newSignups} New this month`}
+          subValue={`${currentStats.newSignups} ${t('dashboard.new_this_month_prefix')}`}
           icon={<Users className="w-6 h-6" />}
           color="orange"
         />
         <StatCard
-          title="Churn Rate"
+          title={t('dashboard.churn_rate_title')}
           value={`${currentStats.churnRate.toFixed(1)}%`}
-          subValue="Attrition Risk"
+          subValue={t('dashboard.churn_rate_subtitle')}
           icon={<UserMinus className="w-6 h-6" />}
           color={currentStats.churnRate > 10 ? 'red' : 'green'}
         />
@@ -199,13 +201,13 @@ const Dashboard: React.FC = () => {
             <div className="p-2 bg-blue-900/30 rounded-lg">
               <Stethoscope className="w-6 h-6 text-blue-400" />
             </div>
-            <h3 className="text-xl font-bold text-white">Financial Health</h3>
+            <h3 className="text-xl font-bold text-white">{t('dashboard.financial_health_title')}</h3>
           </div>
 
           <div className="space-y-4 relative z-10">
             <div className="flex justify-between items-center p-3 bg-gray-800 rounded-lg border border-gray-700">
               <span className="text-gray-400 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" /> Profit Margin
+                <TrendingUp className="w-4 h-4" /> {t('dashboard.profit_margin')}
               </span>
               <span className={`text-xl font-bold ${getFinancialHealthColor(currentStats.profitMargin)}`}>
                 {currentStats.profitMargin.toFixed(1)}%
@@ -213,7 +215,7 @@ const Dashboard: React.FC = () => {
             </div>
             <div className="flex justify-between items-center p-3 bg-gray-800 rounded-lg border border-gray-700">
               <span className="text-gray-400 flex items-center gap-2">
-                <Scale className="w-4 h-4" /> Salary Ratio
+                <Scale className="w-4 h-4" /> {t('dashboard.salary_ratio')}
               </span>
               <span className="text-white font-bold">
                 {currentStats.revenue > 0
@@ -223,12 +225,12 @@ const Dashboard: React.FC = () => {
             </div>
             <div className="mt-4 p-3 bg-blue-900/10 rounded-lg border border-blue-500/10">
               <p className="text-xs text-blue-400 uppercase font-bold mb-1 flex items-center gap-1">
-                <Zap className="w-3 h-3" /> AI Recommendation
+                <Zap className="w-3 h-3" /> {t('dashboard.ai_recommendation')}
               </p>
               <p className="text-sm text-gray-300 italic">
                 {currentStats.profitMargin < 10
-                  ? "⚠️ Margins are tight. Consider reducing operational costs or increasing session pricing."
-                  : "✅ Healthy margins. Good time to invest in marketing for new signups."}
+                  ? t('dashboard.tight_margins_message')
+                  : t('dashboard.healthy_margins_message')}
               </p>
             </div>
           </div>
@@ -240,7 +242,7 @@ const Dashboard: React.FC = () => {
             <div className="p-2 bg-purple-900/30 rounded-lg">
               <Crown className="w-6 h-6 text-purple-400" />
             </div>
-            <h3 className="text-xl font-bold text-white">High Value Members (Whales)</h3>
+            <h3 className="text-xl font-bold text-white">{t('dashboard.high_value_members')}</h3>
           </div>
 
           <div className="overflow-x-auto">
@@ -271,10 +273,10 @@ const Dashboard: React.FC = () => {
                           {t.isSession ? 'Session Pack' : 'Monthly Sub'}
                         </span>
                       </td>
-                      <td className="p-3 text-green-400 font-mono font-bold">${t.totalCost.toLocaleString()}</td>
+                      <td className="p-3 text-green-400 font-mono font-bold">{t.totalCost.toLocaleString()} EGP</td>
                       <td className="p-3">
                         {t.remaining > 0
-                          ? <span className="text-red-400 text-xs font-semibold bg-red-900/20 px-2 py-1 rounded">Owes ${t.remaining}</span>
+                          ? <span className="text-red-400 text-xs font-semibold bg-red-900/20 px-2 py-1 rounded">Owes {t.remaining} EGP</span>
                           : <span className="text-green-500 text-xs font-semibold bg-green-900/20 px-2 py-1 rounded">Paid</span>}
                       </td>
                     </tr>

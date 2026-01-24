@@ -167,7 +167,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
         {/* === COLUMN 1: Personal & Dates === */}
         <div className="space-y-6">
           <h3 className="text-lg font-bold text-gray-300 border-b border-gray-700 pb-2 mb-4">
-            Personal Information
+            {t('subscription.personal_info_section')}
           </h3>
 
           {/* Name */}
@@ -183,7 +183,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
               className="w-full px-4 py-3 bg-gray-800 rounded-xl border border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-white placeholder-gray-600"
               disabled={loading}
               required
-              placeholder="John Doe"
+              placeholder={t('subscription.name_placeholder')}
             />
           </div>
 
@@ -200,7 +200,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
               className="w-full px-4 py-3 bg-gray-800 rounded-xl border border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-white placeholder-gray-600 font-mono"
               disabled={loading}
               required
-              placeholder="+20 1xxxxxxxxx"
+              placeholder={t('subscription.phone_placeholder')}
             />
           </div>
 
@@ -238,7 +238,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
         {/* === COLUMN 2: Financials & Plan === */}
         <div className="space-y-6">
           <h3 className="text-lg font-bold text-gray-300 border-b border-gray-700 pb-2 mb-4">
-            Financials & Plan
+            {t('subscription.financials_section')}
           </h3>
 
           {/* Total Cost */}
@@ -292,7 +292,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
                     setAppliedCoupon(null);
                   }}
                   className="w-full pl-4 pr-12 py-3 bg-gray-800 rounded-xl border border-gray-700 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all text-white uppercase placeholder-gray-600"
-                  placeholder="CODE"
+                  placeholder={t('subscription.coupon_code_placeholder')}
                 />
                 <button
                   type="button"
@@ -315,7 +315,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
                 </div>
                 <div>
                   <span className="block font-medium text-white">{t('trainees.is_session', 'Session Based Plan')}</span>
-                  <span className="text-xs text-gray-400">Enable if member pays per session count</span>
+                  <span className="text-xs text-gray-400">{t('subscription.session_based_hint')}</span>
                 </div>
               </div>
               <div className="relative">
@@ -368,7 +368,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
               <div className="flex items-center gap-2 text-green-400 font-medium mt-1">
                 <CheckCircle className="w-4 h-4" />
                 <span>
-                  {appliedCoupon.code} (-{appliedCoupon.discountType?.toLowerCase() === 'percentage' ? `${appliedCoupon.value}%` : `$${appliedCoupon.value}`})
+                  {appliedCoupon.code} (-{appliedCoupon.discountType?.toLowerCase() === 'percentage' ? `${appliedCoupon.value}%` : `${appliedCoupon.value} EGP`})
                 </span>
               </div>
             ) : (
@@ -380,7 +380,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
           <div className="flex flex-col">
             <span className="text-gray-500 text-sm">Net Total (After Discount)</span>
             <span className={`text-xl font-bold font-mono mt-1 ${financialSummary.discount > 0 ? 'text-green-400' : 'text-white'}`}>
-              ${financialSummary.netTotal.toLocaleString()}
+              {financialSummary.netTotal.toLocaleString()} EGP
             </span>
           </div>
 
@@ -389,7 +389,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
             <span className="text-gray-500 text-sm">Remaining Balance</span>
             <div className="flex items-center gap-2 mt-1">
               <span className={`text-xl font-bold font-mono ${financialSummary.remaining > 0 ? 'text-red-400' : 'text-gray-400'}`}>
-                ${financialSummary.remaining.toLocaleString()}
+                {financialSummary.remaining.toLocaleString()} EGP
               </span>
               {financialSummary.remaining > 0 && <AlertCircle className="w-4 h-4 text-red-500" />}
             </div>

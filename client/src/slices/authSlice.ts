@@ -24,6 +24,7 @@ export const loginUser = createAsyncThunk<
         return {
           ...response.data.user!,
           token: response.data.token,
+          isAuthenticated: true,
         };
       }
 
@@ -55,6 +56,7 @@ export const registerUser = createAsyncThunk<
         return {
           ...response.data.user!,
           token: response.data.token,
+          isAuthenticated: true,
         };
       }
 
@@ -66,6 +68,7 @@ export const registerUser = createAsyncThunk<
     }
   }
 );
+
 
 const initialState: AuthState = {
   user: null,
@@ -132,7 +135,9 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload || 'Registration failed';
         state.isAuthenticated = false;
-      });
+      })
+
+
   },
 });
 

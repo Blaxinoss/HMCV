@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
@@ -8,14 +9,15 @@ interface PeakHoursChartProps {
 }
 
 const PeakHoursChart: React.FC<PeakHoursChartProps> = ({ data }) => {
+    const { t } = useTranslation();
     return (
         <div className="bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-xl h-full">
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                        🔥 Peak Hours Heatmap
+                        {t('charts.peak_hours_title')}
                     </h3>
-                    <p className="text-xs text-gray-400">Average foot traffic by hour</p>
+                    <p className="text-xs text-gray-400">{t('charts.peak_hours_subtitle')}</p>
                 </div>
             </div>
 
@@ -52,7 +54,7 @@ const PeakHoursChart: React.FC<PeakHoursChartProps> = ({ data }) => {
             <div className="mt-4 p-3 bg-gray-700/30 rounded-lg flex items-center gap-3">
                 <span className="text-2xl">💡</span>
                 <p className="text-xs text-gray-300">
-                    Operational Tip: Traffic spikes around <strong>17:00 - 20:00</strong>. Ensure 2 trainers are on floor duty.
+                    {t('charts.operational_tip')}
                 </p>
             </div>
         </div>

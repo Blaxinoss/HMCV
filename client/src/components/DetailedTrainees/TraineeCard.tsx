@@ -80,15 +80,15 @@ const TraineeCard: React.FC<TraineeCardProps> = ({ trainee, isSelected, onSelect
         {/* Status Badge */}
         {trainee.accountFreezeStatus ? (
           <span className="bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
-            <Snowflake className="w-3 h-3" /> Frozen
+            <Snowflake className="w-3 h-3" /> {t('trainees.frozen')}
           </span>
         ) : trainee.remaining > 0 ? (
           <span className="bg-red-500/10 text-red-500 border border-red-500/20 text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 animate-pulse-slow">
-            <AlertCircle className="w-3 h-3" /> Debt
+            <AlertCircle className="w-3 h-3" /> {t('trainees.debt')}
           </span>
         ) : (
           <span className="bg-green-500/10 text-green-500 border border-green-500/20 text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
-            <Activity className="w-3 h-3" /> Active
+            <Activity className="w-3 h-3" /> {t('trainees.active')}
           </span>
         )}
       </div>
@@ -121,7 +121,7 @@ const TraineeCard: React.FC<TraineeCardProps> = ({ trainee, isSelected, onSelect
         {trainee.remaining > 0 && (
           <div className="flex justify-between items-center text-xs bg-red-500/10 border border-red-500/10 px-3 py-2 rounded-lg">
             <span className="text-red-400 font-medium opacity-80">{t('trainees.remaining')}:</span>
-            <span className="text-red-400 font-bold font-mono tracking-wide">${trainee.remaining}</span>
+            <span className="text-red-400 font-bold font-mono tracking-wide">{trainee.remaining} EGP</span>
           </div>
         )}
       </div>

@@ -1,9 +1,11 @@
 // src/slices/userSlice.ts
 
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { UsersState, User, ApiResponse } from '../types';
+import { UsersState, User, ApiResponse, RegisterPayload } from '../types';
 import api from '../utils/api';
 
+// 1. Fetch Users
+// ملحوظة: تأكد إنك عملت الروت ده في الباك إند (غالباً هيكون في auth.ts أو settings.ts)
 export const fetchUsers = createAsyncThunk<
   User[],
   void,
@@ -12,7 +14,9 @@ export const fetchUsers = createAsyncThunk<
   'users/fetchUsers',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get<ApiResponse<User[]>>('/settings');
+      // تأكد من المسار ده في الباك إند
+      // لو الروت موجود في auth.ts يبقى المسار غالباً /auth/users أو /auth/settings
+      const response = await api.get<ApiResponse<User[]>>('/settings/');
       return response.data.data || [];
     } catch (error: any) {
       return rejectWithValue(
@@ -22,6 +26,7 @@ export const fetchUsers = createAsyncThunk<
   }
 );
 
+// 2. Update User
 export const updateUser = createAsyncThunk<
   User,
   { userId: string; username?: string; password?: string },
@@ -30,7 +35,10 @@ export const updateUser = createAsyncThunk<
   'users/updateUser',
   async ({ userId, ...data }, { rejectWithValue }) => {
     try {
-      const response = await api.put<ApiResponse<User>>(`/settings/${userId}`, data);
+      // ⚠️ تصحيح المسار:
+      // بما إنك حطيت الـ PUT route جوه auth.ts، يبقى المسار /auth/${userId}
+      // إلا لو أنت عامل mount للراوتر ده على /settings في index.ts
+      const response = await api.put<ApiResponse<User>>(`/auth/${userId}`, data);
       return response.data.data || ({} as any);
     } catch (error: any) {
       return rejectWithValue(
@@ -40,6 +48,7 @@ export const updateUser = createAsyncThunk<
   }
 );
 
+// 3. Delete User
 export const deleteUser = createAsyncThunk<
   string,
   string,
@@ -48,11 +57,38 @@ export const deleteUser = createAsyncThunk<
   'users/deleteUser',
   async (userId, { rejectWithValue }) => {
     try {
-      await api.delete(`/settings/${userId}`);
+      // المسار ده سليم بناءً على كود الباك إند بتاعك
+      await api.delete(`/auth/deleteUser/${userId}`);
       return userId;
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || 'Failed to delete user'
+      );
+    }
+  }
+);
+
+
+
+export const createAdmin = createAsyncThunk<
+  User,
+  RegisterPayload,
+  { rejectValue: string }
+>(
+  'auth/createAdmin',
+  async ({ username, password }, { rejectWithValue }) => {
+    try {
+
+      const response = await api.post('/auth/create-admin', {
+        username,
+        password,
+      });
+
+      return response.data.data;
+
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to create admin'
       );
     }
   }
@@ -97,7 +133,11 @@ const userSlice = createSlice({
       })
       .addCase(updateUser.fulfilled, (state, action) => {
         state.loading = false;
-        const index = state.users.findIndex(u => u.id === action.payload.id);
+
+        // ⚠️ تصحيح هام جداً:
+        // MongoDB بيرجع _id مش id
+        const index = state.users.findIndex(u => u._id === action.payload._id);
+
         if (index !== -1) {
           state.users[index] = action.payload;
         }
@@ -116,12 +156,32 @@ const userSlice = createSlice({
       })
       .addCase(deleteUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.users = state.users.filter(u => u.id !== action.payload);
+
+        // ⚠️ تصحيح هام جداً:
+        // المقارنة لازم تكون مع _id
+        state.users = state.users.filter(u => u._id !== action.payload);
+
         state.error = null;
       })
       .addCase(deleteUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to delete user';
+      })
+
+    builder
+      .addCase(createAdmin.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createAdmin.fulfilled, (state, action) => {
+        state.loading = false;
+        state.users.push(action.payload)
+
+
+      })
+      .addCase(createAdmin.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
   },
 });

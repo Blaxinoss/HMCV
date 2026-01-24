@@ -37,8 +37,8 @@ const CRMManager: React.FC = () => {
     const campaigns = [
         {
             type: 'expiring',
-            title: 'Subscription Expiry',
-            description: 'Notify members whose subscription ends in 3 days.',
+            title: t('crm.expiring_title'),
+            description: t('crm.expiring_description'),
             icon: BellRing,
             color: 'blue',
             bg: 'bg-blue-500/10',
@@ -47,8 +47,8 @@ const CRMManager: React.FC = () => {
         },
         {
             type: 'debt',
-            title: 'Debt Collection',
-            description: 'Remind members with outstanding balance > 0 EGP.',
+            title: t('crm.debt_title'),
+            description: t('crm.debt_description'),
             icon: DollarSign,
             color: 'red',
             bg: 'bg-red-500/10',
@@ -57,8 +57,8 @@ const CRMManager: React.FC = () => {
         },
         {
             type: 'absence',
-            title: 'Absent Members',
-            description: 'Re-engage members absent for more than 7 days.',
+            title: t('crm.absence_title'),
+            description: t('crm.absence_description'),
             icon: UserX,
             color: 'orange',
             bg: 'bg-orange-500/10',
@@ -74,10 +74,10 @@ const CRMManager: React.FC = () => {
             <div className="mb-10">
                 <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 flex items-center gap-3">
                     <Send className="w-8 h-8 text-purple-500" />
-                    CRM Automation Center
+                    {t('crm.header')}
                 </h1>
                 <p className="text-gray-400 mt-2">
-                    Manually trigger automated WhatsApp campaigns via n8n.
+                    {t('crm.subtitle')}
                 </p>
             </div>
 
@@ -110,9 +110,9 @@ const CRMManager: React.FC = () => {
               `}
                         >
                             {loadingType === campaign.type ? (
-                                <> <Loader2 className="w-5 h-5 animate-spin" /> Processing... </>
+                                <> <Loader2 className="w-5 h-5 animate-spin" /> {t('crm.processing')} </>
                             ) : (
-                                <> Run Campaign <Send className="w-4 h-4" /> </>
+                                <> {t('crm.run_button')} <Send className="w-4 h-4" /> </>
                             )}
                         </button>
                     </div>
@@ -125,9 +125,9 @@ const CRMManager: React.FC = () => {
                     <CheckCircle className="w-4 h-4 text-green-500" />
                 </div>
                 <div>
-                    <h4 className="text-sm font-bold text-gray-300">System Note</h4>
+                    <h4 className="text-sm font-bold text-gray-300">{t('crm.system_note_title')}</h4>
                     <p className="text-xs text-gray-500 mt-1">
-                        These triggers are protected by a cooldown period. Members who received a message recently (e.g., yesterday for expiring, 3 days for debt) will be automatically skipped to prevent spamming.
+                        {t('crm.system_note_description')}
                     </p>
                 </div>
             </div>

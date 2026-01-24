@@ -81,7 +81,7 @@ const TrainersForm: React.FC<TrainersFormProps> = ({ trainer, onSuccess, onCance
         {/* Personal Details */}
         <div className="space-y-6">
           <h3 className="text-lg font-bold text-gray-300 border-b border-gray-700 pb-2 mb-4">
-            Staff Details
+            {t('trainers.staff_details')}
           </h3>
 
           <div className="space-y-2">
@@ -94,7 +94,7 @@ const TrainersForm: React.FC<TrainersFormProps> = ({ trainer, onSuccess, onCance
               value={formData.name}
               onChange={handleChange}
               className="w-full px-4 py-3 bg-gray-800 rounded-xl border border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-white placeholder-gray-600"
-              placeholder="e.g. Captain Ali"
+              placeholder={t('trainers.name_placeholder')}
               required
             />
           </div>
@@ -109,7 +109,7 @@ const TrainersForm: React.FC<TrainersFormProps> = ({ trainer, onSuccess, onCance
               value={formData.phone}
               onChange={handleChange}
               className="w-full px-4 py-3 bg-gray-800 rounded-xl border border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-white placeholder-gray-600"
-              placeholder="01xxxxxxxxx"
+              placeholder={t('trainers.phone_placeholder')}
               required
             />
           </div>
@@ -118,7 +118,7 @@ const TrainersForm: React.FC<TrainersFormProps> = ({ trainer, onSuccess, onCance
         {/* Financial Details */}
         <div className="space-y-6">
           <h3 className="text-lg font-bold text-gray-300 border-b border-gray-700 pb-2 mb-4">
-            Payroll Information
+            {t('trainers.payroll_section')}
           </h3>
 
           <div className="space-y-2">
@@ -148,7 +148,7 @@ const TrainersForm: React.FC<TrainersFormProps> = ({ trainer, onSuccess, onCance
               className="w-full px-4 py-3 bg-gray-800 rounded-xl border border-gray-700 focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none transition-all text-white font-mono"
               min="0"
             />
-            <p className="text-xs text-gray-500">Positive value subtracts from salary.</p>
+            <p className="text-xs text-gray-500">{t('trainers.salary_note')}</p>
           </div>
         </div>
       </div>
@@ -156,11 +156,11 @@ const TrainersForm: React.FC<TrainersFormProps> = ({ trainer, onSuccess, onCance
       {/* Net Salary Calculation Box */}
       <div className="mt-8 bg-gray-800/50 border border-gray-700 p-6 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4">
         <div className="text-center md:text-left">
-          <span className="text-gray-400 text-sm uppercase font-bold tracking-wider block">Estimated Net Salary</span>
-          <span className="text-xs text-gray-500">Base Salary - Deduction</span>
+          <span className="text-gray-400 text-sm uppercase font-bold tracking-wider block">{t('trainers.estimated_net_salary')}</span>
+          <span className="text-xs text-gray-500">{t('trainers.estimated_net_salary_hint')}</span>
         </div>
         <div className="text-3xl font-mono font-bold text-green-400">
-          ${Math.max(0, formData.salary - formData.raise).toLocaleString()}
+          {Math.max(0, formData.salary - formData.raise).toLocaleString()} EGP
         </div>
       </div>
 

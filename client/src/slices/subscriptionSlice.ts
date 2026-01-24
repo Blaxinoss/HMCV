@@ -197,17 +197,21 @@ const subscriptionSlice = createSlice({
     // Freeze Trainee
     builder
       .addCase(freezeTrainee.pending, (state) => {
-        state.loading = true;
+        // state.loading = true;
         state.error = null;
       })
       .addCase(freezeTrainee.fulfilled, (state, action) => {
         state.loading = false;
         const index = state.trainees.findIndex(t => t._id === action.payload._id);
         if (index !== -1) {
+          console.log("Updated Trainee:", state.trainees[index]);
+
           state.trainees[index] = {
             ...state.trainees[index], // هات الاسم والتليفون وباقي الحاجات القديمة
             ...action.payload         // وفوقهم حط التحديثات الجديدة (حالة التجميد والتاريخ)
           };
+        } else {
+          console.error("Trainee not found in state!");
         }
         state.error = null;
       })

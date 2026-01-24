@@ -83,7 +83,7 @@ const Navbar: React.FC = () => {
               <NavItem to="/trainees" icon={Users} label={t('navbar.trainees')} />
               <NavItem to="/allTrainees" icon={Users} label={t('navbar.all_users')} />
               <NavItem to="/expenses" icon={CreditCard} label={t('navbar.expenses')} />
-              <NavItem to="/crm" icon={Send} label="CRM" />
+              <NavItem to="/crm" icon={Send} label={t('navbar.crm')} />
             </div>
 
             {/* 3. Right Actions */}
@@ -150,7 +150,7 @@ const Navbar: React.FC = () => {
             <NavItem to="/trainees" icon={Users} label={t('navbar.trainees')} onClick={() => setMobileMenu(false)} />
             <NavItem to="/allTrainees" icon={Users} label={t('navbar.all_users')} onClick={() => setMobileMenu(false)} />
             <NavItem to="/expenses" icon={CreditCard} label={t('navbar.expenses')} onClick={() => setMobileMenu(false)} />
-            <NavItem to="/crm" icon={Send} label="CRM" />
+            <NavItem to="/crm" icon={Send} label={t('navbar.crm')} />
             <NavItem to="/settings" icon={Settings} label={t('navbar.settings')} onClick={() => setMobileMenu(false)} />
 
             <div className="border-t border-gray-800 my-2 pt-2 flex justify-between items-center px-2">

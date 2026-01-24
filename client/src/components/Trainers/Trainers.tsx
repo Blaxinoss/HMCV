@@ -48,7 +48,7 @@ const Trainers: React.FC = () => {
             {showForm ? (editingTrainer ? t('trainers.edit_trainer') : t('trainers.add_new')) : t('trainers.header', 'Trainers Management')}
           </h1>
           <p className="text-gray-400 mt-1">
-            {showForm ? "Manage staff details below." : t('trainers.subtitle', 'Manage your gym trainers and their salaries.')}
+            {showForm ? t('trainers.manage_subtitle') : t('trainers.subtitle', 'Manage your gym trainers and their salaries.')}
           </p>
         </div>
 
@@ -91,7 +91,7 @@ const Trainers: React.FC = () => {
             </div>
             <div>
               <p className="text-sm text-gray-400">Total Payroll</p>
-              <p className="text-2xl font-bold text-white">${totalSalaries.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-white">{totalSalaries.toLocaleString()} EGP</p>
             </div>
           </div>
         </div>

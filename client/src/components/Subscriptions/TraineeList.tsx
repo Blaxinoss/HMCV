@@ -62,6 +62,7 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
     };
 
     const handleFreeze = (id: string, e: React.MouseEvent) => {
+        console.log(id);
         e.stopPropagation();
         showConfirm(id, () => {
             dispatch(freezeTrainee(id))
@@ -309,11 +310,11 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
                                             <div className="flex gap-4">
                                                 <div className="text-sm">
                                                     <span className="text-gray-400 block text-[10px]">TOTAL</span>
-                                                    ${trainee.totalCost}
+                                                    {trainee.totalCost} EGP
                                                 </div>
                                                 <div className="text-sm">
                                                     <span className="text-gray-400 block text-[10px]">PAID</span>
-                                                    <span className="text-green-400">${trainee.paid}</span>
+                                                    <span className="text-green-400">{trainee.paid} EGP</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -323,7 +324,7 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
                                                 <CreditCard className="w-3 h-3" /> Balance
                                             </p>
                                             <p className={`font-bold text-lg ${trainee.remaining > 0 ? 'text-red-400' : 'text-green-400'}`}>
-                                                ${trainee.remaining}
+                                                {trainee.remaining} EGP
                                             </p>
                                         </div>
                                     </div>

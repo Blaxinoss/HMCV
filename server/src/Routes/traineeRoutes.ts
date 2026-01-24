@@ -97,6 +97,11 @@ router.post('/', async (req: Request, res: Response) => {
         const savedTrainee = await newTrainee.save();
 
         const N8N_WEBHOOK_URL = process.env.N8N_WELCOME_WEBHOOK || 'http://localhost:5678/webhook-test/welcome_user';
+        const N8N_API_SECRET = process.env.N8N_API_SECRET
+
+        if (!N8N_API_SECRET) {
+            console.log('couldn\'t find N8N api secret in ur env')
+        }
 
 
         try {
@@ -107,7 +112,7 @@ router.post('/', async (req: Request, res: Response) => {
                 memberId: savedTrainee.memberId,
             }, {
                 headers: {
-                    "key": process.env.N8N_API_SECRET
+                    "key": N8N_API_SECRET
                 }
             })
             console.log(`Successfully triggered n8n for client: ${savedTrainee.name} message has been sent`);
@@ -170,11 +175,15 @@ router.put('/:id/freeze', async (req: Request, res: Response): Promise<void> => 
         const updatedTrainee = await trainee.save();
 
         res.status(200).json({
-            _id: updatedTrainee._id,
-            accountFreezeStatus: updatedTrainee.accountFreezeStatus,
-            subscriptionEndDate: updatedTrainee.subscriptionEndDate,
-            freezeStartDate: updatedTrainee.freezeStartDate,
-            message: updatedTrainee.accountFreezeStatus ? "Account Frozen" : "Account Unfrozen"
+            success: true,
+            message: updatedTrainee.accountFreezeStatus ? "Account Frozen" : "Account Unfrozen",
+            data: {
+                _id: updatedTrainee._id,
+                accountFreezeStatus: updatedTrainee.accountFreezeStatus,
+                subscriptionEndDate: updatedTrainee.subscriptionEndDate,
+                freezeStartDate: updatedTrainee.freezeStartDate,
+                message: updatedTrainee.accountFreezeStatus ? "Account Frozen" : "Account Unfrozen"
+            }
         });
 
     } catch (error: any) {

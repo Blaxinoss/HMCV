@@ -1,12 +1,14 @@
 import React, { FormEvent, useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { loginUser, clearError } from '../../slices/authSlice';
 import { AppDispatch, RootState } from '../../store';
 import { User, Lock, ArrowRight, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Login: React.FC = () => {
+  const { t } = useTranslation();
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const { loading, error } = useSelector((state: RootState) => state.auth);
@@ -33,21 +35,34 @@ const Login: React.FC = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    // 1. أهم سطر: منع الريلود
+    console.log("🛑 STOP RELOAD");
     e.preventDefault();
-    const result = await dispatch(
-      loginUser({
-        username: formData.username,
-        password: formData.password,
-      })
-    );
 
-    if (result.meta.requestStatus === 'fulfilled') {
-      toast.success('Welcome back, Captain!');
+    try {
+      // 2. استخدام unwrap عشان نفصل النجاح عن الفشل
+      const user = await dispatch(
+        loginUser({
+          username: formData.username,
+          password: formData.password,
+        })
+      ).unwrap();
+
+      // 3. لو وصلنا هنا يبقى الدخول نجح 100%
+      // مش محتاجين نعمل check على user.isAuthenticated لأن unwrap لو فشل هيروح للـ catch
+      toast.success(`Welcome back, ${user.username}!`);
       navigate('/');
+
+    } catch (error: any) {
+      // 4. لو الباسورد غلط هيدخل هنا
+      // الـ error هنا هو الرسالة الـ string اللي جاية من rejectWithValue
+      console.error("Login Error:", error);
+      toast.error(error || 'Invalid username or password');
+
+      // هنا مفيش ريلود هيحصل، مجرد توست هيظهر
     }
   };
-
   return (
     <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4 relative overflow-hidden">
 
@@ -62,8 +77,8 @@ const Login: React.FC = () => {
           <div className="w-16 h-16 bg-gradient-to-tr from-blue-600 to-purple-600 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-blue-900/20 mb-6 transform rotate-3">
             <span className="text-3xl font-bold text-white">F</span>
           </div>
-          <h1 className="text-3xl font-extrabold text-white mb-2">Welcome Back</h1>
-          <p className="text-gray-400">Enter your credentials to access the dashboard.</p>
+          <h1 className="text-3xl font-extrabold text-white mb-2">{t('login.welcome_back')}</h1>
+          <p className="text-gray-400">{t('login.subtitle')}</p>
         </div>
 
         {/* Form */}
@@ -71,7 +86,7 @@ const Login: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-5">
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-300 ml-1">Username</label>
+              <label className="text-sm font-medium text-gray-300 ml-1">{t('login.username_label')}</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <User className="h-5 w-5 text-gray-500" />
@@ -84,13 +99,13 @@ const Login: React.FC = () => {
                   required
                   disabled={loading}
                   className="w-full pl-10 pr-4 py-3 bg-gray-950 border border-gray-800 rounded-xl text-white placeholder-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-                  placeholder="admin"
+                  placeholder={t('login.username_placeholder')}
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-300 ml-1">Password</label>
+              <label className="text-sm font-medium text-gray-300 ml-1">{t('login.password_label')}</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Lock className="h-5 w-5 text-gray-500" />
@@ -103,7 +118,7 @@ const Login: React.FC = () => {
                   required
                   disabled={loading}
                   className="w-full pl-10 pr-4 py-3 bg-gray-950 border border-gray-800 rounded-xl text-white placeholder-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-                  placeholder="••••••••"
+                  placeholder={t('login.password_placeholder')}
                 />
               </div>
             </div>
@@ -115,11 +130,11 @@ const Login: React.FC = () => {
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" /> Logging in...
+                  <Loader2 className="w-5 h-5 animate-spin" /> {t('login.logging_in')}
                 </>
               ) : (
                 <>
-                  Sign In <ArrowRight className="w-5 h-5" />
+                  {t('login.sign_in_button')} <ArrowRight className="w-5 h-5" />
                 </>
               )}
             </button>
@@ -127,9 +142,9 @@ const Login: React.FC = () => {
 
           <div className="mt-8 text-center">
             <p className="text-gray-500 text-sm">
-              Don't have an account?{' '}
+              {t('login.no_account_text')}{' '}
               <Link to="/auth/register" className="text-blue-400 hover:text-blue-300 font-semibold transition-colors">
-                Create one now
+                {t('login.create_account_link')}
               </Link>
             </p>
           </div>

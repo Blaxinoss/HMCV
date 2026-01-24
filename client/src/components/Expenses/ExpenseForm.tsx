@@ -107,7 +107,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ editingId, onSuccess, onCance
             onChange={handleChange}
             className="w-full px-4 py-3 bg-gray-800 rounded-xl border border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-white placeholder-gray-600"
             disabled={loading}
-            placeholder="e.g. New Treadmill"
+            placeholder={t('expenses.personal_placeholder')}
           />
         </div>
 
@@ -181,7 +181,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ editingId, onSuccess, onCance
             onChange={handleChange}
             className="w-full px-4 py-3 bg-gray-800 rounded-xl border border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-white placeholder-gray-600 resize-none h-24"
             disabled={loading}
-            placeholder="Add any additional notes here..."
+            placeholder={t('expenses.additional_notes_placeholder')}
           />
         </div>
       </div>

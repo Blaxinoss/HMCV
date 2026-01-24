@@ -28,14 +28,20 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Token expired or invalid
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('user');
+    // 1. هات عنوان الصفحة الحالي والرابط اللي بنطلبه
+    const isLoginPage = window.location.pathname.includes('/login');
+    const isLoginRequest = error.config.url.includes('/auth/login');
+
+    // 2. لو الخطأ 401، بس إحنا مش في عملية تسجيل دخول
+    if (error.response && error.response.status === 401 && !isLoginRequest) {
+      // هنا بس اعمل طرد للمستخدم
+      localStorage.clear();
       window.location.href = '/auth/login';
     }
+
     return Promise.reject(error);
   }
 );
+
 
 export default api;

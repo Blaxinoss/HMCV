@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface MonthSliderProps {
     currentDate: Date;
@@ -6,6 +7,7 @@ interface MonthSliderProps {
 }
 
 const MonthSlider: React.FC<MonthSliderProps> = ({ currentDate, onChange }) => {
+    const { t } = useTranslation();
     // Generate last 12 months
     const months = Array.from({ length: 12 }, (_, i) => {
         const d = new Date();
@@ -16,7 +18,7 @@ const MonthSlider: React.FC<MonthSliderProps> = ({ currentDate, onChange }) => {
     return (
         <div className="bg-gray-800/50 backdrop-blur-md border border-gray-700 p-4 rounded-2xl mb-8 shadow-2xl">
             <div className="flex justify-between items-end mb-2 px-2">
-                <h3 className="text-gray-400 text-sm font-semibold uppercase tracking-widest">Timeline Control</h3>
+                <h3 className="text-gray-400 text-sm font-semibold uppercase tracking-widest">{t('dashboard.timeline_control_label')}</h3>
                 <p className="text-white font-bold text-lg">
                     {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                 </p>

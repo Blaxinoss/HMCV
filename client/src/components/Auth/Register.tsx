@@ -1,12 +1,14 @@
 import React, { FormEvent, useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { registerUser, clearError } from '../../slices/authSlice';
 import { AppDispatch, RootState } from '../../store';
 import { User, Lock, Key, CheckCircle, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Register: React.FC = () => {
+  const { t } = useTranslation();
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const { loading, error } = useSelector((state: RootState) => state.auth);
@@ -34,28 +36,28 @@ const Register: React.FC = () => {
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    toast.error('Not implemented Logic');
+    // if (formData.password !== formData.confirmPassword) {
+    //   toast.error('Passwords do not match');
+    //   return;
+    // }
 
-    if (formData.password !== formData.confirmPassword) {
-      toast.error('Passwords do not match');
-      return;
-    }
+    // if (formData.password.length < 6) {
+    //   toast.error('Password must be at least 6 characters');
+    //   return;
+    // }
 
-    if (formData.password.length < 6) {
-      toast.error('Password must be at least 6 characters');
-      return;
-    }
+    // const result = await dispatch(
+    //   registerUser({
+    //     username: formData.username,
+    //     password: formData.password,
+    //   })
+    // );
 
-    const result = await dispatch(
-      registerUser({
-        username: formData.username,
-        password: formData.password,
-      })
-    );
-
-    if (result.meta.requestStatus === 'fulfilled') {
-      toast.success('Account created successfully!');
-      navigate('/');
-    }
+    // if (result.meta.requestStatus === 'fulfilled') {
+    //   toast.success('Account created successfully!');
+    //   navigate('/');
+    // }
   };
 
   return (
@@ -68,8 +70,8 @@ const Register: React.FC = () => {
       <div className="bg-gray-900 border border-gray-800 w-full max-w-md rounded-2xl shadow-2xl relative z-10 overflow-hidden animate-fadeIn">
         {/* Header */}
         <div className="p-8 pb-0 text-center">
-          <h1 className="text-3xl font-extrabold text-white mb-2">Create Account</h1>
-          <p className="text-gray-400">Join the management team today.</p>
+          <h1 className="text-3xl font-extrabold text-white mb-2">{t('register.create_account_title')}</h1>
+          <p className="text-gray-400">{t('register.subtitle')}</p>
         </div>
 
         {/* Form */}
@@ -77,7 +79,7 @@ const Register: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-300 ml-1">Username</label>
+              <label className="text-sm font-medium text-gray-300 ml-1">{t('register.username_label')}</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <User className="h-5 w-5 text-gray-500" />
@@ -90,13 +92,13 @@ const Register: React.FC = () => {
                   required
                   disabled={loading}
                   className="w-full pl-10 pr-4 py-3 bg-gray-950 border border-gray-800 rounded-xl text-white placeholder-gray-600 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all"
-                  placeholder="Choose a username"
+                  placeholder={t('register.username_placeholder')}
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-300 ml-1">Password</label>
+              <label className="text-sm font-medium text-gray-300 ml-1">{t('register.password_label')}</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Lock className="h-5 w-5 text-gray-500" />
@@ -109,13 +111,13 @@ const Register: React.FC = () => {
                   required
                   disabled={loading}
                   className="w-full pl-10 pr-4 py-3 bg-gray-950 border border-gray-800 rounded-xl text-white placeholder-gray-600 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all"
-                  placeholder="Min 6 characters"
+                  placeholder={t('register.password_placeholder')}
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-300 ml-1">Confirm Password</label>
+              <label className="text-sm font-medium text-gray-300 ml-1">{t('register.confirm_password_label')}</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Key className="h-5 w-5 text-gray-500" />
@@ -128,7 +130,7 @@ const Register: React.FC = () => {
                   required
                   disabled={loading}
                   className="w-full pl-10 pr-4 py-3 bg-gray-950 border border-gray-800 rounded-xl text-white placeholder-gray-600 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all"
-                  placeholder="Re-enter password"
+                  placeholder={t('register.confirm_password_placeholder')}
                 />
               </div>
             </div>
@@ -140,11 +142,11 @@ const Register: React.FC = () => {
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" /> creating...
+                  <Loader2 className="w-5 h-5 animate-spin" /> {t('register.creating')}
                 </>
               ) : (
                 <>
-                  Register <CheckCircle className="w-5 h-5" />
+                  {t('register.register_button')} <CheckCircle className="w-5 h-5" />
                 </>
               )}
             </button>
@@ -152,9 +154,9 @@ const Register: React.FC = () => {
 
           <div className="mt-8 text-center">
             <p className="text-gray-500 text-sm">
-              Already an admin?{' '}
+              {t('register.already_admin_text')}{' '}
               <Link to="/auth/login" className="text-purple-400 hover:text-purple-300 font-semibold transition-colors">
-                Sign in here
+                {t('register.sign_in_link')}
               </Link>
             </p>
           </div>

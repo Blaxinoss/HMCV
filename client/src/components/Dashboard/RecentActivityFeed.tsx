@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     ArrowUpRight,
     ArrowDownLeft,
@@ -23,6 +24,7 @@ interface RecentActivityFeedProps {
 }
 
 const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({ transactions, onViewAll }) => {
+    const { t } = useTranslation();
 
     // Helper for cleaner currency format
     const formatCurrency = (amount: number) => {
@@ -40,10 +42,10 @@ const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({ transactions, o
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                    <CreditCard className="w-5 h-5 text-blue-500" /> Recent Cash Flow
+                    <CreditCard className="w-5 h-5 text-blue-500" /> {t('dashboard.recent_cash_flow_title')}
                 </h3>
                 <span className="text-xs font-medium px-2 py-1 bg-gray-800 rounded-lg text-gray-400 border border-gray-700">
-                    Last {transactions.length}
+                    {t('dashboard.recent_activity_count_suffix')} {transactions.length}
                 </span>
             </div>
 
@@ -52,7 +54,7 @@ const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({ transactions, o
                 {transactions.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-gray-500 opacity-60 min-h-[200px]">
                         <History className="w-12 h-12 mb-3 stroke-1" />
-                        <p>No recent transactions</p>
+                        <p>{t('dashboard.no_recent_transactions')}</p>
                     </div>
                 ) : (
                     transactions.map((tx) => {

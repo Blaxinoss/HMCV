@@ -25,7 +25,7 @@ router.post('/trigger-reminders', async (req, res) => {
         }
         await sendToN8N(targets, webhook);
 
-        res.json({ success: true, count: targets.length, message: "Campaign triggered manually" });
+        res.json({ success: true, count: targets.length, targets, message: "Campaign triggered manually" });
     } catch (e: any) {
         res.status(500).json({ error: e.message });
     }

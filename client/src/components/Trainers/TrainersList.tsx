@@ -71,22 +71,22 @@ const TrainersList: React.FC<TrainersListProps> = ({ trainers, loading, onEdit }
                     <div className="p-6 space-y-4">
                         <div className="flex justify-between items-center text-sm">
                             <span className="text-gray-400 flex items-center gap-1">
-                                <DollarSign className="w-3 h-3" /> Base Salary
+                                <DollarSign className="w-3 h-3" /> {t('trainers.base_salary')}
                             </span>
-                            <span className="text-white font-medium">${trainer.salary.toLocaleString()}</span>
+                            <span className="text-white font-medium">{trainer.salary.toLocaleString()} EGP</span>
                         </div>
 
                         <div className="flex justify-between items-center text-sm">
-                            <span className="text-gray-400">Deductions</span>
+                            <span className="text-gray-400">{t('trainers.deduction')}  </span>
                             <span className={`font-medium ${trainer.raise > 0 ? 'text-red-400' : 'text-gray-600'}`}>
-                                - ${trainer.raise.toLocaleString()}
+                                - {trainer.raise.toLocaleString()} EGP
                             </span>
                         </div>
 
                         <div className="pt-4 border-t border-gray-800 flex justify-between items-end">
-                            <span className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Net Pay</span>
+                            <span className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">{t('trainers.net_salary')}</span>
                             <span className="text-2xl font-bold text-green-400 font-mono">
-                                ${(trainer.salaryAfterDiscount ?? (trainer.salary - trainer.raise)).toLocaleString()}
+                                {(trainer.salaryAfterDiscount ?? (trainer.salary - trainer.raise)).toLocaleString()}EGP
                             </span>
                         </div>
                     </div>

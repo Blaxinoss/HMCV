@@ -65,17 +65,17 @@ const TraineeDetailsModal: React.FC<TraineeDetailsModalProps> = ({ trainee, isOp
               <div className="flex flex-wrap gap-2 justify-center md:justify-start">
                 {trainee.accountFreezeStatus && (
                   <span className="px-3 py-1 rounded-full text-xs font-bold bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 flex items-center gap-1">
-                    <Snowflake className="w-3 h-3" /> Frozen
+                    <Snowflake className="w-3 h-3" /> {t('trainees.frozen')}
                   </span>
                 )}
                 {trainee.remaining > 0 && (
                   <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-500/10 text-red-500 border border-red-500/20 flex items-center gap-1">
-                    <DollarSign className="w-3 h-3" /> Debt: ${trainee.remaining}
+                    <DollarSign className="w-3 h-3" /> {t('trainees.debt')}: {trainee.remaining} EGP
                   </span>
                 )}
                 {trainee.daysLeft !== null && trainee.daysLeft < 5 && (
                   <span className="px-3 py-1 rounded-full text-xs font-bold bg-orange-500/10 text-orange-500 border border-orange-500/20 flex items-center gap-1">
-                    <AlertTriangle className="w-3 h-3" /> Expiring Soon
+                    <AlertTriangle className="w-3 h-3" /> {t('trainees.expiring_soon')}
                   </span>
                 )}
               </div>
@@ -152,25 +152,25 @@ const TraineeDetailsModal: React.FC<TraineeDetailsModalProps> = ({ trainee, isOp
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="p-4 bg-gray-800 rounded-xl text-center">
                   <p className="text-xs text-gray-500 uppercase mb-1">Total Cost</p>
-                  <p className="text-xl font-bold text-white">${trainee.totalCost}</p>
+                  <p className="text-xl font-bold text-white">{trainee.totalCost} EGP</p>
                 </div>
                 <div className="p-4 bg-gray-800 rounded-xl text-center">
                   <p className="text-xs text-gray-500 uppercase mb-1">Paid</p>
-                  <p className="text-xl font-bold text-green-400">${trainee.paid}</p>
+                  <p className="text-xl font-bold text-green-400">{trainee.paid} EGP</p>
                 </div>
               </div>
 
               <div className="flex justify-between items-center p-4 bg-gray-800/50 rounded-xl border border-gray-800">
                 <span className="text-sm text-gray-400">Outstanding Balance</span>
                 <span className={`text-xl font-mono font-bold ${trainee.remaining > 0 ? 'text-red-500' : 'text-gray-500'}`}>
-                  ${trainee.remaining}
+                  {trainee.remaining} EGP
                 </span>
               </div>
 
               {trainee.appliedDiscount?.hasCustomDiscount && (
                 <div className="mt-4 flex items-center gap-2 text-xs text-indigo-400 bg-indigo-500/10 p-2 rounded-lg border border-indigo-500/20">
                   <CheckCircle className="w-3 h-3" />
-                  Discount Applied: {trainee.appliedDiscount.discountValue}{trainee.appliedDiscount.discountType === 'percentage' ? '%' : '$'}
+                  Discount Applied: {trainee.appliedDiscount.discountValue}{trainee.appliedDiscount.discountType === 'percentage' ? '%' : 'EGP'}
                 </div>
               )}
             </div>

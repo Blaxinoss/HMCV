@@ -1,14 +1,18 @@
 // src/types/index.ts
 
 export interface User {
-  id: string;
+
+  _id: string;
   username: string;
-  createdAt: string;
-  updatedAt: string;
+  password: string;
+  role: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface AuthUser extends User {
   token: string;
+  isAuthenticated: boolean;
 }
 
 export interface LoginPayload {

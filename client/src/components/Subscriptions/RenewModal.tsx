@@ -63,7 +63,7 @@ const RenewModal: React.FC<RenewModalProps> = ({ traineeId, traineeName, isSessi
 
                 {/* Header */}
                 <div className="p-6 border-b border-gray-800 flex justify-between">
-                    <h2 className="text-xl font-bold text-white">Renew Subscription</h2>
+                    <h2 className="text-xl font-bold text-white">{t('subscription.renew_title')}</h2>
                     <button onClick={onClose}><X className="text-gray-400 hover:text-white" /></button>
                 </div>
 
@@ -71,7 +71,7 @@ const RenewModal: React.FC<RenewModalProps> = ({ traineeId, traineeName, isSessi
 
                     {/* Duration */}
                     <div>
-                        <label className="text-xs text-gray-400 block mb-2">Duration</label>
+                        <label className="text-xs text-gray-400 block mb-2">{t('subscription.duration_label')}</label>
                         <div className="grid grid-cols-4 gap-2">
                             {[1, 3, 6, 12].map(m => (
                                 <button
@@ -79,11 +79,11 @@ const RenewModal: React.FC<RenewModalProps> = ({ traineeId, traineeName, isSessi
                                     type="button"
                                     onClick={() => setFormData({ ...formData, durationMonths: m })}
                                     className={`py-2 rounded-lg text-sm font-bold border ${formData.durationMonths === m
-                                            ? 'bg-blue-600 border-blue-500 text-white'
-                                            : 'bg-gray-800 border-gray-700 text-gray-400'
+                                        ? 'bg-blue-600 border-blue-500 text-white'
+                                        : 'bg-gray-800 border-gray-700 text-gray-400'
                                         }`}
                                 >
-                                    {m} Mo
+                                    {m} {t('subscription.month_abbreviation')}
                                 </button>
                             ))}
                         </div>
@@ -92,7 +92,7 @@ const RenewModal: React.FC<RenewModalProps> = ({ traineeId, traineeName, isSessi
                     {/* Sessions Count (Only if Session Based) */}
                     {isSession && (
                         <div>
-                            <label className="text-xs text-gray-400 block mb-1">Sessions Count</label>
+                            <label className="text-xs text-gray-400 block mb-1">{t('subscription.sessions_count_label')}</label>
                             <div className="relative">
                                 <Ticket className="absolute left-3 top-3 w-4 h-4 text-purple-500" />
                                 <input
@@ -108,7 +108,7 @@ const RenewModal: React.FC<RenewModalProps> = ({ traineeId, traineeName, isSessi
                     {/* Money Inputs */}
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="text-xs text-gray-400 block mb-1">Total Cost</label>
+                            <label className="text-xs text-gray-400 block mb-1">{t('subscription.total_cost_label')}</label>
                             <div className="relative">
                                 <DollarSign className="absolute left-3 top-3 w-4 h-4 text-gray-500" />
                                 <input
@@ -122,7 +122,7 @@ const RenewModal: React.FC<RenewModalProps> = ({ traineeId, traineeName, isSessi
                             </div>
                         </div>
                         <div>
-                            <label className="text-xs text-gray-400 block mb-1">Paid Now</label>
+                            <label className="text-xs text-gray-400 block mb-1">{t('subscription.paid_now_label')}</label>
                             <div className="relative">
                                 <DollarSign className="absolute left-3 top-3 w-4 h-4 text-green-500" />
                                 <input
@@ -140,7 +140,7 @@ const RenewModal: React.FC<RenewModalProps> = ({ traineeId, traineeName, isSessi
                     <div>
                         <input
                             type="text"
-                            placeholder="Coupon Code (Optional)"
+                            placeholder={t('subscription.coupon_placeholder')}
                             value={formData.couponCode}
                             onChange={(e) => setFormData({ ...formData, couponCode: e.target.value })}
                             className="w-full bg-gray-950 border border-gray-700 rounded-xl py-2.5 px-4 text-white text-sm"
@@ -152,7 +152,7 @@ const RenewModal: React.FC<RenewModalProps> = ({ traineeId, traineeName, isSessi
                         disabled={loading}
                         className="w-full py-3 bg-green-600 hover:bg-green-500 text-white rounded-xl font-bold transition-all flex justify-center items-center gap-2"
                     >
-                        {loading ? 'Processing...' : <> <CheckCircle className="w-5 h-5" /> Confirm Renewal </>}
+                        {loading ? t('subscription.processing') : <> <CheckCircle className="w-5 h-5" /> {t('subscription.confirm_renewal_button')} </>}
                     </button>
 
                 </form>

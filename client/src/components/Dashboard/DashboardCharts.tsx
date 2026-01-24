@@ -1,5 +1,6 @@
 // src/components/Dashboard/DashboardCharts.tsx
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     BarChart, Bar, Cell
@@ -11,6 +12,7 @@ interface ChartsProps {
 }
 
 const DashboardCharts: React.FC<ChartsProps> = ({ data }) => {
+    const { t } = useTranslation();
     // Format revenue dates
     const revenueData = data.revenueLast6Months.map(item => {
         const date = new Date();
@@ -27,7 +29,7 @@ const DashboardCharts: React.FC<ChartsProps> = ({ data }) => {
             {/* 1. Revenue Chart (Area) */}
             <div className="bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-xl">
                 <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                    📈 Revenue Growth <span className="text-xs text-gray-500">(Last 6 Months)</span>
+                    📈 {t('charts.revenue_growth_title')} <span className="text-xs text-gray-500">{t('charts.last_6_months')}</span>
                 </h3>
                 <div className="h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">
@@ -62,7 +64,7 @@ const DashboardCharts: React.FC<ChartsProps> = ({ data }) => {
             {/* 2. Attendance Chart (Bar) */}
             <div className="bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-xl">
                 <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                    🏋️ Gym Traffic <span className="text-xs text-gray-500">(Last 7 Days)</span>
+                    🏋️ {t('charts.gym_traffic_title')} <span className="text-xs text-gray-500">{t('charts.last_7_days')}</span>
                 </h3>
                 <div className="h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">

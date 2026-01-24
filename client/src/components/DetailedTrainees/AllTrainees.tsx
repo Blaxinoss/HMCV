@@ -43,14 +43,14 @@ const AllTrainees: React.FC = () => {
             <Users className="w-8 h-8 text-blue-500" />
             {t('trainees.header', 'All Members')}
           </h1>
-          <p className="text-gray-400 mt-1">View and manage all registered members.</p>
+          <p className="text-gray-400 mt-1">{t('trainees.manage_subtitle')}</p>
         </div>
 
         <div className="relative w-full md:w-96">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
           <input
             type="text"
-            placeholder="Search by name, ID, or phone..."
+            placeholder={t('trainees.search_placeholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-3 bg-gray-900 border border-gray-800 rounded-xl text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none shadow-lg"
