@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store';
 import { checkInTrainee } from '../../slices/subscriptionSlice';
-import useMessage from '../../utils/useMessageHook';
+import toast from 'react-hot-toast';
+import { Blocks, Zap } from 'lucide-react';
 
 interface QuickCheckInModalProps {
   onClose: () => void;
@@ -13,7 +14,6 @@ const QuickCheckInModal: React.FC<QuickCheckInModalProps> = ({ onClose }) => {
   const { t } = useTranslation();
   const dispatch = useDispatch<AppDispatch>();
   const { trainees } = useSelector((state: RootState) => state.trainees);
-  const { success: showSuccess, error: showError } = useMessage();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTrainee, setSelectedTrainee] = useState<any | null>(null);
@@ -42,25 +42,33 @@ const QuickCheckInModal: React.FC<QuickCheckInModalProps> = ({ onClose }) => {
     setLoading(true);
     try {
       const result = await dispatch(checkInTrainee(selectedTrainee._id)).unwrap();
-      showSuccess(result.message || t('trainees.check_in_success'));
+
+      // Success message
+      toast.success(result.message || t('trainees.check_in_success'));
+
+      // Show alerts if any
       if (result.alerts && result.alerts.length > 0) {
-        result.alerts.forEach((alert: string) => showError(alert));
+        result.alerts.forEach((alert: string) => {
+          toast.error(alert);
+        });
       }
+
       onClose();
     } catch (error: any) {
-      showError(error || t('common.error'));
+      toast.error(error?.message || error || t('common.error'));
     } finally {
       setLoading(false);
     }
   };
-
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
       <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-md border border-gray-700 shadow-2xl">
 
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            ⚡ {t('trainees.quick_check_in', 'Quick Check-in')}
+
+            <Zap className="w-6 h-6 text-orange-500" /> {t('trainees.quick_check_in', 'Quick Check-in')}
+
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white">✕</button>
         </div>
@@ -99,7 +107,7 @@ const QuickCheckInModal: React.FC<QuickCheckInModalProps> = ({ onClose }) => {
                 </div>
               </div>
             ) : (
-              <p className="text-gray-500">🚫 {t('trainees.not_found', 'User not found')}</p>
+              <p className="text-gray-500 flex gap-2"><Blocks></Blocks> {t('trainees.not_found', 'User not found')}</p>
             )}
           </div>
         )}

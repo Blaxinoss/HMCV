@@ -10,8 +10,61 @@ import { type ICoupon, DiscountType } from '../models/Coupons.js'
 // GET: Fetch all trainees
 router.get('/', async (req: Request, res: Response) => {
     try {
-        const trainees = await Trainees.find();
-        res.status(200).json({ success: true, data: trainees }); // Standard is 200 for GET, 201 is usually for Create
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 10;
+        const search = req.query.search ? (req.query.search as string).trim() : "";
+        const status = req.query.status || "all"
+        const skip = (page - 1) * limit;
+
+        // 1. بناء جملة البحث (الذكية)
+        let query: any = {};
+
+        if (search) {
+            const searchConditions = [
+                { name: { $regex: search, $options: 'i' } },
+                { phone: { $regex: search, $options: 'i' } }
+            ];
+
+            if (!isNaN(Number(search))) {
+                searchConditions.push({ memberId: Number(search) } as any);
+            }
+
+            query = { $or: searchConditions };
+        }
+
+        const today = new Date();
+        if (status === 'active') {
+            query.subscriptionEndDate = { $gt: today };
+            query.accountFreezeStatus = false;
+        } else if (status === 'expired') {
+            query.subscriptionEndDate = { $lt: today };
+            query.accountFreezeStatus = false;
+        } else if (status === 'frozen') {
+            query.accountFreezeStatus = true;
+        } else if (status === 'debt') {
+            query.remaining = { $gt: 0 };
+        } else if (status === 'session') {
+            query.isSession = true;
+        }
+
+        const trainees = await Trainees.find(query)
+            .limit(limit)
+            .skip(skip)
+            .sort({ createdAt: -1 });
+
+        const totalSearchBoxResults = await Trainees.countDocuments(query);
+
+        res.status(200).json({
+            success: true,
+            data: trainees,
+            pagination: {
+                totalUsers: totalSearchBoxResults,
+                totalPages: Math.ceil(totalSearchBoxResults / limit),
+                currentPage: page,
+                itemsPerPage: limit
+            }
+        });
+
     } catch (error: any) {
         res.status(400).json({ error: error.message });
     }
@@ -143,15 +196,19 @@ router.put('/:id/freeze', async (req: Request, res: Response): Promise<void> => 
         //(Unfreeze)
         // -------------------------------------------------------
         if (trainee.accountFreezeStatus) {
-            if (trainee.freezeStartDate) {
-                const start = new Date(trainee.freezeStartDate).getTime();
-                const current = currentDate.getTime();
+            if (trainee.freezeStartDate && trainee.daysLeft) {
+                const start = new Date(trainee.freezeStartDate)//  21/10/2022 at 10 pm 
+                start.setHours(0, 0, 0, 0);
 
-                const freezeDurationMs = current - start;
+                const current = new Date(currentDate)//  23/10/2022 at 5 pm
+                current.setHours(0, 0, 0, 0);
+                const freezeDurationMs = current.getTime() - start.getTime();
 
                 if (freezeDurationMs > 0) {
                     const currentEndDate = new Date(trainee.subscriptionEndDate).getTime();
                     trainee.subscriptionEndDate = new Date(currentEndDate + freezeDurationMs);
+                    // trainee.daysLeft += Math.ceil(freezeDurationMs / (1000 * 60 * 60 * 24)) // okay getting the freezing duration
+
                     console.log(`Unfreezing: Added ${freezeDurationMs / (1000 * 60 * 60 * 24)} days`);
                 }
             }
@@ -168,8 +225,31 @@ router.put('/:id/freeze', async (req: Request, res: Response): Promise<void> => 
                 return;
             }
 
+            if (trainee.remaining > 0) {
+                res.status(400).json({
+                    error: `Cannot freeze account with outstanding debt (${trainee.remaining} EGP). Please clear debt first.`
+                });
+                return;
+            }
+
+            let freezeStart = new Date(currentDate);
+            freezeStart.setHours(0, 0, 0, 0);
+
+            if (trainee.lastAttendance) {
+                const lastAtt = new Date(trainee.lastAttendance);
+                lastAtt.setHours(0, 0, 0, 0);
+
+
+                if (lastAtt.getTime() === freezeStart.getTime()) {
+                    console.log("User attended today. Freeze starts TOMORROW");
+
+                    // زحزح بداية التجميد ليوم بكرة
+                    freezeStart.setDate(freezeStart.getDate() + 1);
+                }
+            }
+
             trainee.accountFreezeStatus = true;
-            trainee.freezeStartDate = currentDate;
+            trainee.freezeStartDate = freezeStart;
         }
 
         const updatedTrainee = await trainee.save();
@@ -210,7 +290,18 @@ router.post("/check-in/:id", async (req: Request, res: Response) => {
         return res.status(400).json({ error: "Account is Frozen " });
     }
 
+
+
     const today = new Date();
+    if (new Date(trainee.subscriptionEndDate) < today) {
+        return res.status(400).json({ error: "Cannot check-in: Subscription EXPIRED ⏳" });
+    }
+
+    // 3. فحص عدد الحصص (لو مشترك حصص)
+    if (trainee.isSession && trainee.sessionsRemaining <= 0) {
+        return res.status(400).json({ error: "Cannot check-in: No Sessions Remaining 🎫" });
+    }
+
     if (trainee.lastAttendance) {
         const lastDate = new Date(trainee.lastAttendance).toDateString(); // "Mon Jan 20 2026"
         const todayDate = today.toDateString(); // "Mon Jan 20 2026"

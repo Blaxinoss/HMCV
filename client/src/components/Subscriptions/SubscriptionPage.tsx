@@ -23,25 +23,33 @@ const Skeleton = ({ className }: { className?: string }) => (
 
 const SubscriptionPage: React.FC = () => {
   const { t } = useTranslation();
-  const dispatch = useDispatch<AppDispatch>();
 
   // 1. Fetch data for Stats
-  const { trainees, loading } = useSelector((state: RootState) => state.trainees);
-
-  useEffect(() => {
-    dispatch(fetchTrainees());
-  }, [dispatch]);
-
+  const { raw, loading } = useSelector((state: RootState) => state.dashboard);
   const [showForm, setShowForm] = useState(false);
   const [editingTrainee, setEditingTrainee] = useState<Trainee | null>(null);
 
   // 2. Real-time Stats Calculation
   const stats = useMemo(() => {
-    const total = trainees.length;
-    const active = trainees.filter(t => new Date(t.subscriptionEndDate) > new Date()).length;
-    const debt = trainees.reduce((sum, t) => sum + (t.remaining || 0), 0);
+    // لو الداتا لسه مجاتش من الـ GlobalDataLoader، رجع أصفار
+    if (!raw || !raw.trainees) {
+      return { total: 0, active: 0, debt: 0 };
+    }
+
+    const allTrainees = raw.trainees; // دي كل الداتا مش بس الـ 10 بتوع الصفحة
+
+    const total = allTrainees.length;
+
+    // حسبة النشطين (شاملة التحقق من التجميد والانتهاء)
+    const active = allTrainees.filter((t: Trainee) =>
+      new Date(t.subscriptionEndDate) > new Date() && !t.accountFreezeStatus
+    ).length;
+
+    // حسبة الديون
+    const debt = allTrainees.reduce((sum: number, t: Trainee) => sum + (t.remaining || 0), 0);
+
     return { total, active, debt };
-  }, [trainees]);
+  }, [raw]); // الاعتماد هنا على raw ككل
 
   const handleAddNew = () => {
     setEditingTrainee(null);

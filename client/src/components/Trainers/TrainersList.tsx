@@ -24,13 +24,7 @@ const TrainersList: React.FC<TrainersListProps> = ({ trainers, loading, onEdit }
         });
     };
 
-    if (loading) {
-        return (
-            <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-            </div>
-        );
-    }
+
 
     if (trainers.length === 0) {
         return (
@@ -101,6 +95,7 @@ const TrainersList: React.FC<TrainersListProps> = ({ trainers, loading, onEdit }
                             {t('common.edit')}
                         </button>
                         <button
+                            disabled={loading}
                             onClick={() => handleDelete(trainer._id)}
                             className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white rounded-lg text-sm font-semibold transition-all border border-red-600/20"
                         >

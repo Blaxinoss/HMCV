@@ -32,6 +32,67 @@ export interface ApiResponse<T> {
   token?: string;
   user?: User;
 }
+export interface DashboardCards {
+  revenue: number;           // إيراد الشهر المحدد
+  expenses: number;          // مصاريف الشهر المحدد
+  netProfit: number;         // صافي ربح الشهر
+  profitMargin: number;      // نسبة الربح
+  activeMembers: number;     // الأعضاء النشطين (ثابت)
+  newSignups: number;        // المشتركين الجدد في الشهر المحدد
+  salaryRatio: number;       // نسبة الرواتب
+  churnRate: number;         // معدل التسرب
+  expiringSoon: number;      // هيخلصوا قريب
+}
+
+export interface TrendPoint {
+  _id: { month: number; year: number };
+  total: number;
+}
+
+export interface AttendancePoint {
+  _id: string; // "YYYY-MM-DD"
+  count: number;
+}
+
+export interface PeakHourPoint {
+  _id: number; // Hour (0-23)
+  count: number;
+}
+
+export interface DashboardGraphs {
+  revenueTrend: TrendPoint[];
+  expenseTrend: TrendPoint[];
+  attendanceLast7Days: AttendancePoint[];
+  peakHours: PeakHourPoint[];
+  expensesByCategory: { _id: string; totalExpenses: number }[];
+}
+
+export interface TopMember {
+  _id: string;
+  name: string;
+  memberId: number;
+  totalCost: number;
+  remaining: number;
+  isSession: boolean;
+  paid: number;
+}
+
+export interface DashboardLists {
+  topMembers: TopMember[];
+  recentTransactions: any[];
+}
+
+export interface DashboardData {
+  cards: DashboardCards;
+  graphs: DashboardGraphs;
+  lists: DashboardLists;
+}
+
+export interface DashboardState {
+  stats: DashboardData | null;
+  loading: boolean;
+  error: string | null;
+}
 
 export interface Expense {
   _id: string;
@@ -99,6 +160,25 @@ export interface Trainee {
   updatedAt: string;
 }
 
+
+export interface PaginationData {
+  totalUsers: number;
+  totalPages: number;
+  currentPage: number;
+  itemsPerPage: number;
+}
+export interface TraineeWithPagination {
+  trainees: Trainee[];
+  pagination: PaginationData;
+}
+
+export interface TraineesApiResponse {
+  success: boolean;
+  error: string;
+  data: Trainee[];
+  pagination: PaginationData;
+}
+
 export interface Coupon {
   _id: string;
   code: string;
@@ -111,36 +191,38 @@ export interface Coupon {
   createdAt: Date;
   updatedAt: Date;
 }
-export interface DashboardData {
-  cards: {
-    totalMembers: number;
-    activeMembers: number;
-    expiringSoon: number;
-    attendanceToday: number;
-    totalDebt: number;
-    totalRevenue: number;
-    totalExpenses: number;
-    netProfit: number;
-  };
-  graphs: {
-    attendanceLast7Days: { _id: string; count: number }[];
-    revenueLast6Months: { _id: number; monthName: number; totalRevenue: number; count: number }[];
-  };
-}
+// export interface DashboardData {
+//   cards: {
+//     totalMembers: number;
+//     activeMembers: number;
+//     expiringSoon: number;
+//     attendanceToday: number;
+//     totalDebt: number;
+//     totalRevenue: number;
+//     totalExpenses: number;
+//     netProfit: number;
+//   };
+//   graphs: {
+//     attendanceLast7Days: { _id: string; count: number }[];
+//     revenueLast6Months: { _id: number; monthName: number; totalRevenue: number; count: number }[];
+//   };
+// }
 
-export interface DashboardState {
-  stats: DashboardData | null;
-  loading: boolean;
-  error: string | null;
-}
-export interface DashboardStats {
-  totalTrainees: number;
-  activeTrainees: number;
-  expiredSubscriptions: number;
-  totalRevenue: number;
-  totalExpenses: number;
-  netProfit: number;
-}
+// export interface DashboardState {
+//   stats: DashboardData | null;
+//   loading: boolean;
+//   error: string | null;
+// }
+// export interface DashboardStats {
+//   totalTrainees: number;
+//   activeTrainees: number;
+//   expiredSubscriptions: number;
+//   totalRevenue: number;
+//   totalExpenses: number;
+//   netProfit: number;
+// }
+
+
 
 export interface AuthState {
   user: AuthUser | null;
@@ -158,6 +240,7 @@ export interface UsersState {
 
 export interface TraineesState {
   trainees: Trainee[];
+  pagination: PaginationData | null
   loading: boolean;
   error: string | null;
 }

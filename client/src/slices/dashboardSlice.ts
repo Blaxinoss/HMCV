@@ -1,28 +1,47 @@
-// src/slices/dashboardSlice.ts
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import api from '../utils/api';
-import { DashboardData, DashboardState, ApiResponse } from '../types';
+import { addTrainee, checkInTrainee, deleteTrainee, freezeTrainee, renewTrainee, updateTrainee } from './subscriptionSlice';
+import { addExpense, deleteExpense, updateExpense } from './expensesSlice';
+import { addTrainer, deleteTrainer, updateTrainer } from './trainersSlice';
+// import { DashboardState } from '../types'; // ممكن نستغنى عنها ونعرف الـ State هنا لو التايب القديم مختلف
 
-export const fetchDashboardStats = createAsyncThunk<
-    DashboardData,
+// 1. تعريف شكل الداتا الخام
+export interface RawData {
+    trainees: any[];
+    expenses: any[];
+    trainers: any[];
+}
+
+// 2. تعريف حالة السلايس
+interface DashboardSliceState {
+    raw: RawData | null;
+    loading: boolean;
+    error: string | null;
+    needsRefresh: boolean; // 👈 العلم المهم
+}
+
+// 3. الـ Thunk لجلب الداتا
+export const fetchDashboardRawData = createAsyncThunk<
+    RawData,
     void,
     { rejectValue: string }
 >(
-    'dashboard/fetchStats',
+    'dashboard/fetchRaw',
     async (_, { rejectWithValue }) => {
         try {
-            const response = await api.get<ApiResponse<DashboardData>>('/dashboard/stats');
-            return response.data.data!;
+            const response = await api.get('/dashboard/raw-data');
+            return response.data.data;
         } catch (error: any) {
-            return rejectWithValue(error.response?.data?.message || 'Failed to fetch stats');
+            return rejectWithValue(error.response?.data?.message || 'Failed to fetch data');
         }
     }
 );
 
-const initialState: DashboardState = {
-    stats: null,
+const initialState: DashboardSliceState = {
+    raw: null,
     loading: false,
     error: null,
+    needsRefresh: false,
 };
 
 const dashboardSlice = createSlice({
@@ -30,20 +49,45 @@ const dashboardSlice = createSlice({
     initialState,
     reducers: {},
     extraReducers: (builder) => {
+        // --- التعامل مع الفيتش الأساسي ---
         builder
-            .addCase(fetchDashboardStats.pending, (state) => {
-                state.loading = true;
+            .addCase(fetchDashboardRawData.pending, (state) => {
+                // ✅ الذكاء هنا: لو الداتا موجودة أصلاً، متعملش Loading
+                // عشان اليوزر ميشوفش وميض (Flicker) والعملية تتم في الخلفية
+                if (!state.raw) {
+                    state.loading = true;
+                }
+            })
+            .addCase(fetchDashboardRawData.fulfilled, (state, action: PayloadAction<RawData>) => {
+                state.loading = false;
+                state.raw = action.payload; // تحديث الداتا
+                state.needsRefresh = false; // ✅ نزل العلم، خلاص حدثنا
                 state.error = null;
             })
-            .addCase(fetchDashboardStats.fulfilled, (state, action) => {
-                state.loading = false;
-                state.stats = action.payload;
-            })
-            .addCase(fetchDashboardStats.rejected, (state, action) => {
+            .addCase(fetchDashboardRawData.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload as string;
             });
-    },
+
+        // --- التعامل مع التريجر (الأكشنز اللي بتغير الداتا) ---
+        const triggerActions = [
+            addTrainee.fulfilled, deleteTrainee.fulfilled, updateTrainee.fulfilled, renewTrainee.fulfilled,
+            addExpense.fulfilled, deleteExpense.fulfilled, updateExpense.fulfilled,
+            addTrainer.fulfilled, updateTrainer.fulfilled, deleteTrainer.fulfilled,
+            checkInTrainee.fulfilled, freezeTrainee.fulfilled,
+        ];
+
+        // ✅ اللوب الكاملة
+        triggerActions.forEach(action => {
+            builder.addCase(action, (state) => {
+                // 🚩 ارفع العلم: الداتا قدمت ومحتاجة تحديث
+                state.needsRefresh = true;
+
+                // ⚠️ ملحوظة: إياك تعمل state.raw = null هنا
+                // سيب الداتا القديمة معروضة لحد ما الجديدة تيجي في الخلفية
+            });
+        });
+    }
 });
 
 export default dashboardSlice.reducer;

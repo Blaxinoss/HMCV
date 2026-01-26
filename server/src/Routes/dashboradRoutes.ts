@@ -2,8 +2,32 @@ import express from 'express';
 import type { Request, Response } from 'express'
 import Trainees from '../models/Trainees.js';
 import Expense from '../models/Expense.js';
-
+import Trainers from '../models/Trainers.js';
 const router = express.Router();
+
+// routes/dashboard.ts
+
+
+
+// GET /api/dashboard/raw-data
+router.get('/raw-data', async (req, res) => {
+    try {
+        const [trainees, expenses, trainers] = await Promise.all([
+            Trainees.find(),
+            Expense.find(),
+            Trainers.find()
+        ]);
+
+        res.json({
+            success: true,
+            data: { trainees, expenses, trainers }
+        });
+    } catch (error: any) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+
 
 // GET /api/dashboard/stats
 router.get('/stats', async (req: Request, res: Response): Promise<void> => {

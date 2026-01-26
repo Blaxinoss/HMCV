@@ -51,10 +51,9 @@ const PeakHoursChart: React.FC<PeakHoursChartProps> = ({ data }) => {
             </div>
 
             {/* Legend / Insight */}
-            <div className="mt-4 p-3 bg-gray-700/30 rounded-lg flex items-center gap-3">
-                <span className="text-2xl">💡</span>
+            <div className=" p-3 bg-gray-700/30 rounded-lg flex items-center gap-3 ">
                 <p className="text-xs text-gray-300">
-                    {t('charts.operational_tip')}
+                    {/* {t('charts.operational_tip')} */}Operational tip : ...
                 </p>
             </div>
         </div>

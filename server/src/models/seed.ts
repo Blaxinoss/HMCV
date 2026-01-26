@@ -1,180 +1,201 @@
-import mongoose from 'mongoose';
-import Trainees from './Trainees.js';
-import Coupons from './Coupons.js';
+import mongoose from "mongoose";
+import Trainees from "./Trainees.js";// تأكد من المسار الصحيح
+import dotenv from 'dotenv';
 
-// 1. الاتصال بقاعدة البيانات
+dotenv.config(); // عشان يقرا ملف .env
+
+// ============================================================================
+// 🛠️ Helper Functions
+// ============================================================================
+
+const getStartOfDay = (daysOffset = 0) => {
+    const d = new Date();
+    d.setDate(d.getDate() + daysOffset);
+    d.setHours(0, 0, 0, 0);
+    return d;
+};
+
+const getEndOfDay = (daysOffset = 0) => {
+    const d = new Date();
+    d.setDate(d.getDate() + daysOffset);
+    d.setHours(23, 59, 59, 999);
+    return d;
+};
+
+// ============================================================================
+// 🎯 Default Values
+// ============================================================================
+const defaults = {
+    discount: 0,
+    deleteFlag: false,
+    appliedDiscount: { hasCustomDiscount: false, discountValue: 0, discountType: 'fixed' },
+    attendanceHistory: [],
+    crmInfo: { whatsappOptIn: true, status: 'New' },
+    lastAttendance: null,
+    isSession: false,
+    sessionsRemaining: 0,
+    usedCoupon: null
+};
+
+// ============================================================================
+// 🚀 Seed Function
+// ============================================================================
 const seedData = async () => {
     try {
-        await mongoose.connect("mongodb://localhost:27017/HMCV");
-        console.log('📦 Connected to MongoDB...');
+        await mongoose.connect(process.env.MONGO_URI || "mongodb://localhost:27017/HMCV");
+        console.log('🔌 Connected to MongoDB...\n');
 
-        // 1. مسح البيانات القديمة (اختياري)
         await Trainees.deleteMany({});
-        console.log('🧹 Cleared old data...');
+        console.log('🧹 Cleared existing data...\n');
 
-        // دوال مساعدة للتواريخ
-        const today = new Date();
-        const futureDate = (days: number) => new Date(Date.now() + days * 24 * 60 * 60 * 1000);
-        const pastDate = (days: number) => new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+        const testCases = [
+            // ========== BASIC FREEZE TESTS ==========
 
-        const trainees = [
-            // ---------------------------------------------------------
-            // 1. المشترك المثالي (Active Time-Based)
-            // ---------------------------------------------------------
+            // 1️⃣ Standard Freeze (5 days)
+            // سيناريو: اشترك من شهر، ويخلص كمان شهر، واتجمد من 5 أيام.
             {
-                memberId: 101,
-                name: "أحمد كمال (مثالي)",
-                phone: "01012345678",
-                subscriptionStartDate: pastDate(5),
-                subscriptionEndDate: futureDate(25),
-                totalCost: 500,
-                paid: 500,
-                remaining: 0,
-                discount: 0,
-                isSession: false, // اشتراك شهري
-                sessionsRemaining: 0,
-                accountFreezeStatus: false,
-                attendanceHistory: [
-                    { checkIn: pastDate(4) },
-                    { checkIn: pastDate(2) },
-                    { checkIn: today }
-                ],
-                lastAttendance: today,
-                crmInfo: { whatsappOptIn: true, lastMessageSent: pastDate(5), lastMessageType: "welcome" }
+                ...defaults,
+                memberId: 901,
+                name: "FZ01 Standard Frozen",
+                phone: "01090000001",
+                subscriptionStartDate: getStartOfDay(-30),
+                subscriptionEndDate: getEndOfDay(30),
+                totalCost: 500, paid: 500,
+                accountFreezeStatus: true,
+                freezeStartDate: getStartOfDay(-5)
+                // Expected: daysLeft = 35 (30 + 5)
             },
 
-            // ---------------------------------------------------------
-            // 2. نظام حصص - رصيد كافي (Active Session)
-            // ---------------------------------------------------------
+            // 2️⃣ Zombie User (expired but frozen)
+            // سيناريو: اشتراكه خلص امبارح، بس هو مجمد بقاله 10 أيام.
+            // ده "الميت الحي". لازم السيستم يحفظ له أيامه.
             {
-                memberId: 102,
-                name: "سارة حسن (حصص)",
-                phone: "01123456789",
-                subscriptionStartDate: pastDate(2),
-                subscriptionEndDate: futureDate(60), // صلاحية طويلة
-                totalCost: 800,
-                paid: 800,
-                remaining: 0,
-                isSession: true, // ✅ نظام حصص
-                sessionsRemaining: 12, // ✅ رصيد 12 حصة
-                attendanceHistory: [{ checkIn: pastDate(1) }],
-                crmInfo: { whatsappOptIn: true }
+                ...defaults,
+                memberId: 902,
+                name: "FZ02 Zombie User",
+                phone: "01090000002",
+                subscriptionStartDate: getStartOfDay(-60),
+                subscriptionEndDate: getEndOfDay(-1),
+                totalCost: 500, paid: 500,
+                accountFreezeStatus: true,
+                freezeStartDate: getStartOfDay(-10)
+                // Expected: daysLeft = 9 (كان فاضل 9 أيام لما جمد)
             },
 
-            // ---------------------------------------------------------
-            // 3. نظام حصص - رصيد منخفض (Low Session Warning)
-            // ---------------------------------------------------------
+            // 3️⃣ Just Frozen Today
+            // لسه مجمد حالا.
             {
-                memberId: 103,
-                name: "كريم مجدي (قرب يخلص)",
-                phone: "01234567890",
-                subscriptionStartDate: pastDate(20),
-                subscriptionEndDate: futureDate(10),
-                totalCost: 600,
-                paid: 600,
-                remaining: 0,
-                isSession: true,
-                sessionsRemaining: 1, // ⚠️ فاضله حصة واحدة
-                attendanceHistory: [
-                    { checkIn: pastDate(10) },
-                    { checkIn: pastDate(5) },
-                    { checkIn: pastDate(2) }
-                ],
-                crmInfo: { whatsappOptIn: false }
+                ...defaults,
+                memberId: 903,
+                name: "FZ03 Just Frozen",
+                phone: "01090000003",
+                subscriptionStartDate: getStartOfDay(-10),
+                subscriptionEndDate: getEndOfDay(20),
+                totalCost: 500, paid: 500,
+                accountFreezeStatus: true,
+                freezeStartDate: getStartOfDay(0)
+                // Expected: daysLeft = 20
             },
 
-            // ---------------------------------------------------------
-            // 4. مديون (Debt)
-            // ---------------------------------------------------------
+            // 4️⃣ Captain America (1 Year Freeze)
+            // مجمد من سنة، وكان فاضله 5 أيام.
             {
-                memberId: 104,
-                name: "محمود سعيد (مديون)",
-                phone: "01555555555",
-                subscriptionStartDate: today,
-                subscriptionEndDate: futureDate(30),
-                totalCost: 1000, // اشتراك غالي
-                paid: 200,       // دفع جزء بسيط
-                remaining: 800,  // 💸 عليه 800 جنيه
-                isSession: false,
-                crmInfo: { whatsappOptIn: true, lastMessageType: "payment_reminder" }
+                ...defaults,
+                memberId: 907,
+                name: "FZ07 Captain America",
+                phone: "01090000007",
+                subscriptionStartDate: getStartOfDay(-400),
+                subscriptionEndDate: getEndOfDay(-365),
+                totalCost: 500, paid: 500,
+                accountFreezeStatus: true,
+                freezeStartDate: getStartOfDay(-370)
+                // Expected: daysLeft = 5
             },
 
-            // ---------------------------------------------------------
-            // 5. مجمد (Frozen)
-            // ---------------------------------------------------------
+            // ========== ACTIVE & EXPIRED ==========
+
+            // 5️⃣ Normal Active
             {
-                memberId: 105,
-                name: "علياء عادل (مجمد)",
-                phone: "01099999999",
-                subscriptionStartDate: pastDate(10),
-                subscriptionEndDate: futureDate(20),
-                totalCost: 500,
-                paid: 500,
-                remaining: 0,
-                accountFreezeStatus: true, // 🧊 مجمد
-                freezeStartDate: pastDate(2), // متجمد من يومين
-                isSession: false,
-                crmInfo: { whatsappOptIn: true }
+                ...defaults,
+                memberId: 914,
+                name: "ACT01 Normal Active",
+                phone: "01090000014",
+                subscriptionStartDate: getStartOfDay(-10),
+                subscriptionEndDate: getEndOfDay(20),
+                totalCost: 500, paid: 500,
+                accountFreezeStatus: false
             },
 
-            // ---------------------------------------------------------
-            // 6. منتهي الصلاحية (Expired Time)
-            // ---------------------------------------------------------
+            // 6️⃣ Expired
             {
-                memberId: 106,
-                name: "خالد جمال (منتهي)",
-                phone: "01111111111",
-                subscriptionStartDate: pastDate(35),
-                subscriptionEndDate: pastDate(5), // 📅 خلص من 5 أيام
-                totalCost: 400,
-                paid: 400,
-                remaining: 0,
-                isSession: false,
-                crmInfo: { whatsappOptIn: true, lastMessageType: "renewal_reminder" }
+                ...defaults,
+                memberId: 915,
+                name: "EXP01 Expired",
+                phone: "01090000015",
+                subscriptionStartDate: getStartOfDay(-60),
+                subscriptionEndDate: getEndOfDay(-5),
+                totalCost: 500, paid: 500,
+                accountFreezeStatus: false
             },
 
-            // ---------------------------------------------------------
-            // 7. مستخدم كوبون (Coupon User)
-            // ---------------------------------------------------------
+            // ========== FINANCIAL ==========
+
+            // 7️⃣ User with Debt
             {
-                memberId: 107,
-                name: "رامي سمير (كوبون)",
-                phone: "01222222222",
-                subscriptionStartDate: today,
-                subscriptionEndDate: futureDate(30),
-                totalCost: 1000,
-                discount: 200, // خصم 200 جنيه
-                paid: 800,
-                remaining: 0,
-                usedCoupon: "SUMMER20",
-                appliedDiscount: {
-                    hasCustomDiscount: true,
-                    discountValue: 200,
-                    discountType: 'fixed',
-                    reason: 'Summer Offer'
-                },
-                isSession: false,
-                crmInfo: { whatsappOptIn: true }
+                ...defaults,
+                memberId: 921,
+                name: "FIN01 With Debt",
+                phone: "01090000021",
+                subscriptionStartDate: getStartOfDay(-5),
+                subscriptionEndDate: getEndOfDay(25),
+                totalCost: 1000, paid: 500,
+                accountFreezeStatus: false
+                // Expected: remaining = 500
             }
         ];
 
+        console.log('🚀 Starting to seed data with pre-save hook...\n');
 
-        await Coupons.insertOne({
+        let successCount = 0;
 
-            code: 'SAVE50',
-            discountType: 'FIXED',
-            value: 50, // 50 جنيه خصم
-            expiryDate: new Date(new Date().setMonth(new Date().getMonth() + 1)), // صالح لمدة شهر
-            isActive: true,
-            usageLimit: 100,
-            usedCount: 5
-        })
+        // Use loop to trigger pre-save hook
+        for (const data of testCases) {
+            try {
+                const trainee = new Trainees(data);
+                await trainee.save(); // 🔥 Hook runs here
+                successCount++;
+            } catch (error: any) {
+                console.error(`❌ Failed to create ${data.name}:`, error.message);
+            }
+        }
 
-        await Trainees.insertMany(trainees);
-        console.log('🌱 Database Seeded Successfully with 7 Diverse Users!');
-        process.exit();
+        console.log(`\n✅ Successfully seeded ${successCount} records.\n`);
+
+        // ============================================================================
+        // 🔍 Verification Step (Database Check)
+        // ============================================================================
+        console.log('🔍 VERIFYING DATABASE STATE (Checking Hooks)...');
+        console.log('--------------------------------------------------');
+
+        const fz01 = await Trainees.findOne({ memberId: 901 });
+        console.log(`🥶 FZ01 (Standard): DaysLeft = ${fz01?.daysLeft} (Expected: ~35)`);
+
+        const fz02 = await Trainees.findOne({ memberId: 902 });
+        console.log(`🧟 FZ02 (Zombie):   DaysLeft = ${fz02?.daysLeft} (Expected: ~9)`);
+
+        const fz07 = await Trainees.findOne({ memberId: 907 });
+        console.log(`🛡️ FZ07 (Captain):  DaysLeft = ${fz07?.daysLeft} (Expected: ~5)`);
+
+        const fin01 = await Trainees.findOne({ memberId: 921 });
+        console.log(`💰 FIN01 (Debt):    Remaining = ${fin01?.remaining} (Expected: 500)`);
+
+        console.log('--------------------------------------------------');
+        console.log('🎉 Verification Complete. Ready for Frontend Testing!');
+
+        process.exit(0);
+
     } catch (error) {
-        console.error('❌ Seeding Failed:', error);
+        console.error('❌ Fatal Error:', error);
         process.exit(1);
     }
 };

@@ -73,11 +73,17 @@ const TraineeDetailsModal: React.FC<TraineeDetailsModalProps> = ({ trainee, isOp
                     <DollarSign className="w-3 h-3" /> {t('trainees.debt')}: {trainee.remaining} EGP
                   </span>
                 )}
-                {trainee.daysLeft !== null && trainee.daysLeft < 5 && (
+                {trainee.daysLeft !== null && trainee.daysLeft !== 0 && trainee.daysLeft < 5 && (
                   <span className="px-3 py-1 rounded-full text-xs font-bold bg-orange-500/10 text-orange-500 border border-orange-500/20 flex items-center gap-1">
                     <AlertTriangle className="w-3 h-3" /> {t('trainees.expiring_soon')}
                   </span>
                 )}
+                {trainee.daysLeft !== null && trainee.daysLeft === 0 && (
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-orange-500/10 text-orange-500 border border-orange-500/20 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" /> {t('trainees.filter_expired')}
+                  </span>
+                )}
+
               </div>
             </div>
           </div>
@@ -125,13 +131,13 @@ const TraineeDetailsModal: React.FC<TraineeDetailsModalProps> = ({ trainee, isOp
                   <div>
                     <div className="flex justify-between items-end mb-2">
                       <p className="text-sm text-gray-400">Days Remaining</p>
-                      <p className={`text-2xl font-bold ${trainee.daysLeft && trainee.daysLeft < 5 ? 'text-red-500' : 'text-green-500'}`}>
+                      <p className={`text-2xl font-bold ${trainee.daysLeft !== undefined && trainee.daysLeft !== null && trainee.daysLeft < 5 ? 'text-red-500' : 'text-green-500'}`}>
                         {trainee.daysLeft ?? 0}
                       </p>
                     </div>
                     <div className="w-full bg-gray-700 rounded-full h-2">
                       <div
-                        className={`h-2 rounded-full ${trainee.daysLeft && trainee.daysLeft < 5 ? 'bg-red-500' : 'bg-green-500'}`}
+                        className={`h-2 rounded-full ${trainee.daysLeft !== undefined && trainee.daysLeft !== null && trainee.daysLeft < 5 ? 'bg-red-500' : 'bg-green-500'}`}
                         style={{ width: `${Math.min(((30 - (trainee.daysLeft || 0)) / 30) * 100, 100)}%` }}
                       ></div>
                     </div>

@@ -1,19 +1,32 @@
 // src/slices/subscriptionSlice.ts
 
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { TraineesState, Trainee, ApiResponse } from '../types';
+import { TraineesState, Trainee, ApiResponse, TraineeWithPagination, TraineesApiResponse } from '../types';
 import api from '../utils/api';
 
+interface FetchTraineesArgs {
+  page: number;
+  limit: number;
+  search?: string;
+  status?: string;
+}
+
+
 export const fetchTrainees = createAsyncThunk<
-  Trainee[],
-  void,
+  TraineeWithPagination,
+  { page: number, search?: string, status?: string, limit: number },
   { rejectValue: string }
 >(
   'trainees/fetchTrainees',
-  async (_, { rejectWithValue }) => {
+  async ({ page, limit, search, status }: FetchTraineesArgs, { rejectWithValue }) => {
     try {
-      const response = await api.get<ApiResponse<Trainee[]>>('/trainees');
-      return response.data.data || [];
+      const response = await api.get<TraineesApiResponse>('/trainees', {
+        params: { page, search, status: status !== 'all' ? status : undefined, limit }
+      });
+      return {
+        trainees: response.data.data || [], // لو مفيش داتا رجع أراي فاضي
+        pagination: response.data.pagination // لازم ترجع عشان الـ UI
+      };
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || 'Failed to fetch trainees'
@@ -88,7 +101,7 @@ export const checkInTrainee = createAsyncThunk<
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || 'Failed to check in trainee'
+        error.response?.data?.error || 'Failed to check in trainee'
       );
     }
   }
@@ -130,6 +143,7 @@ export const renewTrainee = createAsyncThunk<
 
 const initialState: TraineesState = {
   trainees: [],
+  pagination: null,
   loading: false,
   error: null,
 };
@@ -151,7 +165,8 @@ const subscriptionSlice = createSlice({
       })
       .addCase(fetchTrainees.fulfilled, (state, action) => {
         state.loading = false;
-        state.trainees = action.payload;
+        state.trainees = action.payload.trainees;
+        state.pagination = action.payload.pagination
         state.error = null;
       })
       .addCase(fetchTrainees.rejected, (state, action) => {
@@ -167,7 +182,16 @@ const subscriptionSlice = createSlice({
       })
       .addCase(addTrainee.fulfilled, (state, action) => {
         state.loading = false;
-        state.trainees.push(action.payload);
+        const exists = state.trainees.find(t => t._id === action.payload._id);
+
+        if (!exists) {
+          state.trainees.push(action.payload);
+          // أو لو عايز الجديد يظهر في الأول:
+          // state.trainees.unshift(action.payload); 
+          if (state.pagination) {
+            state.pagination.totalUsers += 1;
+          }
+        }
         state.error = null;
       })
       .addCase(addTrainee.rejected, (state, action) => {
@@ -244,6 +268,9 @@ const subscriptionSlice = createSlice({
       .addCase(deleteTrainee.fulfilled, (state, action) => {
         state.loading = false;
         state.trainees = state.trainees.filter(t => t._id !== action.payload);
+        if (state.pagination) {
+          state.pagination.totalUsers -= 1;
+        }
         state.error = null;
       })
       .addCase(deleteTrainee.rejected, (state, action) => {

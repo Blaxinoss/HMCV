@@ -37,6 +37,7 @@ export interface ITrainee {
     isSession: boolean;
     sessionsRemaining: number;
     appliedDiscount: IAppliedDiscount;
+    daysLeft: number;
     attendanceHistory: IAttendanceEntry[];
     lastAttendance?: Date | null;
     usedCoupon?: string;
@@ -123,6 +124,12 @@ const TraineeSchema = new Schema<ITrainee, TraineeModel, ITraineeMethods, ITrain
             type: Boolean,
             default: false,
         },
+        daysLeft: {
+            type: Number,
+            min: 0,
+            default: 0
+
+        },
         sessionsRemaining: { type: Number, default: 0 },
         appliedDiscount: {
             hasCustomDiscount: { type: Boolean, default: false },
@@ -151,28 +158,57 @@ const TraineeSchema = new Schema<ITrainee, TraineeModel, ITraineeMethods, ITrain
     }
 );
 
-// 7. Implement Virtuals
-TraineeSchema.virtual('daysLeft').get(function (this: ITrainee) {
-    if (!this.subscriptionEndDate) return null;
-    const today = new Date();
-    const difference = new Date(this.subscriptionEndDate).getTime() - today.getTime();
-    const daysLeft = Math.ceil(difference / (1000 * 60 * 60 * 24));
-    return daysLeft;
-});
+// // 7. Implement Virtuals
+// TraineeSchema.virtual('daysLeft').get(function (this: ITrainee) {
+//     if (!this.subscriptionEndDate) return null;
+//     const today = new Date();
+//     const difference = new Date(this.subscriptionEndDate).getTime() - today.getTime();
+//     const daysLeft = Math.ceil(difference / (1000 * 60 * 60 * 24));
+//     return daysLeft;
+// });
 
-// 8. Implement Pre-Save Hook
 TraineeSchema.pre('save', function (next) {
-    // 1. Calculate Remaining Balance
-    if (this.isModified('totalCost') || this.isModified('paid') || this.isModified('discount')) {
-        this.remaining = this.totalCost - (this.paid + this.discount);
+
+    // ---------------------------------------------------
+    // 1. Calculate Days Left (Logic: Freeze & Active) ⏳
+    // ---------------------------------------------------
+    if (this.isModified('subscriptionEndDate') ||
+        this.isModified('accountFreezeStatus') ||
+        this.isModified('freezeStartDate')) {
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const endDate = new Date(this.subscriptionEndDate);
+        endDate.setHours(23, 59, 59, 999);
+
+        if (this.accountFreezeStatus && this.freezeStartDate) {
+            const freezeStart = new Date(this.freezeStartDate);
+            freezeStart.setHours(0, 0, 0, 0);
+            const frozenDiff = endDate.getTime() - freezeStart.getTime();
+            this.daysLeft = Math.max(0, Math.ceil(frozenDiff / (1000 * 60 * 60 * 24)));
+        } else {
+            const activeDiff = endDate.getTime() - today.getTime();
+            this.daysLeft = Math.max(0, Math.ceil(activeDiff / (1000 * 60 * 60 * 24)));
+        }
     }
 
-    // 2. Update Last Attendance
-    // We check if the history exists and has items
+    // ---------------------------------------------------
+    // 2. Calculate Remaining Balance 💰
+    // ---------------------------------------------------
+    if (this.isModified('totalCost') || this.isModified('paid') || this.isModified('discount')) {
+        // حماية من القيم الـ undefined
+        const cost = this.totalCost || 0;
+        const paid = this.paid || 0;
+        const discount = this.discount || 0;
+        this.remaining = cost - (paid + discount);
+    }
+
+    // ---------------------------------------------------
+    // 3. Update Last Attendance (For Smart Freeze) 🏃‍♂️
+    // ---------------------------------------------------
     if (this.isModified('attendanceHistory') && this.attendanceHistory?.length > 0) {
         const lastEntry = this.attendanceHistory[this.attendanceHistory.length - 1];
-
-        // Update: Safe assignment using optional chaining
         this.lastAttendance = lastEntry?.checkIn ?? null;
     }
 

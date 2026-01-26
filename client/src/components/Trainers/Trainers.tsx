@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchTrainers } from '../../slices/trainersSlice';
-import { AppDispatch, RootState } from '../../store';
+import { useSelector, useDispatch } from 'react-redux'; // 👈 ضفنا dispatch
+import { RootState, AppDispatch } from '../../store';
+import { fetchTrainers } from '../../slices/trainersSlice'; // 👈 ضفنا الأكشن ده
 import TrainersForm from './TrainersForm';
 import TrainersList from './TrainersList';
 import { Users, DollarSign, Plus, ArrowLeft } from 'lucide-react';
@@ -10,14 +10,18 @@ import { Users, DollarSign, Plus, ArrowLeft } from 'lucide-react';
 const Trainers: React.FC = () => {
   const { t } = useTranslation();
   const dispatch = useDispatch<AppDispatch>();
+
+  // 1. مصدر الداتا للجدول (السريع والمباشر)
   const { trainers, loading } = useSelector((state: RootState) => state.trainers);
 
-  const [showForm, setShowForm] = useState(false);
-  const [editingTrainer, setEditingTrainer] = useState<any | null>(null);
+  // 2. مصدر الداتا للإحصائيات (الشامل)
 
   useEffect(() => {
     dispatch(fetchTrainers());
   }, [dispatch]);
+
+  const [showForm, setShowForm] = useState(false);
+  const [editingTrainer, setEditingTrainer] = useState<any | null>(null);
 
   const handleAddNew = () => {
     setEditingTrainer(null);
@@ -34,15 +38,19 @@ const Trainers: React.FC = () => {
   const handleCloseForm = () => {
     setShowForm(false);
     setEditingTrainer(null);
+    // اختياري: لو عايز تحدث الـ Raw Data كمان عشان الداشبورد تحس بالتغيير
+    // dispatch(fetchDashboardRawData()); 
   };
 
-  const totalSalaries = trainers.reduce((acc, curr) => acc + (curr.salaryAfterDiscount || curr.salary), 0);
+
+  const totalSalaries = trainers.reduce((acc: number, curr: any) => acc + (curr.salaryAfterDiscount || curr.salary), 0);
 
   return (
     <div className="p-6 lg:p-10 bg-gray-950 min-h-screen text-white font-sans">
 
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        {/* ... (نفس كود الهيدر بتاعك) ... */}
         <div>
           <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">
             {showForm ? (editingTrainer ? t('trainers.edit_trainer') : t('trainers.add_new')) : t('trainers.header', 'Trainers Management')}
@@ -73,7 +81,7 @@ const Trainers: React.FC = () => {
         </div>
       </div>
 
-      {/* Stats Cards (Hidden in Form Mode) */}
+      {/* Stats Cards */}
       {!showForm && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 animate-fadeIn">
           <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl flex items-center gap-4 shadow-lg">
@@ -82,6 +90,7 @@ const Trainers: React.FC = () => {
             </div>
             <div>
               <p className="text-sm text-gray-400">Total Trainers</p>
+              {/* هنا بنعرض العدد */}
               <p className="text-2xl font-bold text-white">{trainers.length}</p>
             </div>
           </div>
@@ -108,6 +117,7 @@ const Trainers: React.FC = () => {
             />
           </div>
         ) : (
+          // 👇 هنا بنبعت listTrainers (بتاع السلايس) عشان الجدول يبقى سريع في التعديل
           <TrainersList
             trainers={trainers}
             loading={loading}

@@ -1,3 +1,4 @@
+import { Coins } from 'lucide-react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -50,7 +51,12 @@ const BusinessCharts: React.FC<BusinessChartsProps> = ({ revenueTrend, expenseBr
 
             {/* 2. Expense Allocation (Donut Chart) */}
             <div className="bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-xl">
-                <h3 className="text-lg font-bold text-white mb-6">{t('charts.expense_breakdown_title')}</h3>
+
+
+                <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                    <Coins className="w-5 h-5 text-yellow-500" />
+                    {t('charts.expense_breakdown_title')}
+                </h3>
                 <div className="h-[350px] relative">
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart>

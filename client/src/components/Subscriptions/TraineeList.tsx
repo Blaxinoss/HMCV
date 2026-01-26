@@ -27,6 +27,7 @@ import {
     RefreshCw
 } from 'lucide-react';
 import RenewModal from './RenewModal';
+import Pagination from '../Pagination/Pagination';
 
 interface TraineeListProps {
     onEdit: (trainee: Trainee) => void;
@@ -37,20 +38,24 @@ type FilterType = 'all' | 'active' | 'expired' | 'frozen' | 'debt' | 'session';
 const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
     const { t } = useTranslation();
     const dispatch = useDispatch<AppDispatch>();
-    const { trainees, loading } = useSelector((state: RootState) => state.trainees);
+    const { trainees, pagination, loading } = useSelector((state: RootState) => state.trainees);
     const { error: showError } = useMessage();
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [filterStatus, setFilterStatus] = useState<FilterType>('all');
-    const [searchTerm, setSearchTerm] = useState('');
+    const [search, setSearch] = useState('');
 
     const { showConfirm } = useConfirmToast();
     const [checkInTraineeData, setCheckInTraineeData] = useState<{ id: string, name: string } | null>(null);
     const [showQuickCheckIn, setShowQuickCheckIn] = useState(false);
     const [renewData, setRenewData] = useState<{ id: string, name: string, isSession: boolean } | null>(null);
+    const [page, setPage] = useState(1);
+    const [limit, setLimit] = useState(10);
+    const { raw } = useSelector((state: RootState) => state.dashboard);
+
 
     useEffect(() => {
-        dispatch(fetchTrainees());
-    }, [dispatch]);
+        dispatch(fetchTrainees({ page, search, status: filterStatus, limit }));
+    }, [dispatch, page, limit, filterStatus, search]);
 
     const handleDelete = (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
@@ -59,6 +64,12 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
                 .unwrap()
                 .catch(() => showError(t('trainees.delete_failed')));
         });
+    };
+
+
+    const handleFilterChange = (newStatus: FilterType) => {
+        setFilterStatus(newStatus);
+        setPage(1); // دايماً ارجع لصفحة 1 لما تغير الفلتر
     };
 
     const handleFreeze = (id: string, e: React.MouseEvent) => {
@@ -70,6 +81,14 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
                 .catch(() => showError(t('common.error_occurred')));
         });
     }
+
+
+
+    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearch(e.target.value);
+        setPage(1);
+    };
+
 
     const getStatusBadge = (trainee: Trainee) => {
         const endDate = new Date(trainee.subscriptionEndDate);
@@ -105,45 +124,21 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
             </span>
         );
     };
+    const filteredTrainees = trainees
 
-    // Enhanced Filtering Logic
-    const filteredTrainees = trainees.filter((trainee) => {
-        const endDate = new Date(trainee.subscriptionEndDate);
-        const today = new Date();
-
-        // Search Filter
-        const matchesSearch =
-            trainee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            trainee.phone.includes(searchTerm) ||
-            trainee.memberId.toString().includes(searchTerm);
-
-        if (!matchesSearch) return false;
-
-        // Status Filter
-        switch (filterStatus) {
-            case 'active': return endDate > today && !trainee.accountFreezeStatus;
-            case 'expired': return endDate < today;
-            case 'frozen': return trainee.accountFreezeStatus;
-            case 'debt': return trainee.remaining > 0;
-            case 'session': return trainee.isSession;
-            default: return true;
-        }
-    });
 
     const getCount = (status: FilterType) => {
-        if (status === 'all') return trainees.length;
-        return trainees.filter((t) => {
-            const end = new Date(t.subscriptionEndDate);
-            const now = new Date();
-            if (status === 'active') return end > now && !t.accountFreezeStatus;
-            if (status === 'expired') return end < now;
-            if (status === 'frozen') return t.accountFreezeStatus;
-            if (status === 'debt') return t.remaining > 0;
-            if (status === 'session') return t.isSession;
-            return true;
-        }).length;
+        if (!raw?.trainees) return 0;
+        const all = raw.trainees;
+        switch (status) {
+            case 'active': return all.filter((t: any) => new Date(t.subscriptionEndDate) > new Date() && !t.accountFreezeStatus).length;
+            case 'frozen': return all.filter((t: any) => t.accountFreezeStatus).length;
+            case 'expired': return all.filter((t: any) => new Date(t.subscriptionEndDate) < new Date()).length;
+            case 'debt': return all.filter((t: any) => t.remaining > 0).length;
+            case 'session': return all.filter((t: any) => t.isSession).length;
+            default: return all.length;
+        }
     };
-
     const filters: { key: FilterType; label: string, icon: any }[] = [
         { key: 'all', label: 'All', icon: User },
         { key: 'active', label: 'Active', icon: Activity },
@@ -153,13 +148,13 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
         { key: 'session', label: 'Session', icon: Calendar }
     ];
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-            </div>
-        );
-    }
+    // if (loading) {
+    //     return (
+    //         <div className="flex items-center justify-center h-64">
+    //             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+    //         </div>
+    //     );
+    // }
 
     return (
         <div className="space-y-6">
@@ -175,7 +170,7 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
                         return (
                             <button
                                 key={key}
-                                onClick={() => setFilterStatus(key)}
+                                onClick={() => handleFilterChange(key)}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${isActive
                                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20'
                                     : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
@@ -198,8 +193,8 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
                         <input
                             type="text"
                             placeholder="Search name, phone, ID..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            value={search}
+                            onChange={handleSearch}
                             className="w-full sm:w-64 pl-9 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
                         />
                     </div>
@@ -232,7 +227,7 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
                         </div>
                         <p className="text-gray-400 text-lg font-medium">{t('trainees.no_trainees_filter')}</p>
                         <button
-                            onClick={() => { setFilterStatus('all'); setSearchTerm(''); }}
+                            onClick={() => { setFilterStatus('all'); setSearch(''); }}
                             className="text-blue-400 hover:text-blue-300 text-sm mt-2 hover:underline"
                         >
                             {t('trainees.clear_filters')}
@@ -379,6 +374,20 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
                     ))
                 )}
             </div>
+
+            {pagination && (
+                <Pagination
+                    currentPage={pagination.currentPage}
+                    totalPages={pagination.totalPages}
+                    totalItems={pagination.totalUsers}
+                    itemsPerPage={limit}
+                    onPageChange={setPage}
+                    onItemsPerPageChange={(newLimit) => {
+                        setLimit(newLimit);
+                        setPage(1); // Reset to page 1 when limit changes
+                    }}
+                />
+            )}
 
             {checkInTraineeData && (
                 <CheckInModal

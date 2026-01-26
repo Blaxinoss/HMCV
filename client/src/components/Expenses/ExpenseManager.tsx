@@ -8,18 +8,19 @@ import ExpenseTable from './ExpenseTable';
 import { Plus, Search, Filter, DollarSign, TrendingUp, Receipt } from 'lucide-react';
 
 const ExpenseManager: React.FC = () => {
-  const { t } = useTranslation();
   const dispatch = useDispatch<AppDispatch>();
+  const { t } = useTranslation();
   const { expenses, loading } = useSelector((state: RootState) => state.expenses);
-
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
+
   useEffect(() => {
     dispatch(fetchExpenses());
   }, [dispatch]);
+
 
   const handleAddNew = () => {
     setEditingId(null);
@@ -40,6 +41,7 @@ const ExpenseManager: React.FC = () => {
 
   // Filter Logic
   const filteredExpenses = useMemo(() => {
+
     return expenses.filter(expense => {
       const matchesSearch = expense.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         expense.description?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -144,7 +146,7 @@ const ExpenseManager: React.FC = () => {
 
       {/* Table Section */}
       <ExpenseTable
-        expenses={filteredExpenses}
+        expenses={expenses}
         loading={loading}
         onEdit={handleEdit}
         onAddNew={handleAddNew}

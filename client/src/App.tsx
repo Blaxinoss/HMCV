@@ -24,6 +24,7 @@ import { setUser } from './slices/authSlice';
 import { Toaster } from 'react-hot-toast';
 import AllTrainees from './components/DetailedTrainees/AllTrainees';
 import CRMManager from './components/CRM/CRMManager';
+import GlobalDataLoader from './components/Wrappers/GlobalDataLoader';
 
 function AppContent() {
   const { i18n } = useTranslation();
@@ -50,6 +51,8 @@ function AppContent() {
 
   return (
     <BrowserRouter>
+      <GlobalDataLoader />
+
       <Routes>
         {/* Auth Routes - Public */}
         <Route path="/auth/login" element={<Login />} />

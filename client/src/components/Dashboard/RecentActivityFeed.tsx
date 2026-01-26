@@ -103,15 +103,14 @@ const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({ transactions, o
             </div>
 
             {/* Footer */}
-            <div className="mt-4 pt-4 border-t border-gray-800 flex justify-center">
+            {/* <div className="mt-4 pt-4 border-t border-gray-800 flex justify-center">
                 <button
                     onClick={onViewAll}
                     className="text-xs font-semibold text-gray-400 hover:text-white flex items-center gap-1 transition-colors group"
                 >
-                    View Full Ledger
                     <ChevronRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                 </button>
-            </div>
+            </div> */}
         </div>
     );
 };

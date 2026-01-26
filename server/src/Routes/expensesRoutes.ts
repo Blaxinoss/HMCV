@@ -27,7 +27,7 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
 // POST Add Expense
 router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { name, category, amount, dateOfPayment } = req.body;
+        const { name, category, amount, dateOfPayment, description } = req.body;
 
         // Validate input
         if (!name || !category || !amount || !dateOfPayment) {
@@ -43,6 +43,7 @@ router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
             category,
             amount,
             dateOfPayment,
+            description: description || ""
         });
 
         const newExpense = await expense.save();
@@ -75,6 +76,7 @@ router.put('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
         expense.category = req.body.category || expense.category;
         expense.amount = req.body.amount || expense.amount;
         expense.dateOfPayment = req.body.dateOfPayment || expense.dateOfPayment;
+        expense.description = req.body.description || expense.description;
 
         const updatedExpense = await expense.save();
         res.status(200).json({

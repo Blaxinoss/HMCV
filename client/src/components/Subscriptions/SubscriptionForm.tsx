@@ -129,10 +129,10 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
 
       if (trainee) {
         dispatch(updateTrainee({ id: trainee._id, data: payload as any }));
-        showSuccess(t('TraineeUpdated') || "Member Updated");
+        toast.success(t('TraineeUpdated') || "Member Updated");
       } else {
         dispatch(addTrainee(payload as any));
-        showSuccess(t('TraineeAdded') || "Member Added");
+        toast.success(t('TraineeAdded') || "Member Added");
       }
       onSuccess();
     } catch (error) {

@@ -4,31 +4,17 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store';
-import { fetchTrainees } from '../../slices/subscriptionSlice';
-import { fetchTrainers } from '../../slices/trainersSlice';
-import { fetchExpenses } from '../../slices/expensesSlice';
+// 👇 بننادي الـ Action الجديد اللي بيجيب الداتا الخام
+import { fetchDashboardRawData } from '../../slices/dashboardSlice';
 
 // Icons (Lucide React)
 import {
-  LayoutDashboard,
-  DollarSign,
-  TrendingUp,
-  TrendingDown,
-  Users,
-  CreditCard,
-  UserMinus,
-  Activity,
-  Stethoscope,
-  Scale,
-  Zap,
-  AlertTriangle,
-  Rocket,
-  Crown,
-  Clock,
-  ArrowRightLeft
+  LayoutDashboard, DollarSign, TrendingUp, TrendingDown,
+  Users, CreditCard, UserMinus, Activity, Stethoscope,
+  Scale, Zap, AlertTriangle, Rocket, Crown, Clock
 } from 'lucide-react';
 
-// Utils
+// Utils (تأكد إن الدوال دي موجودة في businessLogic.ts)
 import {
   calculateMonthlyStats,
   getFinancialHealthColor,
@@ -42,37 +28,48 @@ import BusinessCharts from './BusinessCharts';
 import StatCard from './StatCards';
 import PeakHoursChart from './PeakHoursChart';
 import RecentActivityFeed from './RecentActivityFeed';
+import { Expense, Trainee, Trainer } from '../../types';
 
 const Dashboard: React.FC = () => {
   const { t } = useTranslation();
   const dispatch = useDispatch<AppDispatch>();
+
+  // 1. State للسلايدر
   const [selectedDate, setSelectedDate] = useState(new Date());
 
-  // Data Selectors
-  const { trainees } = useSelector((state: RootState) => state.trainees);
-  const { trainers } = useSelector((state: RootState) => state.trainers);
-  const { expenses } = useSelector((state: RootState) => state.expenses);
+  // 2. Selectors: بنجيب الداتا الخام
+  const { raw, loading } = useSelector((state: RootState) => state.dashboard);
 
-  // Memoized Calculations
-  const peakHoursData = useMemo(() => calculatePeakHours(trainees), [trainees]);
-  const recentTx = useMemo(() => getRecentTransactions(trainees, expenses), [trainees, expenses]);
+  // 3. Fetch Data Once on Mount
 
-  useEffect(() => {
-    dispatch(fetchTrainees());
-    dispatch(fetchTrainers());
-    dispatch(fetchExpenses());
-  }, [dispatch]);
 
-  // 🔥 INTELLIGENT CALCULATION ENGINE 🔥
+  // 4. Data Extraction (Safe Access)
+  // لو الداتا لسه مجاتش، بنستخدم مصفوفات فاضية عشان الحسابات متضربش
+  const trainees: Trainee[] = raw?.trainees || [];
+  const expenses: Expense[] = raw?.expenses || [];
+  const trainers: Trainer[] = raw?.trainers || [];
+
+  // ==========================================
+  // 🔥 CALCULATIONS ENGINE (CLIENT-SIDE) 🔥
+  // ==========================================
+
+  // A. إحصائيات الشهر المختار (للكروت)
   const currentStats = useMemo(() => {
     return calculateMonthlyStats(trainees, expenses, trainers, selectedDate);
   }, [trainees, expenses, trainers, selectedDate]);
 
-  // Generate Trend Data for Charts
+  // B. ساعات الذروة (بناءً على كل الداتا)
+  const peakHoursData = useMemo(() => calculatePeakHours(trainees), [trainees]);
+
+  // C. أحدث المعاملات (آخر 5)
+  const recentTx = useMemo(() => getRecentTransactions(trainees, expenses), [trainees, expenses]);
+
+  // D. بيانات الرسم البياني (آخر 6 شهور)
   const trendData = useMemo(() => {
     return Array.from({ length: 6 }, (_, i) => {
       const d = new Date(selectedDate);
       d.setMonth(d.getMonth() - (5 - i));
+      // بنحسب إحصائيات كل شهر لوحده
       const stats = calculateMonthlyStats(trainees, expenses, trainers, d);
       return {
         month: d.toLocaleDateString('en-US', { month: 'short' }),
@@ -83,10 +80,12 @@ const Dashboard: React.FC = () => {
     });
   }, [selectedDate, trainees, expenses, trainers]);
 
-  // Expense Breakdown Logic
+  // E. توزيع المصاريف للشهر المختار (Pie Chart)
   const expenseData = useMemo(() => {
+    // 1. حساب الرواتب
     const salaries = trainers.reduce((sum, t) => sum + (t.salaryAfterDiscount || t.salary), 0);
 
+    // 2. تجميع المصاريف حسب الفئة
     const categoryMap: Record<string, number> = {};
     expenses
       .filter(e => {
@@ -97,6 +96,7 @@ const Dashboard: React.FC = () => {
         categoryMap[e.category] = (categoryMap[e.category] || 0) + e.amount;
       });
 
+    // 3. دمجهم
     const data = [
       { name: 'Salaries', value: salaries },
       ...Object.keys(categoryMap).map(k => ({ name: k, value: categoryMap[k] }))
@@ -104,8 +104,28 @@ const Dashboard: React.FC = () => {
     return data.filter(d => d.value > 0);
   }, [selectedDate, expenses, trainers]);
 
+  // F. أعلى الأعضاء (Top Members) - ترتيب في الفرونت
+  const topMembers = useMemo(() => {
+    return [...trainees]
+      .sort((a, b) => b.totalCost - a.totalCost) // الأعلى دفعاً أولاً
+      .slice(0, 5); // هات أول 5 بس
+  }, [trainees]);
+
+
+  // ==========================================
+  // 🖼️ RENDER UI
+  // ==========================================
+
+  if (loading && !raw) {
+    return (
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-8 font-sans">
+    <div className="min-h-screen bg-gray-950 text-white p-6 lg:p-8 font-sans">
 
       {/* Header */}
       <div className="mb-8 flex items-center gap-4">
@@ -113,10 +133,10 @@ const Dashboard: React.FC = () => {
           <LayoutDashboard className="w-8 h-8 text-blue-400" />
         </div>
         <div>
-          <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500">
+          <h1 className="text-3xl lg:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500">
             {t('dashboard.intelligence_hub_title', 'Business Intelligence Hub')}
           </h1>
-          <p className="text-gray-400 mt-1">{t('dashboard.subtitle')}</p>
+          <p className="text-gray-400 mt-1">{t('dashboard.subtitle', 'Overview & Analytics')}</p>
         </div>
       </div>
 
@@ -167,7 +187,6 @@ const Dashboard: React.FC = () => {
 
         {/* 1. Peak Hours (2/3 width) */}
         <div className="lg:col-span-2 h-[400px] relative group">
-          {/* Section Title Overlay */}
           <div className="absolute top-4 right-6 z-10 opacity-50 group-hover:opacity-100 transition-opacity">
             <Clock className="w-5 h-5 text-gray-400" />
           </div>
@@ -176,9 +195,6 @@ const Dashboard: React.FC = () => {
 
         {/* 2. Recent Transactions (1/3 width) */}
         <div className="h-[400px] relative group">
-          <div className="absolute top-4 right-6 z-10 opacity-50 group-hover:opacity-100 transition-opacity">
-            <ArrowRightLeft className="w-5 h-5 text-gray-400" />
-          </div>
           <RecentActivityFeed transactions={recentTx} />
         </div>
       </div>
@@ -236,7 +252,7 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* 2. Customer LTV & Segments */}
+        {/* 2. Customer LTV & Segments (Top Members) */}
         <div className="lg:col-span-2 bg-gray-900 rounded-2xl border border-gray-800 p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-2 bg-purple-900/30 rounded-lg">
@@ -256,39 +272,34 @@ const Dashboard: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="text-sm">
-                {trainees
-                  .slice()
-                  .sort((a, b) => b.totalCost - a.totalCost)
-                  .slice(0, 4)
-                  .map(t => (
-                    <tr key={t._id} className="border-b border-gray-800 hover:bg-gray-800/50 transition last:border-0">
-                      <td className="p-3 font-semibold text-white flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 flex items-center justify-center text-[10px] text-white">
-                          {t.name.charAt(0)}
-                        </div>
-                        {t.name}
-                      </td>
-                      <td className="p-3">
-                        <span className={`px-2 py-1 rounded text-xs border ${t.isSession ? 'bg-purple-900/20 border-purple-500/30 text-purple-300' : 'bg-blue-900/20 border-blue-500/30 text-blue-300'}`}>
-                          {t.isSession ? 'Session Pack' : 'Monthly Sub'}
-                        </span>
-                      </td>
-                      <td className="p-3 text-green-400 font-mono font-bold">{t.totalCost.toLocaleString()} EGP</td>
-                      <td className="p-3">
-                        {t.remaining > 0
-                          ? <span className="text-red-400 text-xs font-semibold bg-red-900/20 px-2 py-1 rounded">Owes {t.remaining} EGP</span>
-                          : <span className="text-green-500 text-xs font-semibold bg-green-900/20 px-2 py-1 rounded">Paid</span>}
-                      </td>
-                    </tr>
-                  ))}
+                {topMembers.map(t => (
+                  <tr key={t._id} className="border-b border-gray-800 hover:bg-gray-800/50 transition last:border-0">
+                    <td className="p-3 font-semibold text-white flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 flex items-center justify-center text-[10px] text-white">
+                        {t.name.charAt(0)}
+                      </div>
+                      {t.name}
+                    </td>
+                    <td className="p-3">
+                      <span className={`px-2 py-1 rounded text-xs border ${t.isSession ? 'bg-purple-900/20 border-purple-500/30 text-purple-300' : 'bg-blue-900/20 border-blue-500/30 text-blue-300'}`}>
+                        {t.isSession ? 'Session Pack' : 'Monthly Sub'}
+                      </span>
+                    </td>
+                    <td className="p-3 text-green-400 font-mono font-bold">{t.totalCost.toLocaleString()} EGP</td>
+                    <td className="p-3">
+                      {t.remaining > 0
+                        ? <span className="text-red-400 text-xs font-semibold bg-red-900/20 px-2 py-1 rounded">Owes {t.remaining} EGP</span>
+                        : <span className="text-green-500 text-xs font-semibold bg-green-900/20 px-2 py-1 rounded">Paid</span>}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
         </div>
 
-        {/* 3. 🔥 NEW: ACTION CENTER WIDGET 🔥 */}
+        {/* 3. 🔥 ACTION CENTER WIDGET 🔥 */}
         <div className="bg-gradient-to-br from-blue-900/20 to-purple-900/20 rounded-2xl border border-blue-500/30 p-6 relative overflow-hidden">
-          {/* Background decoration */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-3xl rounded-full"></div>
 
           <div className="flex items-center gap-2 mb-6 relative z-10">

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trainee } from '../../types';
@@ -7,7 +8,8 @@ import {
   Snowflake,
   ChevronRight,
   Activity,
-  Ticket
+  Ticket,
+  XCircle // Imported a clear 'X' icon
 } from 'lucide-react';
 
 interface TraineeCardProps {
@@ -20,8 +22,16 @@ interface TraineeCardProps {
 const TraineeCard: React.FC<TraineeCardProps> = ({ trainee, isSelected, onSelect, onViewDetails }) => {
   const { t } = useTranslation();
 
+  // Logic for Expired State
+  const isExpired = !trainee.accountFreezeStatus && new Date() > new Date(trainee.subscriptionEndDate);
+
   // Helper to determine card border/bg styles based on status
   const getStatusStyles = () => {
+    if (isExpired) {
+      // Style for expired cards: Grayed out, red border, special overlay
+      return 'border-gray-700/50 bg-gray-900/30 hover:border-red-500/30 grayscale-[50%] relative overflow-hidden';
+    }
+
     if (trainee.accountFreezeStatus)
       return 'border-yellow-500/20 bg-gradient-to-br from-yellow-900/10 to-transparent hover:border-yellow-500/40';
 
@@ -52,8 +62,18 @@ const TraineeCard: React.FC<TraineeCardProps> = ({ trainee, isSelected, onSelect
         ${getStatusStyles()}
       `}
     >
+      {/* --- EXPIRED OVERLAY & ICON --- */}
+      {isExpired && (
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-gray-950/60 backdrop-blur-[1px] transition-opacity duration-300 opacity-0 group-hover:opacity-30 pointer-events-none">
+          <div className="bg-red-500/20 p-3 rounded-full mb-2 border border-red-500/30 shadow-lg shadow-red-900/20 animate-pulse-slow">
+            <XCircle className="w-8 h-8 text-red-500" />
+          </div>
+          <span className="text-red-400 font-bold text-sm uppercase tracking-wider">Expired</span>
+        </div>
+      )}
+
       {/* Selection Indicator Corner */}
-      {isSelected && (
+      {isSelected && !isExpired && (
         <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-blue-500/20 to-transparent -mr-8 -mt-8 rounded-bl-full pointer-events-none" />
       )}
 
@@ -62,7 +82,7 @@ const TraineeCard: React.FC<TraineeCardProps> = ({ trainee, isSelected, onSelect
         <div className="flex items-center gap-3">
           {/* Avatar with Gradient */}
           <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-lg shadow-lg ring-2 ring-opacity-20
-             ${trainee.remaining > 0
+              ${trainee.remaining > 0
               ? 'bg-gradient-to-br from-red-500 to-pink-600 ring-red-500 text-white'
               : 'bg-gradient-to-br from-blue-500 to-indigo-600 ring-blue-500 text-white'}
           `}>
@@ -78,7 +98,11 @@ const TraineeCard: React.FC<TraineeCardProps> = ({ trainee, isSelected, onSelect
         </div>
 
         {/* Status Badge */}
-        {trainee.accountFreezeStatus ? (
+        {isExpired ? (
+          <span className="bg-red-500/10 text-red-500 border border-red-500/20 text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
+            <XCircle className="w-3 h-3" /> {t('trainees.expired', 'Expired')}
+          </span>
+        ) : trainee.accountFreezeStatus ? (
           <span className="bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
             <Snowflake className="w-3 h-3" /> {t('trainees.frozen')}
           </span>
@@ -94,7 +118,7 @@ const TraineeCard: React.FC<TraineeCardProps> = ({ trainee, isSelected, onSelect
       </div>
 
       {/* --- BODY: Metrics --- */}
-      <div className="space-y-4 relative z-10">
+      <div className={`space-y-4 relative z-10 ${isExpired ? 'opacity-50' : ''}`}> {/* Dim metrics if expired */}
 
         {/* Primary Metric (Days or Sessions) */}
         <div>
@@ -103,7 +127,7 @@ const TraineeCard: React.FC<TraineeCardProps> = ({ trainee, isSelected, onSelect
               {isSession ? <Ticket className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
               {isSession ? t('trainees.sessions_left', 'Sessions') : t('trainees.days_left', 'Days Left')}
             </span>
-            <span className={`text-sm font-bold font-mono ${metricColor}`}>
+            <span className={`text-sm font-bold font-mono ${isExpired ? 'text-red-500' : metricColor}`}>
               {remainingValue} <span className="text-[10px] text-gray-500 font-normal">/ {isSession ? 'Left' : 'Days'}</span>
             </span>
           </div>
@@ -111,8 +135,8 @@ const TraineeCard: React.FC<TraineeCardProps> = ({ trainee, isSelected, onSelect
           {/* Mini Progress Bar */}
           <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all duration-1000 ${barColor}`}
-              style={{ width: `${progressPercentage}%` }}
+              className={`h-full rounded-full transition-all duration-1000 ${isExpired ? 'bg-red-500' : barColor}`}
+              style={{ width: `${isExpired ? 100 : progressPercentage}%` }} // Full red bar if expired
             />
           </div>
         </div>
@@ -127,7 +151,7 @@ const TraineeCard: React.FC<TraineeCardProps> = ({ trainee, isSelected, onSelect
       </div>
 
       {/* --- FOOTER: Action --- */}
-      <div className="mt-4 pt-3 border-t border-gray-800/50 flex justify-between items-center opacity-60 group-hover:opacity-100 transition-opacity">
+      <div className={`mt-4 pt-3 border-t border-gray-800/50 flex justify-between items-center opacity-60 group-hover:opacity-100 transition-opacity relative z-10 ${isExpired ? 'opacity-50 group-hover:opacity-50' : ''}`}>
         <span className="text-[10px] text-gray-500">
           {isSession ? 'Pay per session' : 'Monthly Plan'}
         </span>
@@ -146,3 +170,4 @@ const TraineeCard: React.FC<TraineeCardProps> = ({ trainee, isSelected, onSelect
 };
 
 export default TraineeCard;
+

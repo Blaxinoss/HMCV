@@ -18,7 +18,6 @@ const TrainersForm: React.FC<TrainersFormProps> = ({ trainer, onSuccess, onCance
   const { t } = useTranslation();
   const dispatch = useDispatch<AppDispatch>();
   const { loading } = useSelector((state: RootState) => state.trainers);
-  const { success: showSuccess, error: showError } = useMessage();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -54,22 +53,31 @@ const TrainersForm: React.FC<TrainersFormProps> = ({ trainer, onSuccess, onCance
       return;
     }
 
-    try {
-      const payload = {
-        ...formData,
-        phone: parseInt(formData.phone),
-      };
+    const payload = {
+      ...formData,
+      phone: parseInt(formData.phone),
+    };
 
+
+    try {
       if (trainer) {
         await dispatch(updateTrainer({ id: trainer._id, data: payload })).unwrap();
-        showSuccess(t('trainers.update_success', 'Trainer updated successfully'));
+        toast.success(t('trainers.update_success', 'Trainer updated successfully'));
       } else {
         await dispatch(addTrainer(payload)).unwrap();
-        showSuccess(t('trainers.add_success', 'Trainer added successfully'));
+        toast.success(t('trainers.add_success', 'Trainer added successfully'));
       }
+
       onSuccess();
-    } catch (err: any) {
-      showError(err || t('common.error'));
+
+    } catch (error: any) {
+      console.error("Failed to save trainer:", error);
+
+      const errorMessage = typeof error === 'string'
+        ? error
+        : error?.message || t('common.error_occurred', 'Something went wrong');
+
+      toast.error(errorMessage);
     }
   };
 
