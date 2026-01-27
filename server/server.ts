@@ -31,9 +31,7 @@ app.use(bodyParser.json());
 
 // أو الحل الاحترافي (تسمح فقط للـ Frontend بتاعك)
 app.use(cors({
-    origin: 'http://localhost:5173', // عنوان الـ Vite بتاعك
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true
+    origin: '*',
 }));
 
 
