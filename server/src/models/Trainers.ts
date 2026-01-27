@@ -60,6 +60,8 @@ TrainersSchema.virtual('salaryAfterDiscount').get(function (this: ITrainer) {
 });
 
 // Export Trainers model
-const Trainers = mongoose.model<ITrainer>('Trainers', TrainersSchema);
+// const Trainers = mongoose.model<ITrainer>('Trainers', TrainersSchema);
 
-export default Trainers;
+// export default Trainers;
+
+export { TrainersSchema }

@@ -1,7 +1,12 @@
-import User from '../models/User.js'; // تأكد من المسار
 import bcrypt from 'bcrypt';
+import type { Model } from 'mongoose';
+import type { IUser } from './User.js';
 
-const seedAdmin = async () => {
+
+import express from 'express';
+import { db } from './index.js';
+
+const seedAdmin = async (User: Model<IUser>) => {
     try {
         // 1. دور هل فيه أي أدمن موجود ولا لأ؟
         const existingAdmin = await User.findOne({ role: 'admin' });
@@ -38,4 +43,27 @@ const seedAdmin = async () => {
     }
 };
 
-export default seedAdmin;
+
+
+const router = express.Router();
+
+// هذا الراوت خطير! لازم نحميه بـ Secret Key
+router.post('/init-tenant', async (req, res) => {
+    // 1. حماية بسيطة عشان مش أي حد معدي يعمل ريسيت للادمن
+    const systemSecret = req.headers['x-system-secret'];
+    if (systemSecret !== process.env.SYSTEM_SECRET) {
+        return res.status(403).json({ error: 'Forbidden: Wrong System Secret' });
+    }
+
+    try {
+        const { User } = db(req);
+
+        await seedAdmin(User);
+
+        res.json({ success: true, message: 'Tenant initialized & Admin seeded 🚀' });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+export default router;

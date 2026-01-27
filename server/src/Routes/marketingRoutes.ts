@@ -1,9 +1,9 @@
 
 import type { Request, Response } from 'express'
 import { Router } from 'express';
-import Trainees from '../models/Trainees.js';
-import axios from 'axios';
-import Coupon, { type ICoupon } from '../models/Coupons.js';
+import { type ICoupon } from '../models/Coupons.js';
+import { db } from '../models/index.js';
+
 
 
 const router = Router();
@@ -13,9 +13,11 @@ import { getTargets, sendToN8N } from '../utils/targets.js';
 
 // 1. زرار "Run Expiring Reminders Now" في الداشبورد
 router.post('/trigger-reminders', async (req, res) => {
+    const { Trainees } = db(req);
+
     const { type } = req.body;
     try {
-        const targets = await getTargets(type);
+        const targets = await getTargets(type, Trainees);
 
         // نبعت لـ Webhook مخصص للنوع ده
         const webhook = process.env.N8N_CAMPAIGN_WEBHOOK;
@@ -62,6 +64,8 @@ router.post('/trigger-reminders', async (req, res) => {
 
 router.post("/log/:id", async (req: Request, res: Response) => {
     try {
+        const { Trainees } = db(req);
+
         const { id } = req.params;
         const { messageType } = req.body; // n8n sends: 'expiring', 'debt', 'welcome', etc.
 
@@ -86,6 +90,9 @@ router.post("/log/:id", async (req: Request, res: Response) => {
 
 router.post('/validate-coupon', async (req: Request, res: Response): Promise<void> => {
     try {
+
+        const { Coupon } = db(req);
+
         const { code } = req.body;
 
         if (!code) {

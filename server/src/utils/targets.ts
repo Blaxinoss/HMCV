@@ -1,8 +1,9 @@
 
 import axios from 'axios';
-import Trainees from '../models/Trainees.js'
+import type { Model } from 'mongoose';
+import type { ITrainee } from '../models/Trainees.js';
+export const getTargets = async (type: string, Trainees: Model<ITrainee>) => {
 
-export const getTargets = async (type: string) => {
 
     let query = {}
     let targets = []

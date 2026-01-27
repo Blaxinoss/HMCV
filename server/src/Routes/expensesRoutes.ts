@@ -1,8 +1,9 @@
 import express, { Router } from 'express';
-import Expense from '../models/Expense.js';
 import verifyToken from '../../midware/verifyToken.js';
 import type { Request, Response } from 'express';
 import type { AuthRequest } from '../../midware/verifyToken.js';
+import { db } from '../models/index.js';
+
 const router: Router = express.Router();
 
 // Apply JWT verification to all routes
@@ -11,6 +12,8 @@ router.use(verifyToken);
 // GET All Expenses
 router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
     try {
+        const { Expense } = db(req);
+
         const expenses = await Expense.find().sort({ dateOfPayment: -1 });
         res.status(200).json({
             success: true,
@@ -27,6 +30,8 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
 // POST Add Expense
 router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
     try {
+        const { Expense } = db(req);
+
         const { name, category, amount, dateOfPayment, description } = req.body;
 
         // Validate input
@@ -63,6 +68,8 @@ router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
 // PUT Edit Expense
 router.put('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
     try {
+        const { Expense } = db(req);
+
         const expense = await Expense.findById(req.params.id);
         if (!expense) {
             res.status(404).json({
@@ -95,6 +102,8 @@ router.put('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
 // DELETE Expense
 router.delete('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
     try {
+        const { Expense } = db(req);
+
         const expense = await Expense.findByIdAndDelete(req.params.id);
         if (!expense) {
             res.status(404).json({

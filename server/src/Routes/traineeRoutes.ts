@@ -1,15 +1,18 @@
 import express from "express"
 import type { Request, Response } from 'express';
-import Trainees from '../models/Trainees.js'; // Import Model and Interface
-import type { ITrainee } from "../models/Trainees.js"
 import axios from "axios"
 import mongoose, { Mongoose } from "mongoose";
 const router = express.Router();
-import Coupon from '../models/Coupons.js';
 import { type ICoupon, DiscountType } from '../models/Coupons.js'
+import { db } from '../models/index.js';
+
 // GET: Fetch all trainees
 router.get('/', async (req: Request, res: Response) => {
     try {
+
+        const { Trainees } = db(req);
+
+
         const page = parseInt(req.query.page as string) || 1;
         const limit = parseInt(req.query.limit as string) || 10;
         const search = req.query.search ? (req.query.search as string).trim() : "";
@@ -73,6 +76,7 @@ router.get('/', async (req: Request, res: Response) => {
 // POST: Create a new trainee
 router.post('/', async (req: Request, res: Response) => {
     try {
+        const { Trainees, Coupon } = db(req);
 
         const lastTrainee = await Trainees.findOne({
             memberId: { $exists: true }
@@ -183,6 +187,8 @@ router.post('/', async (req: Request, res: Response) => {
 
 router.put('/:id/freeze', async (req: Request, res: Response): Promise<void> => {
     try {
+        const { Trainees } = db(req);
+
         const trainee = await Trainees.findById(req.params.id);
 
         if (!trainee) {
@@ -272,6 +278,8 @@ router.put('/:id/freeze', async (req: Request, res: Response): Promise<void> => 
 });
 
 router.post("/check-in/:id", async (req: Request, res: Response) => {
+    const { Trainees } = db(req);
+
     const { id } = req.params;
 
     // 1. Validation ID
@@ -368,6 +376,8 @@ router.post("/check-in/:id", async (req: Request, res: Response) => {
 // GET: Fetch single trainee
 router.get('/:id', async (req: Request, res: Response) => {
     try {
+        const { Trainees } = db(req);
+
         const trainee = await Trainees.findById(req.params.id);
         if (!trainee) {
             res.status(404).json({ error: 'Trainee not found' });
@@ -382,6 +392,8 @@ router.get('/:id', async (req: Request, res: Response) => {
 // DELETE: Remove trainee
 router.delete('/:id', async (req: Request, res: Response) => {
     try {
+        const { Trainees } = db(req);
+
         const deletedTrainee = await Trainees.findByIdAndDelete(req.params.id);
         if (!deletedTrainee) {
             res.status(404).json({ error: 'Trainee not found' });
@@ -396,6 +408,8 @@ router.delete('/:id', async (req: Request, res: Response) => {
 // PUT: Update trainee details
 router.put('/:id', async (req: Request, res: Response) => {
     try {
+        const { Trainees } = db(req);
+
         const trainee = await Trainees.findById(req.params.id);
 
         if (!trainee) {
@@ -432,6 +446,8 @@ router.put('/:id', async (req: Request, res: Response) => {
 // POST: /api/trainees/:id/renew
 router.post('/:id/renew', async (req: Request, res: Response): Promise<void> => {
     try {
+        const { Trainees, Coupon } = db(req);
+
         const { id } = req.params;
         const {
             durationInDays, // مدة التجديد (30 يوم مثلاً)

@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import User from '../src/models/User.js';
+import { db } from '../src/models/index.js';
 
 // Extend Express Request to include user
 export interface AuthRequest extends Request {
@@ -14,6 +14,7 @@ export interface AuthRequest extends Request {
 const verifyToken = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
         // Get token from header
+        const { User } = db(req);
         const token = req.headers.authorization?.split(' ')[1];
 
         if (!token) {

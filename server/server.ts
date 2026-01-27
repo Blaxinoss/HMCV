@@ -11,11 +11,10 @@ import settingsRoutes from './src/Routes/userRoutes.js';
 import dashboardRoutes from './src/Routes/dashboradRoutes.js'
 import marketingRoutes from './src/Routes/marketingRoutes.js'
 import authRoutes from './src/Routes/authRoutes.js';
-import requireApi from './midware/requireApi.js';
-import User from './src/models/User.js';
 import { requireAdmin } from './midware/requireAdmin.js';
 import verifyToken from './midware/verifyToken.js';
-import seedAdmin from './src/models/seedAdmin.js';
+import seedAdminRoutes from './src/models/seedAdmin.js';
+import { tenantMiddleware } from './midware/tenant.js';
 
 // Load environment variables
 dotenv.config();
@@ -39,7 +38,7 @@ app.use(cors({
 
 // Get configuration from environment
 const PORT = process.env.PORT || 5000;
-const uri = process.env.DB_URI;
+const uri = process.env.DB_URI || 'mongodb://localhost:27017';
 
 // MongoDB connection
 if (!uri) {
@@ -51,8 +50,7 @@ mongoose
     .then(async () => {
         console.log('✓ MongoDB connected successfully');
 
-        await seedAdmin();
-        console.log('✓ seeding admin account done ');
+
 
 
     })
@@ -62,7 +60,8 @@ mongoose
     });
 
 
-
+app.use(tenantMiddleware);
+app.use('/seed', seedAdminRoutes)
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/trainees', verifyToken, requireAdmin, traineeRoutes);

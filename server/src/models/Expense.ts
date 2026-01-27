@@ -57,6 +57,8 @@ const expenseSchema = new Schema<IExpense>(
 );
 
 // Export Expense model
-const Expense = mongoose.model<IExpense>('Expense', expenseSchema);
+// const Expense = mongoose.model<IExpense>('Expense', expenseSchema);
 
-export default Expense;
+// export default Expense;
+
+export { expenseSchema }

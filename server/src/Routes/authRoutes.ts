@@ -1,12 +1,10 @@
-import User from '../models/User.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import express, { Router } from 'express';
 import verifyToken from '../../midware/verifyToken.js';
 import type { Request, Response } from 'express';
-import type { AuthRequest } from '../../midware/verifyToken.js';
 import { requireAdmin } from '../../midware/requireAdmin.js';
-
+import { db } from '../models/index.js';
 const router: Router = express.Router();
 
 // // POST /api/auth/register// POST /api/auth/register
@@ -75,7 +73,7 @@ const router: Router = express.Router();
 router.post('/login', async (req: Request, res: Response): Promise<void> => {
     try {
         const { username, password } = req.body;
-
+        const { User } = db(req);
         // Validate input
         if (!username || !password) {
             res.status(400).json({
@@ -138,6 +136,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
 router.post('/create-admin', verifyToken, requireAdmin, async (req: Request, res: Response) => {
     // هذا الكود لن يصل إليه إلا من معه Token و دوره Admin
     const { username, password } = req.body;
+    const { User } = db(req);
 
     // ... validation ...
     if (!username || !password) {
@@ -184,6 +183,7 @@ router.put('/:userId', verifyToken, async (req: Request, res: Response): Promise
     try {
         const { userId } = req.params;
         const { username, password } = req.body;
+        const { User } = db(req);
 
         // 1. Validation: Ensure ID format is valid (Prevent server crash)
 
@@ -245,6 +245,8 @@ router.put('/:userId', verifyToken, async (req: Request, res: Response): Promise
 router.delete('/deleteUser/:id', async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
+        const { User } = db(req);
+
         if (!id) {
             res.status(400).json({
                 success: false,

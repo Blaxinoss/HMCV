@@ -1,14 +1,16 @@
-import User from '../models/User.js';
 import bcrypt from 'bcrypt';
 import express, { Router } from 'express';
 import verifyToken from '../../midware/verifyToken.js';
 import type { Request, Response } from 'express';
 import type { AuthRequest } from '../../midware/verifyToken.js';
+import { db } from '../models/index.js';
+
 const router: Router = express.Router();
 
 // GET all users (admin only) - Protected route
 router.get('/', verifyToken, async (req: AuthRequest, res: Response): Promise<void> => {
     try {
+        const { User } = db(req);
         const users = await User.find().select('-password');
         res.status(200).json({
             success: true,
@@ -25,6 +27,7 @@ router.get('/', verifyToken, async (req: AuthRequest, res: Response): Promise<vo
 // PUT update user - Protected route
 router.put('/:id', verifyToken, async (req: AuthRequest, res: Response): Promise<void> => {
     try {
+        const { User } = db(req);
         const { id } = req.params;
         const { username, password } = req.body;
 
@@ -72,6 +75,7 @@ router.put('/:id', verifyToken, async (req: AuthRequest, res: Response): Promise
 // DELETE user - Protected route
 router.delete('/:id', verifyToken, async (req: AuthRequest, res: Response): Promise<void> => {
     try {
+        const { User } = db(req);
         const { id } = req.params;
 
         const user = await User.findByIdAndDelete(id);
