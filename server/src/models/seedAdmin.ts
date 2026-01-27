@@ -1,5 +1,5 @@
 import User from '../models/User.js'; // تأكد من المسار
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 const seedAdmin = async () => {
     try {
