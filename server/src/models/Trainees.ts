@@ -35,6 +35,7 @@ export interface ITrainee {
     accountFreezeStatus: boolean;
     freezeStartDate?: Date | null;
     isSession: boolean;
+    program: string;
     sessionsRemaining: number;
     appliedDiscount: IAppliedDiscount;
     daysLeft: number;
@@ -120,6 +121,12 @@ const TraineeSchema = new Schema<ITrainee, TraineeModel, ITraineeMethods>(
             type: Date,
             default: null,
         },
+        program: {
+            type: String,
+            default: "",
+            trim: true,
+            maxLength: 5000,
+        },
         isSession: {
             type: Boolean,
             default: false,
@@ -198,10 +205,16 @@ TraineeSchema.pre('save', function (next) {
     // ---------------------------------------------------
     if (this.isModified('totalCost') || this.isModified('paid') || this.isModified('discount')) {
         // حماية من القيم الـ undefined
-        const cost = this.totalCost || 0;
-        const paid = this.paid || 0;
-        const discount = this.discount || 0;
-        this.remaining = cost - (paid + discount);
+        const cost = Number(this.totalCost) || 0;
+        const paid = Number(this.paid) || 0;
+        const discount = Number(this.discount) || 0;
+        const netTotal = cost - discount;
+        const calculatedRemaining = netTotal - paid;
+        if (calculatedRemaining < 0) {
+            return next(new Error(`Overpayment! You paid (${paid}) but net cost is (${netTotal}). Difference: ${calculatedRemaining}`));
+        }
+
+        this.remaining = calculatedRemaining;
     }
 
     // ---------------------------------------------------

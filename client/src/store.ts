@@ -7,6 +7,7 @@ import subscriptionReducer from './slices/subscriptionSlice';
 import trainerReducer from './slices/trainersSlice';
 import userReducer from './slices/userSlice';
 import dashboardReducer from './slices/dashboardSlice'
+import couponReducer from './slices/couponSlice'
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +17,7 @@ export const store = configureStore({
     trainers: trainerReducer,
     user: userReducer,
     dashboard: dashboardReducer,
+    coupons: couponReducer,
   },
 });
 

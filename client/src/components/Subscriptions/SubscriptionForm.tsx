@@ -20,7 +20,8 @@ import {
   CheckCircle,
   AlertCircle,
   Save,
-  X
+  X,
+  Dumbbell
 } from 'lucide-react';
 
 interface SubscriptionFormProps {
@@ -37,7 +38,6 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
   const { t } = useTranslation();
   const dispatch = useDispatch<AppDispatch>();
   const { loading } = useSelector((state: RootState) => state.trainees);
-  const { success: showSuccess, error: showError } = useMessage();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -47,6 +47,10 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
     totalCost: 0,
     paid: 0,
     couponCode: '',
+    program: '',
+    hasCustomDiscount: false,
+    discountValue: 0,
+    discountType: "FIXED",
     isSession: false,
     sessionsCount: 0,
   });
@@ -63,14 +67,34 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
         subscriptionEndDate: new Date(trainee.subscriptionEndDate).toISOString().split('T')[0],
         totalCost: trainee.totalCost,
         paid: trainee.paid,
-        couponCode: '',
+        program: trainee.program,
+        couponCode: trainee.usedCoupon || "",
+        hasCustomDiscount: trainee.appliedDiscount?.hasCustomDiscount || false,
+        discountValue: 0,
+        discountType: "FIXED",
         isSession: trainee.isSession,
         sessionsCount: (trainee as any).sessionsRemaining || 0,
       });
+
+      if (trainee.appliedDiscount && (trainee.appliedDiscount.discountValue > 0 || trainee.usedCoupon)) {
+        setAppliedCoupon({
+          _id: 'saved_from_history',
+          code: trainee.usedCoupon || 'Custom Discount',
+          discountType: (trainee.appliedDiscount.discountType?.toUpperCase() || 'FIXED') as 'PERCENTAGE' | 'FIXED',
+          value: trainee.appliedDiscount.discountValue,
+          expiryDate: new Date(),
+          isActive: true,
+          usageLimit: 0,
+          usedCount: 0,
+          createdAt: new Date(),
+          updatedAt: new Date()
+
+        } satisfies Coupon);
+      }
     }
   }, [trainee]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -81,6 +105,16 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
             ? parseFloat(value) || 0
             : value,
     }));
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setFormData(prev => ({ ...prev, couponCode: '' }));
+    toast.success("Coupon removed");
+  };
+
+  const handlePayFull = () => {
+    setFormData(prev => ({ ...prev, paid: financialSummary.netTotal }));
   };
 
   const handleValidateCoupon = async () => {
@@ -121,22 +155,27 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
       return;
     }
 
+    if (financialSummary.isOverpaid) {
+      toast.error(`Payment exceeds total cost! You are overpaying by ${Math.abs(financialSummary.rawRemaining)} EGP`);
+      return;
+    }
+
     try {
       const payload = {
         ...formData,
-        couponCode: formData.couponCode || undefined
+        couponCode: appliedCoupon ? formData.couponCode : ""
       };
 
       if (trainee) {
-        dispatch(updateTrainee({ id: trainee._id, data: payload as any }));
+        await dispatch(updateTrainee({ id: trainee._id, data: payload as any })).unwrap();
         toast.success(t('TraineeUpdated') || "Member Updated");
       } else {
-        dispatch(addTrainee(payload as any));
+        await dispatch(addTrainee(payload as any)).unwrap();
         toast.success(t('TraineeAdded') || "Member Added");
       }
       onSuccess();
     } catch (error) {
-      showError(t('trainees.operation_failed'));
+      toast.error(t('trainees.operation_failed'));
     }
   };
 
@@ -144,6 +183,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
   const financialSummary = useMemo(() => {
     const original = formData.totalCost;
     let discount = 0;
+
 
     if (appliedCoupon) {
       if (appliedCoupon.discountType?.toLowerCase() === 'percentage') {
@@ -154,11 +194,11 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
     }
 
     const netTotal = Math.max(0, original - discount);
-    const remaining = Math.max(0, netTotal - formData.paid);
-
-    return { discount, netTotal, remaining };
+    const rawRemaining = netTotal - formData.paid;
+    const isOverpaid = rawRemaining < 0;
+    const remaining = Math.max(0, rawRemaining);
+    return { discount, netTotal, remaining, isOverpaid, rawRemaining };
   }, [formData.totalCost, formData.paid, appliedCoupon]);
-
   return (
     <form onSubmit={handleSubmit} className="w-full text-left">
 
@@ -348,12 +388,32 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
               </div>
             </div>
           </div>
+
         </div>
+
+        <div className="col-span-full space-y-2">
+          <label className="text-sm font-medium text-gray-400 flex items-center gap-2">
+            <Dumbbell className="w-4 h-4" />
+            {t('trainees.program_label', 'Workout Program')}
+            <span className="text-gray-500 text-xs font-normal">
+              ({t('common.optional', 'Optional')})
+            </span>
+          </label>
+
+          <textarea
+            name="program"
+            value={formData.program}
+            onChange={handleChange} // تأكد إن الـ Type متظبط زي ما اتفقنا فوق
+            rows={4}
+            placeholder={t('trainees.program_placeholder', 'e.g.\nDay 1: Chest & Triceps\nDay 2: Back & Biceps...')}
+            className="w-full px-4 py-3 bg-gray-800 rounded-xl border border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-white placeholder-gray-600 resize-y min-h-[100px]"
+          />
+        </div>
+
       </div>
 
       {/* === FOOTER: Financial Summary === */}
       <div className="mt-8 bg-gray-900 border border-gray-800 rounded-2xl p-6 relative overflow-hidden">
-        {/* Background Gradient decoration */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-3xl rounded-full pointer-events-none"></div>
 
         <h4 className="text-gray-400 text-sm uppercase font-bold tracking-wider mb-4 flex items-center gap-2">
@@ -361,37 +421,67 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
         </h4>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Applied Coupon Info */}
+
+          {/* 1. Coupon Status */}
           <div className="flex flex-col">
             <span className="text-gray-500 text-sm">Coupon Status</span>
             {appliedCoupon ? (
-              <div className="flex items-center gap-2 text-green-400 font-medium mt-1">
-                <CheckCircle className="w-4 h-4" />
-                <span>
-                  {appliedCoupon.code} (-{appliedCoupon.discountType?.toLowerCase() === 'percentage' ? `${appliedCoupon.value}%` : `${appliedCoupon.value} EGP`})
-                </span>
+              <div className="flex items-center justify-between mt-1 bg-green-500/10 border border-green-500/20 rounded-lg p-2">
+                <div className="flex items-center gap-2 text-green-400 font-medium text-sm">
+                  <CheckCircle className="w-4 h-4" />
+                  <span>
+                    {appliedCoupon.code} (-{appliedCoupon.discountType === 'PERCENTAGE' ? `${appliedCoupon.value}%` : `${appliedCoupon.value} EGP`})
+                  </span>
+                </div>
+                {/* زرار الحذف */}
+                <button
+                  type="button"
+                  onClick={handleRemoveCoupon}
+                  className="text-green-500 hover:text-red-400 transition-colors p-1"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
             ) : (
-              <span className="text-gray-600 italic mt-1">No coupon applied</span>
+              <span className="text-gray-600 italic mt-1 text-sm">No coupon applied</span>
             )}
           </div>
 
-          {/* Net Total */}
+          {/* 2. Net Total */}
           <div className="flex flex-col">
-            <span className="text-gray-500 text-sm">Net Total (After Discount)</span>
-            <span className={`text-xl font-bold font-mono mt-1 ${financialSummary.discount > 0 ? 'text-green-400' : 'text-white'}`}>
-              {financialSummary.netTotal.toLocaleString()} EGP
-            </span>
+            <span className="text-gray-500 text-sm">Net Total</span>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className={`text-xl font-bold font-mono ${financialSummary.discount > 0 ? 'text-green-400' : 'text-white'}`}>
+                {financialSummary.netTotal.toLocaleString()} EGP
+              </span>
+              {/* عرض السعر القديم مشطوب لو فيه خصم */}
+              {financialSummary.discount > 0 && (
+                <span className="text-xs text-gray-500 line-through">
+                  {formData.totalCost.toLocaleString()}
+                </span>
+              )}
+            </div>
           </div>
 
-          {/* Remaining Balance */}
+          {/* 3. Remaining */}
           <div className="flex flex-col">
-            <span className="text-gray-500 text-sm">Remaining Balance</span>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-500 text-sm">Remaining</span>
+              {financialSummary.remaining > 0 && (
+                <button
+                  type="button"
+                  onClick={handlePayFull}
+                  className="text-[10px] bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white px-2 py-0.5 rounded transition-all border border-blue-600/30"
+                >
+                  PAY FULL
+                </button>
+              )}
+            </div>
+
             <div className="flex items-center gap-2 mt-1">
               <span className={`text-xl font-bold font-mono ${financialSummary.remaining > 0 ? 'text-red-400' : 'text-gray-400'}`}>
                 {financialSummary.remaining.toLocaleString()} EGP
               </span>
-              {financialSummary.remaining > 0 && <AlertCircle className="w-4 h-4 text-red-500" />}
             </div>
           </div>
         </div>

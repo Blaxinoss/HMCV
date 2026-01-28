@@ -8,7 +8,8 @@
         "checkIn": "Check In",
         "crm": "CRM",
         "settings": "Settings",
-        "logout": "Logout"
+        "logout": "Logout",
+        "coupons": "Coupon"
     },
     "switchButton": {
         "switchAR": "Switch to Arabic 🇦🇪"
@@ -316,6 +317,9 @@
         "confirm_delete": "Are you sure you want to delete this?",
         "actions": "Actions",
         "total": "Total Expenses",
+        "transaction_count_label": "Transaction Count",
+        "average_cost_label": "Average Cost",
+        "total_label": "TOTAL",
         "manage_subtitle": "Manage and track your gym's operational costs.",
         "search_placeholder": "Search by name or description...",
         "personal_placeholder": "e.g. New Treadmill",
@@ -436,6 +440,7 @@
         "no_more_sessions": "No more sessions Left",
         "session_details": "Session Details",
         "delete_failed": "Failed to delete trainee",
+        "no_program": "No program for this trainee",
         "filter_all": "All",
         "filter_active": "Active",
         "filter_expired": "Expired",
@@ -510,6 +515,7 @@
         "details": "View Details",
         "days": "days",
         "debt": "Debt",
+        "send_program": "Message Program",
         "freeze": "Freeze",
         "apply": "Apply",
         "unfreeze": "Unfreeze",
@@ -539,5 +545,32 @@
     "languageSwitcher": {
         "english": "English",
         "arabic": "العربية"
+    },
+    "coupons": {
+        "modal": {
+            "title": "Manage Coupons",
+            "code_label": "Coupon Code",
+            "code_placeholder": "e.g. SUMMER20",
+            "type_label": "Type",
+            "fixed": "Fixed",
+            "value_label": "Value",
+            "value_placeholder_percent": "e.g. 20",
+            "value_placeholder_fixed": "e.g. 100",
+            "expiry_label": "Expire Date",
+            "create_btn": "Create Coupon",
+            "active_title": "Active Coupons",
+            "empty_state": "No active coupons",
+            "expires": "Expires",
+            "expired_tag": "(Expired)",
+            "delete_tooltip": "Delete Coupon"
+        },
+        "toast": {
+            "fill_all": "Please fill all fields",
+            "created": "Coupon Created Successfully! 🎉",
+            "create_failed": "Failed to create coupon",
+            "delete_confirm": "Are you sure you want to delete this coupon?",
+            "deleted": "Coupon Deleted",
+            "delete_failed": "Failed to delete coupon"
+        }
     }
 }

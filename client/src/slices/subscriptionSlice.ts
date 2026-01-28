@@ -11,6 +11,17 @@ interface FetchTraineesArgs {
   status?: string;
 }
 
+export const patchTrainee = createAsyncThunk(
+  'trainees/patchTrainee',
+  async ({ id, data }: { id: string; data: any }, thunkAPI) => {
+    try {
+      const response = await api.patch(`/trainees/${id}`, data);
+      return response.data.data;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.response?.data?.message || 'Update failed');
+    }
+  }
+);
 
 export const fetchTrainees = createAsyncThunk<
   TraineeWithPagination,
@@ -295,6 +306,14 @@ const subscriptionSlice = createSlice({
         state.error = action.payload || "Failed to renew trainee";
         state.loading = false;
       })
+
+    builder.addCase(patchTrainee.fulfilled, (state, action) => {
+      const index = state.trainees.findIndex(t => t._id === action.payload._id);
+      if (index !== -1) {
+        state.trainees[index] = action.payload;
+
+      }
+    });
   },
 
 

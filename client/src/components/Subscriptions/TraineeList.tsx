@@ -24,10 +24,13 @@ import {
     Trash2,
     Edit,
     Activity,
-    RefreshCw
+    RefreshCw,
+    Dumbbell,
+    Send
 } from 'lucide-react';
 import RenewModal from './RenewModal';
 import Pagination from '../Pagination/Pagination';
+import ClearDebtButton from './ClearDebtButton';
 
 interface TraineeListProps {
     onEdit: (trainee: Trainee) => void;
@@ -88,6 +91,7 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
         setSearch(e.target.value);
         setPage(1);
     };
+
 
 
     const getStatusBadge = (trainee: Trainee) => {
@@ -278,7 +282,7 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
                                 <div className="bg-gray-900/50 p-6 border-t border-gray-700 animate-slideDown">
 
                                     {/* Info Grid */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-6 mb-6">
                                         <div>
                                             <p className="text-gray-500 text-xs uppercase font-bold mb-1 flex items-center gap-1">
                                                 <Calendar className="w-3 h-3" /> Period
@@ -303,6 +307,7 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
                                                 <DollarSign className="w-3 h-3" /> Financials
                                             </p>
                                             <div className="flex gap-4">
+                                                {/* Total & Paid (زي ما هما) */}
                                                 <div className="text-sm">
                                                     <span className="text-gray-400 block text-[10px]">TOTAL</span>
                                                     {trainee.totalCost} EGP
@@ -314,14 +319,47 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
                                             </div>
                                         </div>
 
+
+
                                         <div>
                                             <p className="text-gray-500 text-xs uppercase font-bold mb-1 flex items-center gap-1">
-                                                <CreditCard className="w-3 h-3" /> Balance
+                                                <CreditCard className="w-3 h-3" /> Remaining
                                             </p>
                                             <p className={`font-bold text-lg ${trainee.remaining > 0 ? 'text-red-400' : 'text-green-400'}`}>
                                                 {trainee.remaining} EGP
                                             </p>
                                         </div>
+
+                                        <div className="h-full col-span-2">
+                                            <div className="relative  bg-gray-800/40 hover:bg-gray-800/60 transition-colors duration-300 p-2 rounded-xl border border-gray-700/50 hover:border-blue-500/30 h-full flex flex-col justify-center">
+
+                                                <div className="flex gap-2 items-start">
+                                                    {/* Icon */}
+                                                    <div className={`p-1.5 rounded-md shrink-0 ${trainee.program ? 'bg-blue-500/10 text-blue-400' : 'bg-gray-700/50 text-gray-500'}`}>
+                                                        <Dumbbell className="w-3.5 h-3.5" />
+                                                    </div>
+
+                                                    {/* Text Content */}
+                                                    <div className="flex-1 min-w-0">
+                                                        <h4 className="text-[10px] uppercase tracking-wider font-bold text-gray-500 mb-0.5">
+                                                            Program
+                                                        </h4>
+
+                                                        <div className="text-xs leading-tight whitespace-pre-wrap">
+                                                            {trainee.program ? (
+                                                                // This line-clamp-2 is key: It keeps the box size fixed, but expands on hover if you add group-hover:line-clamp-none
+                                                                <p className="text-gray-300 line-clamp-3 hover:line-clamp-none transition-all duration-300">
+                                                                    {trainee.program}
+                                                                </p>
+                                                            ) : (
+                                                                <span className="text-gray-600 italic text-[11px]">No program assigned</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                     </div>
 
                                     {/* Actions Row */}
@@ -334,6 +372,9 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
                                             {t('common.edit')}
                                         </button>
 
+
+                                        <ClearDebtButton trainee={trainee} />
+
                                         <button
                                             onClick={(e) => handleFreeze(trainee._id, e)}
                                             className="flex items-center gap-2 px-4 py-2 bg-yellow-600/10 text-yellow-500 hover:bg-yellow-600 hover:text-white rounded-lg text-sm font-semibold transition-all border border-yellow-600/20"
@@ -345,17 +386,26 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                // بنفتح المودال ونبعتله بيانات المتدرب ده
                                                 setRenewData({
                                                     id: trainee._id,
                                                     name: trainee.name,
                                                     isSession: trainee.isSession
                                                 });
                                             }}
-                                            className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600/10 text-green-500 hover:bg-green-600 hover:text-white rounded-lg text-sm font-semibold transition-all border border-green-600/20"
+                                            className="flex items-center justify-center gap-2 px-4 py-2 bg-green-500/10 text-green-500 hover:bg-green-500 hover:text-white rounded-xl text-sm font-semibold transition-all border border-green-500/20"
                                         >
-                                            <RefreshCw className="w-4 h-4" /> {/* استورد الايقونة دي */}
+                                            <RefreshCw className="w-4 h-4" />
                                             {t('common.renew')}
+                                        </button>
+
+                                        {/* 2. Send Program (Changed to Blue - Communication Action) */}
+                                        <button
+                                            onClick={(e) => alert('needs Implementation')}
+                                            className="group/sendBtn flex items-center gap-2 px-4 py-2 bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white rounded-xl text-sm font-semibold transition-all duration-300 border border-blue-500/20 hover:shadow-[0_0_15px_rgba(59,130,246,0.3)]"
+                                        >
+                                            <Send className="w-4 h-4 transition-transform duration-300 group-hover/sendBtn:translate-x-1 group-hover/sendBtn:-translate-y-1" />
+
+                                            {t('common.send_program')}
                                         </button>
 
                                         <button
@@ -366,6 +416,8 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
                                             {t('common.delete')}
                                         </button>
 
+
+
                                     </div>
 
                                 </div>
@@ -375,44 +427,52 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
                 )}
             </div>
 
-            {pagination && (
-                <Pagination
-                    currentPage={pagination.currentPage}
-                    totalPages={pagination.totalPages}
-                    totalItems={pagination.totalUsers}
-                    itemsPerPage={limit}
-                    onPageChange={setPage}
-                    onItemsPerPageChange={(newLimit) => {
-                        setLimit(newLimit);
-                        setPage(1); // Reset to page 1 when limit changes
-                    }}
-                />
-            )}
+            {
+                pagination && (
+                    <Pagination
+                        currentPage={pagination.currentPage}
+                        totalPages={pagination.totalPages}
+                        totalItems={pagination.totalUsers}
+                        itemsPerPage={limit}
+                        onPageChange={setPage}
+                        onItemsPerPageChange={(newLimit) => {
+                            setLimit(newLimit);
+                            setPage(1); // Reset to page 1 when limit changes
+                        }}
+                    />
+                )
+            }
 
-            {checkInTraineeData && (
-                <CheckInModal
-                    traineeId={checkInTraineeData.id}
-                    traineeName={checkInTraineeData.name}
-                    onClose={() => setCheckInTraineeData(null)}
-                />
-            )}
+            {
+                checkInTraineeData && (
+                    <CheckInModal
+                        traineeId={checkInTraineeData.id}
+                        traineeName={checkInTraineeData.name}
+                        onClose={() => setCheckInTraineeData(null)}
+                    />
+                )
+            }
 
-            {showQuickCheckIn && (
-                <QuickCheckInModal
-                    onClose={() => setShowQuickCheckIn(false)}
-                />
-            )}
+            {
+                showQuickCheckIn && (
+                    <QuickCheckInModal
+                        onClose={() => setShowQuickCheckIn(false)}
+                    />
+                )
+            }
 
-            {renewData && (
-                <RenewModal
-                    traineeId={renewData.id}
-                    traineeName={renewData.name}
-                    isSession={renewData.isSession}
-                    onClose={() => setRenewData(null)}
-                />
-            )}
+            {
+                renewData && (
+                    <RenewModal
+                        traineeId={renewData.id}
+                        traineeName={renewData.name}
+                        isSession={renewData.isSession}
+                        onClose={() => setRenewData(null)}
+                    />
+                )
+            }
 
-        </div>
+        </div >
     );
 };
 

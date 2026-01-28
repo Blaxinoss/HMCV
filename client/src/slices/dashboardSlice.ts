@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import api from '../utils/api';
-import { addTrainee, checkInTrainee, deleteTrainee, freezeTrainee, renewTrainee, updateTrainee } from './subscriptionSlice';
+import { addTrainee, checkInTrainee, deleteTrainee, freezeTrainee, patchTrainee, renewTrainee, updateTrainee } from './subscriptionSlice';
 import { addExpense, deleteExpense, updateExpense } from './expensesSlice';
 import { addTrainer, deleteTrainer, updateTrainer } from './trainersSlice';
 // import { DashboardState } from '../types'; // ممكن نستغنى عنها ونعرف الـ State هنا لو التايب القديم مختلف
@@ -75,6 +75,7 @@ const dashboardSlice = createSlice({
             addExpense.fulfilled, deleteExpense.fulfilled, updateExpense.fulfilled,
             addTrainer.fulfilled, updateTrainer.fulfilled, deleteTrainer.fulfilled,
             checkInTrainee.fulfilled, freezeTrainee.fulfilled,
+            patchTrainee.fulfilled,
         ];
 
         // ✅ اللوب الكاملة

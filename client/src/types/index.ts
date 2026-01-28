@@ -137,7 +137,10 @@ export interface Trainee {
   accountFreezeStatus: boolean;
   freezeStartDate: string | null;
   isSession: boolean;
+  program: string;
   sessionsRemaining?: number
+  usedCoupon?: string
+
   appliedDiscount: {
     hasCustomDiscount: boolean;
     discountValue: number;

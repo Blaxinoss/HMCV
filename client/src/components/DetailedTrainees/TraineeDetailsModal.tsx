@@ -12,7 +12,8 @@ import {
   Activity,
   Snowflake,
   CheckCircle,
-  AlertTriangle
+  AlertTriangle,
+  Dumbbell
 } from 'lucide-react';
 
 interface TraineeDetailsModalProps {
@@ -178,6 +179,52 @@ const TraineeDetailsModal: React.FC<TraineeDetailsModalProps> = ({ trainee, isOp
                   <CheckCircle className="w-3 h-3" />
                   Discount Applied: {trainee.appliedDiscount.discountValue}{trainee.appliedDiscount.discountType === 'percentage' ? '%' : 'EGP'}
                 </div>
+              )}
+            </div>
+          </div>
+
+          {/* Program */}
+          <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden lg:col-span-2 flex flex-col justify-center">
+            {/* Container with Hover Effect */}
+            <div className="relative group bg-gray-800/40 hover:bg-gray-800/60 transition-colors duration-300 p-3 rounded-xl border border-gray-700/50 hover:border-blue-500/30">
+
+              <div className="flex gap-3">
+                {/* Icon Column */}
+                <div className="shrink-0 mt-0.5">
+                  <div className={`p-2 rounded-lg ${trainee.program ? 'bg-blue-500/10 text-blue-400' : 'bg-gray-700/50 text-gray-500'}`}>
+                    <Dumbbell className="w-4 h-4" />
+                  </div>
+                </div>
+
+                {/* Content Column */}
+                <div className="flex-1 min-w-0">
+                  {/* Label */}
+                  <h4 className="text-[10px] uppercase tracking-wider font-bold text-gray-500 mb-1 flex justify-between items-center">
+                    {t('trainees.program_label', 'Current Program')}
+                    {/* Optional: Edit Icon that appears on hover */}
+                    {/* <Pencil className="w-3 h-3 text-gray-600 group-hover:text-blue-400 cursor-pointer transition-colors" /> */}
+                  </h4>
+
+                  {/* The Text */}
+                  <div className="text-xs leading-relaxed whitespace-pre-wrap">
+                    {trainee.program ? (
+                      <p className="text-gray-300 line-clamp-2 group-hover:line-clamp-none transition-all duration-300">
+                        {trainee.program}
+                      </p>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-600 italic text-xs">{t('trainees.no_program')}</span>
+                        {/* Optional: Add button hint */}
+                        {/* <span className="text-[10px] text-blue-500/50 group-hover:text-blue-400 cursor-pointer">+ Add</span> */}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Decorative corner accent (Optional for Premium feel) */}
+              {trainee.program && (
+                <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-bl from-blue-500/10 to-transparent rounded-tr-xl opacity-0 group-hover:opacity-100 transition-opacity" />
               )}
             </div>
           </div>

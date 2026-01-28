@@ -15,6 +15,7 @@ import { requireAdmin } from './midware/requireAdmin.js';
 import verifyToken from './midware/verifyToken.js';
 import seedAdminRoutes from './src/models/seedAdmin.js';
 import { tenantMiddleware } from './midware/tenant.js';
+import couponRoutes from './src/Routes/couponRoutes.js'
 
 // Load environment variables
 dotenv.config();
@@ -31,7 +32,7 @@ app.use(bodyParser.json());
 // أو الحل الاحترافي (تسمح فقط للـ Frontend بتاعك)
 app.use(cors({
     origin: 'http://localhost:5173', // عنوان الـ Vite بتاعك
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     credentials: true
 }));
 
@@ -65,6 +66,8 @@ app.use('/seed', seedAdminRoutes)
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/trainees', verifyToken, requireAdmin, traineeRoutes);
+app.use('/api/coupons', verifyToken, requireAdmin, couponRoutes);
+
 app.use('/api/expenses', verifyToken, requireAdmin, expensesRoutes);
 app.use('/api/trainers', verifyToken, requireAdmin, trainersRoutes);
 app.use('/api/settings', verifyToken, requireAdmin, settingsRoutes);
