@@ -1,7 +1,7 @@
 import express from 'express';
-import { db } from '../models/index.js';
 import type { ICoupon } from '../models/Coupons.js';
 import { isValid } from 'date-fns';
+import Coupon from '../models/Coupons.js';
 
 const router = express.Router();
 
@@ -10,7 +10,6 @@ const router = express.Router();
 // ---------------------------------------------------
 router.get('/', async (req, res) => {
     try {
-        const { Coupon } = db(req);
         // بنرتبهم الأحدث فالأقدم
         const coupons = await Coupon.find().sort({ createdAt: -1 });
         res.status(200).json({ data: coupons });
@@ -24,7 +23,6 @@ router.get('/', async (req, res) => {
 // ---------------------------------------------------
 router.post('/', async (req, res) => {
     try {
-        const { Coupon } = db(req);
 
         const { code, discountType, value, expiryDate, usageLimit } = req.body;
 
@@ -55,7 +53,6 @@ router.post('/', async (req, res) => {
 // ---------------------------------------------------
 router.delete('/:id', async (req, res) => {
     try {
-        const { Coupon } = db(req);
 
         await Coupon.findByIdAndDelete(req.params.id);
         res.json({ message: 'Coupon deleted' });
@@ -71,7 +68,6 @@ router.delete('/:id', async (req, res) => {
 router.post('/validate-coupon', async (req, res) => {
     try {
 
-        const { Coupon } = db(req);
 
         const { code } = req.body;
 
