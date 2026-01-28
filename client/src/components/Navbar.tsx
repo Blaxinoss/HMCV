@@ -6,6 +6,9 @@ import { logout } from '../slices/authSlice';
 import { AppDispatch } from '../store';
 import LanguageSwitcher from './LanguageSwitcher';
 import QuickCheckInModal from './Trainers/QuickCheckInModal';
+// 1. استدعاء مودال الكوبونات (تأكد من المسار)
+import { CouponsModal } from './modals/CouponsModal';
+
 import {
   LayoutDashboard,
   Users,
@@ -16,8 +19,8 @@ import {
   Menu,
   X,
   Zap,
-  Globe,
-  Send
+  Send,
+  Ticket // 2. استدعاء ايقونة التيكت
 } from 'lucide-react';
 
 const Navbar: React.FC = () => {
@@ -25,8 +28,10 @@ const Navbar: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const location = useLocation();
+
   const [mobileMenu, setMobileMenu] = useState(false);
   const [showQuickCheckIn, setShowQuickCheckIn] = useState(false);
+  const [showCouponsModal, setShowCouponsModal] = useState(false); // 3. حالة المودال الجديد
 
   const handleLogout = () => {
     dispatch(logout());
@@ -87,12 +92,22 @@ const Navbar: React.FC = () => {
             </div>
 
             {/* 3. Right Actions */}
-            <div className="hidden md:flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-3">
+
+              {/* === زرار الكوبونات الجديد === */}
+              <button
+                onClick={() => setShowCouponsModal(true)}
+                className="flex items-center gap-2 px-3 py-2 bg-purple-600/10 text-purple-400 hover:bg-purple-600 hover:text-white rounded-xl text-sm font-bold transition-all border border-purple-600/20 hover:shadow-[0_0_10px_rgba(147,51,234,0.3)]"
+                title="Manage Coupons"
+              >
+                <Ticket className="w-4 h-4" />
+                <span className="hidden lg:inline">{t('navbar.coupons', 'Coupons')}</span>
+              </button>
 
               {/* Quick Check-In Button */}
               <button
                 onClick={() => setShowQuickCheckIn(true)}
-                className="flex items-center  gap-2 px-4 py-2 bg-blue-700 hover:bg-blue-500   text-white rounded-xl text-sm font-bold shadow-lg shadow-purple-900/20 transition-all hover:scale-105 active:scale-95"
+                className="flex items-center gap-2 px-4 py-2 bg-blue-700 hover:bg-blue-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-purple-900/20 transition-all hover:scale-105 active:scale-95"
               >
                 <Zap className="w-4 h-4 fill-white" />
                 {t('navbar.checkIn')}
@@ -123,12 +138,21 @@ const Navbar: React.FC = () => {
 
             {/* 4. Mobile Menu Button */}
             <div className="md:hidden flex items-center gap-4">
+              {/* زرار الكوبونات للموبايل (مختصر) */}
+              <button
+                onClick={() => setShowCouponsModal(true)}
+                className="p-2 bg-purple-600/20 text-purple-400 rounded-lg"
+              >
+                <Ticket className="w-5 h-5" />
+              </button>
+
               <button
                 onClick={() => setShowQuickCheckIn(true)}
-                className="p-2 bg-purple-600/20 text-purple-400 rounded-lg"
+                className="p-2 bg-blue-600/20 text-blue-400 rounded-lg"
               >
                 <Zap className="w-5 h-5" />
               </button>
+
               <button
                 onClick={() => setMobileMenu(!mobileMenu)}
                 className="text-gray-300 hover:text-white"
@@ -141,7 +165,7 @@ const Navbar: React.FC = () => {
 
         {/* 5. Mobile Menu Dropdown */}
         <div
-          className={`md:hidden absolute top-20 left-0 w-full bg-gray-900 border-b border-gray-800 transition-all duration-300 ease-in-out overflow-hidden ${mobileMenu ? 'max-h-[500px] opacity-100 shadow-2xl' : 'max-h-0 opacity-0'
+          className={`md:hidden absolute top-20 left-0 w-full bg-gray-900 border-b border-gray-800 transition-all duration-300 ease-in-out overflow-hidden ${mobileMenu ? 'max-h-[600px] opacity-100 shadow-2xl' : 'max-h-0 opacity-0'
             }`}
         >
           <div className="p-4 space-y-2">
@@ -152,6 +176,16 @@ const Navbar: React.FC = () => {
             <NavItem to="/expenses" icon={CreditCard} label={t('navbar.expenses')} onClick={() => setMobileMenu(false)} />
             <NavItem to="/crm" icon={Send} label={t('navbar.crm')} onClick={() => setMobileMenu(false)} />
             <NavItem to="/settings" icon={Settings} label={t('navbar.settings')} onClick={() => setMobileMenu(false)} />
+
+            {/* زرار الكوبونات في قائمة الموبايل */}
+            <button
+              onClick={() => { setShowCouponsModal(true); setMobileMenu(false); }}
+              className="w-full flex items-center gap-2 px-4 py-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition-all font-medium text-sm"
+            >
+              <Ticket className="w-4 h-4 text-purple-400" />
+              {t('navbar.coupons', 'Manage Coupons')}
+            </button>
+
 
             <div className="border-t border-gray-800 my-2 pt-2 flex justify-between items-center px-2">
               <LanguageSwitcher />
@@ -169,6 +203,11 @@ const Navbar: React.FC = () => {
       {/* Modals */}
       {showQuickCheckIn && (
         <QuickCheckInModal onClose={() => setShowQuickCheckIn(false)} />
+      )}
+
+      {/* 4. استدعاء مودال الكوبونات */}
+      {showCouponsModal && (
+        <CouponsModal isOpen={showCouponsModal} onClose={() => setShowCouponsModal(false)} />
       )}
 
       {/* Main Content */}

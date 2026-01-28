@@ -8,6 +8,7 @@ import { fetchTrainees } from '../../slices/subscriptionSlice';
 import { Trainee } from '../../types';
 import TraineeList from './TraineeList';
 import SubscriptionForm from './SubscriptionForm';
+import ClearDebtButton from './ClearDebtButton';
 import {
   Users,
   UserPlus,

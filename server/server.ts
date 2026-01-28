@@ -16,6 +16,7 @@ import User from './src/models/User.js';
 import { requireAdmin } from './midware/requireAdmin.js';
 import verifyToken from './midware/verifyToken.js';
 import seedAdmin from './src/models/seedAdmin.js';
+import couponRoutes from './src/Routes/couponRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -64,6 +65,8 @@ mongoose
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/trainees', verifyToken, requireAdmin, traineeRoutes);
+app.use('/api/coupons', verifyToken, requireAdmin, couponRoutes);
+
 app.use('/api/expenses', verifyToken, requireAdmin, expensesRoutes);
 app.use('/api/trainers', verifyToken, requireAdmin, trainersRoutes);
 app.use('/api/settings', verifyToken, requireAdmin, settingsRoutes);

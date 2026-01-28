@@ -91,11 +91,17 @@ router.post('/', async (req: Request, res: Response) => {
             isSession,
             sessionsCount,
             paid,
-            couponCode
+            couponCode,
+            program,
         } = req.body;
 
         let discountAmount = 0;
         let finalUsedCouponCode = null;
+        const appliedDiscountData = {
+            hasCustomDiscount: false, // لو فيه خصم يبقا true
+            discountValue: 0,
+            discountType: "fixed"
+        };
 
         if (couponCode) {
             const coupon: ICoupon | null = await Coupon.findOne({
@@ -111,15 +117,20 @@ router.post('/', async (req: Request, res: Response) => {
                     // حساب قيمة الخصم
                     if (coupon.discountType === DiscountType.PERCENTAGE) {
                         discountAmount = (totalCost * coupon.value) / 100;
+                        appliedDiscountData.discountType = 'percentage';
                     } else if (coupon.discountType === DiscountType.FIXED) {
                         discountAmount = coupon.value;
+                        appliedDiscountData.discountType = 'fixed';
                     }
 
                     // تحديث بيانات الكوبون
                     coupon.usedCount += 1;
+
                     await coupon.save();
 
                     finalUsedCouponCode = coupon.code;
+                    appliedDiscountData.hasCustomDiscount = true
+                    appliedDiscountData.discountValue = coupon.value;
                 }
             }
         }
@@ -130,7 +141,7 @@ router.post('/', async (req: Request, res: Response) => {
             return;
         }
 
-        const remainingAmount = (totalCost - discountAmount) - paid;
+
 
         const newTrainee = new Trainees({
             memberId: newMemberId,
@@ -143,8 +154,9 @@ router.post('/', async (req: Request, res: Response) => {
             sessionsRemaining: isSession ? sessionsCount : 0,
             discount: discountAmount,
             paid,
-            remaining: remainingAmount,
-            usedCoupon: finalUsedCouponCode
+            program,
+            usedCoupon: finalUsedCouponCode,
+            appliedDiscount: appliedDiscountData,
         });
 
         const savedTrainee = await newTrainee.save();
@@ -392,7 +404,6 @@ router.delete('/:id', async (req: Request, res: Response) => {
         res.status(500).json({ error: error.message });
     }
 });
-
 // PUT: Update trainee details
 router.put('/:id', async (req: Request, res: Response) => {
     try {
@@ -407,20 +418,74 @@ router.put('/:id', async (req: Request, res: Response) => {
             phone,
             subscriptionStartDate,
             totalCost,
-            paid
-            // لاحظ: مكتبناش remaining ولا role ولا memberId
+            paid,
+            program,
+            couponCode, // 🔥 لازم نستقبله هنا
+            sessionsCount // لو بيعدل عدد الحصص
         } = req.body;
 
-        // تحديث الحقول لو كانت مبعوتة (عشان متمسحش القديم بـ undefined)
+        // 1. تحديث البيانات الأساسية
         if (name) trainee.name = name;
         if (phone) trainee.phone = phone;
         if (subscriptionStartDate) trainee.subscriptionStartDate = subscriptionStartDate;
-
-        // لو عدل الفلوس، الـ Pre-save Hook هيشتغل ويظبط الـ remaining
+        if (program !== undefined) trainee.program = program;
         if (totalCost !== undefined) trainee.totalCost = totalCost;
         if (paid !== undefined) trainee.paid = paid;
+        if (sessionsCount !== undefined && trainee.isSession) trainee.sessionsRemaining = sessionsCount;
 
-        // 🔥 السطر ده هو اللي بيشغل الـ Hook ويحسب الـ Remaining
+        // ---------------------------------------------------------
+        // 2. منطق الكوبون (De-apply & Apply) 🔥 هذا هو الجزء الناقص
+        // ---------------------------------------------------------
+
+        // الحالة الأولى: حذف الكوبون (De-apply)
+        if (couponCode === "") {
+            trainee.discount = 0;
+            trainee.usedCoupon = undefined; // أو undefined حسب السكيما
+            trainee.appliedDiscount = {
+                hasCustomDiscount: false,
+                discountValue: 0,
+                discountType: 'fixed' // قيمة افتراضية
+            };
+        }
+        // الحالة الثانية: تغيير الكوبون أو إضافته لأول مرة
+        else if (couponCode && couponCode !== trainee.usedCoupon) {
+            const coupon = await Coupon.findOne({
+                code: couponCode.toUpperCase(),
+                isActive: true
+            });
+
+            if (coupon) {
+                // (اختياري) ممكن تزود شروط الصلاحية هنا لو عايز تمنع الكوبونات المنتهية
+                let discountAmount = 0;
+
+                // تحديث الـ Metadata
+                trainee.appliedDiscount = {
+                    hasCustomDiscount: true,
+                    discountValue: coupon.value,
+                    discountType: coupon.discountType === 'PERCENTAGE' ? 'percentage' : 'fixed'
+                };
+
+                // حساب القيمة المالية
+                if (coupon.discountType === 'PERCENTAGE') {
+                    discountAmount = (trainee.totalCost * coupon.value) / 100;
+                } else {
+                    discountAmount = coupon.value;
+                }
+
+                trainee.discount = discountAmount;
+                trainee.usedCoupon = coupon.code;
+            }
+        }
+
+        // الحالة الثالثة: لو الكوبون هو هو ومسحناش حاجة -> مش بنعمل حاجة (بس لازم نعيد حساب الخصم لو السعر اتغير)
+        // دي نقطة ذكية: لو انا مغيرتش الكوبون بس غيرت السعر من 1000 لـ 2000 والخصم نسبة مئوية؟
+        // الـ Pre-save hook اللي عملناه زمان المفروض يظبط دي لو اعتمدنا عليه، أو نحسبها هنا يدوي للأمان:
+        if (trainee.appliedDiscount?.hasCustomDiscount && trainee.appliedDiscount.discountType === 'percentage') {
+            trainee.discount = (trainee.totalCost * trainee.appliedDiscount.discountValue) / 100;
+        }
+
+
+        // 3. الحفظ (الـ Pre-save Hook هيشتغل ويحسب الـ Remaining أوتوماتيك)
         const updatedTrainee = await trainee.save();
 
         res.status(200).json(updatedTrainee);
@@ -433,6 +498,17 @@ router.put('/:id', async (req: Request, res: Response) => {
 router.post('/:id/renew', async (req: Request, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
+
+        let discountAmount = 0;
+        let finalUsedCouponCode = null;
+
+        const appliedDiscountData = {
+            hasCustomDiscount: false,
+            discountValue: 0,
+            discountType: "fixed"
+        };
+
+
         const {
             durationInDays, // مدة التجديد (30 يوم مثلاً)
             totalCost,      // سعر الباقة الجديد
@@ -473,9 +549,6 @@ router.post('/:id/renew', async (req: Request, res: Response): Promise<void> => 
         newEndDate.setDate(newEndDate.getDate() + durationInDays);
 
 
-        // 2. منطق الكوبون (نفس الكود نعيده هنا)
-        let discountAmount = 0;
-        let finalUsedCouponCode = null;
 
         if (couponCode) {
             const coupon = await Coupon.findOne({
@@ -490,13 +563,21 @@ router.post('/:id/renew', async (req: Request, res: Response): Promise<void> => 
                 if (!isExpired && !isLimitReached) {
                     if (coupon.discountType === 'PERCENTAGE') {
                         discountAmount = (totalCost * coupon.value) / 100;
+                        appliedDiscountData.discountType = 'percentage';
                     } else if (coupon.discountType === 'FIXED') {
                         discountAmount = coupon.value;
+                        appliedDiscountData.discountType = 'fixed';
                     }
 
                     // تحديث الكوبون
                     coupon.usedCount += 1;
+
                     await coupon.save();
+
+                    finalUsedCouponCode = coupon.code;
+                    appliedDiscountData.hasCustomDiscount = true;
+                    appliedDiscountData.discountValue = coupon.value;
+
                     finalUsedCouponCode = coupon.code;
                 }
             }
@@ -516,7 +597,7 @@ router.post('/:id/renew', async (req: Request, res: Response): Promise<void> => 
         trainee.paid = paid;
         trainee.remaining = remainingAmount; // تحديث المتبقي
         trainee.usedCoupon = finalUsedCouponCode || trainee.usedCoupon; // سجل الكوبون الجديد
-
+        trainee.appliedDiscount = appliedDiscountData as any; // التفاصيل (عشان الـ Edit Form تفهم)
 
         if (trainee.isSession) {
             if (!sessionsCount) {
@@ -550,5 +631,67 @@ router.post('/:id/renew', async (req: Request, res: Response): Promise<void> => 
 });
 
 
+
+router.patch('/:id', async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const updates = req.body;
+
+        // 1. هات المشترك الأول
+        const trainee = await Trainees.findById(id);
+
+        if (!trainee) {
+            return res.status(404).json({ error: 'Trainee not found' });
+        }
+
+        // 2. قائمة الحقول المسموح بتعديلها (عشان محدش يلعب في الـ ID أو التواريخ الحساسة بالغلط)
+        const allowedUpdates = [
+            'name',
+            'phone',
+            'totalCost',
+            'paid',
+            'sessionsRemaining',
+            'subscriptionEndDate',
+            'program',
+            'discount', // لو حبيت تعدل الخصم يدوياً
+            'appliedDiscount', // لو حبيت تشيل الكوبون
+            'crmInfo' // لو حبيت تحدث حالة الواتساب
+        ];
+
+        // 3. تطبيق التعديلات
+        const updatesKeys = Object.keys(updates);
+
+        updatesKeys.forEach((key) => {
+            if (allowedUpdates.includes(key)) {
+                // @ts-ignore: عشان التايب سكريبت ميرخمش في الـ dynamic assignment
+                trainee[key] = updates[key];
+            }
+        });
+
+        // 4. حالة خاصة: لو بنعمل Clear Debt (بنخلي المدفوع = الصافي)
+        // الـ Pre-save hook هيقوم بالواجب ويحسب الـ remaining
+
+        // 5. حالة خاصة: لو بنعدل الـ appliedDiscount (مثلاً بنمسح الكوبون)
+        // لازم نتأكد إننا مش بنبوظ الـ Schema
+        if (updates.appliedDiscount) {
+            trainee.appliedDiscount = {
+                ...trainee.appliedDiscount,
+                ...updates.appliedDiscount
+            };
+        }
+
+        // 6. الحفظ (هنا السحر كله بيحصل والـ Hooks بتشتغل) 🔥
+        const updatedTrainee = await trainee.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Trainee updated successfully",
+            data: updatedTrainee
+        });
+
+    } catch (error: any) {
+        res.status(400).json({ error: error.message });
+    }
+});
 
 export default router;

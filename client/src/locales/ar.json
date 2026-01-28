@@ -8,7 +8,8 @@
         "checkIn": "تسجيل دخول",
         "crm": "إدارة العملاء (CRM)",
         "settings": "الإعدادات",
-        "logout": "تسجيل خروج"
+        "logout": "تسجيل خروج",
+        "coupons": "الكوبونات"
     },
     "switchButton": {
         "switchAR": "Switch to Arabic 🇦🇪"
@@ -496,6 +497,33 @@
         "user_not_found": "المستخدم غير موجود",
         "expiring_soon": "ينتهي قريباً",
         "search_placeholder": "بحث بالاسم، الهاتف، الكود..."
+    },
+    "coupons": {
+        "modal": {
+            "title": "إدارة الكوبونات",
+            "code_label": "كود الكوبون",
+            "code_placeholder": "مثال: SUMMER20",
+            "type_label": "النوع",
+            "fixed": "مبلغ ثابت",
+            "value_label": "القيمة",
+            "value_placeholder_percent": "مثال: 20",
+            "value_placeholder_fixed": "مثال: 100",
+            "expiry_label": "تاريخ الانتهاء",
+            "create_btn": "إنشاء كوبون",
+            "active_title": "الكوبونات النشطة",
+            "empty_state": "لا توجد كوبونات نشطة حالياً",
+            "expires": "ينتهي في",
+            "expired_tag": "(منتهي)",
+            "delete_tooltip": "حذف الكوبون"
+        },
+        "toast": {
+            "fill_all": "يرجى ملء جميع الحقول المطلوبة",
+            "created": "تم إنشاء الكوبون بنجاح! 🎉",
+            "create_failed": "فشل في إنشاء الكوبون",
+            "delete_confirm": "هل أنت متأكد أنك تريد حذف هذا الكوبون؟",
+            "deleted": "تم حذف الكوبون",
+            "delete_failed": "فشل في حذف الكوبون"
+        }
     },
     "crm": {
         "header": "مركز أتمتة CRM",
