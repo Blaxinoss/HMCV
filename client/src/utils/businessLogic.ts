@@ -59,7 +59,7 @@ export const calculateMonthlyStats = (
 
         // 2. حالة التجميد (لو عندك حقل boolean أو تواريخ للتجميد)
         // افترضنا هنا إن عندك حقل اسمه isFrozen
-        const isNotFrozen = t.accountFreezeStatus;
+        const isNotFrozen = !t.accountFreezeStatus;
 
         return isTimeValid && isNotFrozen;
     }).length;
