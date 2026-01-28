@@ -153,7 +153,7 @@ const Dashboard: React.FC = () => {
       {/* <MonthSlider currentDate={selectedDate} onChange={setSelectedDate} /> */}
 
       {/* 📊 KPI CARDS (INTENSIVE) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard
           title={t('dashboard.monthly_revenue_title')}
           value={`${currentStats.revenue.toLocaleString()} EGP`}
