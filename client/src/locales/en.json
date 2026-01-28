@@ -212,6 +212,7 @@
         "header": "Settings",
         "accounts": "Accounts",
         "changePassword": "Change Password",
+        "add_account": "Add account",
         "forwho": "for user: ",
         "updatePassword": "Update Password",
         "newPassword": "New Password",
