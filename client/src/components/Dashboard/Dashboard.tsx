@@ -32,6 +32,9 @@ import PeakHoursChart from './PeakHoursChart';
 import RecentActivityFeed from './RecentActivityFeed';
 import { Expense, Trainee, Trainer } from '../../types';
 
+
+
+
 const Dashboard: React.FC = () => {
   const { t } = useTranslation();
   const dispatch = useDispatch<AppDispatch>();
@@ -43,6 +46,10 @@ const Dashboard: React.FC = () => {
   const { raw, loading } = useSelector((state: RootState) => state.dashboard);
 
   // 3. Fetch Data Once on Mount
+
+  useEffect(() => {
+    dispatch(fetchDashboardRawData())
+  }, [])
 
 
   // 4. Data Extraction (Safe Access)
@@ -143,7 +150,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* 🎚️ THE SLIDER */}
-      <MonthSlider currentDate={selectedDate} onChange={setSelectedDate} />
+      {/* <MonthSlider currentDate={selectedDate} onChange={setSelectedDate} /> */}
 
       {/* 📊 KPI CARDS (INTENSIVE) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
@@ -161,27 +168,35 @@ const Dashboard: React.FC = () => {
           icon={<TrendingUp className="w-6 h-6" />}
           color={currentStats.netProfit >= 0 ? 'green' : 'red'}
         />
+
         <StatCard
+          title={t('dashboard.expenses')}
+          value={`${currentStats.expenses.toLocaleString()} EGP`}
+          subValue={`${currentStats.expenses.toFixed(1)}${t('dashboard.margin_suffix')}`}
+          icon={<TrendingDown className="w-6 h-6" />}
+          color={currentStats.netProfit >= 0 ? 'green' : 'red'}
+        />
+        {/* <StatCard
           title={t('dashboard.arpu_title')}
           value={`${currentStats.arpu.toFixed(1)} EGP`}
           subValue={t('dashboard.arpu_subtitle')}
           icon={<CreditCard className="w-6 h-6" />}
           color="purple"
-        />
+        /> */}
         <StatCard
           title={t('dashboard.active_members_title')}
-          value={currentStats.activeUsers}
+          value={currentStats.totalActiveMembers}
           subValue={`${currentStats.newSignups} ${t('dashboard.new_this_month_prefix')}`}
           icon={<Users className="w-6 h-6" />}
           color="orange"
         />
-        <StatCard
+        {/* <StatCard
           title={t('dashboard.churn_rate_title')}
           value={`${currentStats.churnRate.toFixed(1)}%`}
           subValue={t('dashboard.churn_rate_subtitle')}
           icon={<UserMinus className="w-6 h-6" />}
           color={currentStats.churnRate > 10 ? 'red' : 'green'}
-        />
+        /> */}
       </div>
 
       {/* 🚀 NEW SECTION: OPERATIONAL & FINANCIAL PULSE */}

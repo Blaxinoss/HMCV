@@ -31,12 +31,37 @@ export const calculateMonthlyStats = (
     const totalMonthlyOutflow = monthlyExpenses + monthlySalaries;
     const netProfit = monthlyRevenue - totalMonthlyOutflow;
 
-    // 2. Business Metrics
+
+
     const activeUsersThisMonth = trainees.filter(t => {
+        // 1. حدد أول لحظة وآخر لحظة في الشهر اللي بتبحث عنه
+        const monthStart = new Date(year, month, 1);
+        const monthEnd = new Date(year, month + 1, 0); // يوم 0 بيجيب آخر يوم في الشهر الحالي
+
+        const subStart = new Date(t.subscriptionStartDate);
+        const subEnd = new Date(t.subscriptionEndDate);
+
+        // 2. شرط التقاطع (Overlap): 
+        // هل فترة الاشتراك تتقاطع مع فترة الشهر؟
+        return subStart <= monthEnd && subEnd >= monthStart;
+    }).length;
+
+
+
+    const totalActiveMembers = trainees.filter(t => {
+        const today = new Date();
+
         const start = new Date(t.subscriptionStartDate);
         const end = new Date(t.subscriptionEndDate);
-        const target = new Date(year, month, 15); // Check mid-month
-        return start <= target && end >= target;
+
+        // 1. اشتراكه ساري (بدأ ومش منتهي)
+        const isTimeValid = start <= today && end >= today;
+
+        // 2. حالة التجميد (لو عندك حقل boolean أو تواريخ للتجميد)
+        // افترضنا هنا إن عندك حقل اسمه isFrozen
+        const isNotFrozen = t.accountFreezeStatus;
+
+        return isTimeValid && isNotFrozen;
     }).length;
 
     // ARPU: Average Revenue Per User
@@ -60,6 +85,7 @@ export const calculateMonthlyStats = (
         expenses: totalMonthlyOutflow,
         netProfit,
         activeUsers: activeUsersThisMonth,
+        totalActiveMembers,
         arpu,
         profitMargin,
         churnRate,
