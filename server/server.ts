@@ -30,9 +30,11 @@ const app: Express = express();
 app.use(bodyParser.json());
 
 
-// أو الحل الاحترافي (تسمح فقط للـ Frontend بتاعك)
 app.use(cors({
-    origin: '*',
+  origin: 'https://hustlecv.vercel.app',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  credentials: true, 
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 
