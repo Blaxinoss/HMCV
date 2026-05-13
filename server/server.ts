@@ -25,17 +25,18 @@ dotenv.config();
 const app: Express = express();
 
 // CORS configuration
-
-// Middleware
-app.use(bodyParser.json());
-
-
 app.use(cors({
   origin: 'https://hustlecv.vercel.app',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   credentials: true, 
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Middleware
+app.use(bodyParser.json());
+
+
+
 
 
 // Get configuration from environment
