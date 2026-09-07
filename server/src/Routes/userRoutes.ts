@@ -74,7 +74,8 @@ router.delete('/:id', verifyToken, async (req: AuthRequest, res: Response): Prom
     try {
         const { id } = req.params;
 
-        const user = await User.findByIdAndDelete(id);
+        const user = await User.findById(id);
+
 
         if (!user) {
             res.status(404).json({
@@ -83,6 +84,17 @@ router.delete('/:id', verifyToken, async (req: AuthRequest, res: Response): Prom
             });
             return;
         }
+
+        if (user.role === 'admin') {
+            res.status(403).json({
+                success: false,
+                message: 'Admin user cannot be deleted.',
+            });
+            return;
+        }
+
+        await User.deleteOne({ _id: id });
+
 
         res.status(200).json({
             success: true,

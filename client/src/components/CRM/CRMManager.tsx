@@ -142,7 +142,7 @@ const CRMManager: React.FC = () => {
 
             {/* الطبقة اللي فوق اللي فيها الرسالة */}
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-950/40 transition-all duration-300 group-hover:bg-gray-950/20">
-                <div className="bg-yellow-500/10 border border-yellow-500/50 p-4 rounded-xl backdrop-blur-md text-center shadow-2xl">
+                <div className="bg-yellow-500/10 border border-yellow-500/50 p-4 rounded-xl backdrop-blur-[0.25px] text-center shadow-2xl">
                     <span className="text-yellow-500 text-2xl mb-2 block">🔒</span>
                     <h3 className="text-xl font-bold text-yellow-500 uppercase tracking-wider">Premium Feature</h3>
 

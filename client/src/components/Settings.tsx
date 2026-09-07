@@ -225,7 +225,7 @@ const Settings: React.FC = () => {
           <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6 sticky top-24 relative overflow-hidden group">
 
 
-            <div className="absolute inset-0 z-20 backdrop-blur-[1px] flex flex-col items-center justify-center text-center p-6 border border-amber-500/20 rounded-2xl transition-all duration-300">
+            <div className="absolute inset-0 z-20 backdrop-blur-[0.25px] flex flex-col items-center justify-center text-center p-6 border border-amber-500/20 rounded-2xl transition-all duration-300">
 
 
               <button
