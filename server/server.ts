@@ -25,15 +25,18 @@ dotenv.config();
 const app: Express = express();
 
 // CORS configuration
+app.use(cors({
+  origin: 'https://hustlecv.vercel.app',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  credentials: true, 
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // Middleware
 app.use(bodyParser.json());
 
 
-// أو الحل الاحترافي (تسمح فقط للـ Frontend بتاعك)
-app.use(cors({
-    origin: '*',
-}));
+
 
 
 // Get configuration from environment
@@ -83,6 +86,7 @@ app.get('/health', (req, res) => {
     res.status(200).json({
         success: true,
         message: 'Server is running',
+        main:"kindaworking",
         timestamp: new Date().toISOString(),
     });
 });
