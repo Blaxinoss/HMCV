@@ -253,15 +253,28 @@ router.delete('/deleteUser/:id', async (req: Request, res: Response) => {
             return;
         }
 
-        // Find user
-        const user = await User.findOneAndDelete({ _id: id });
+
+        const user = await User.findById(id);
+
+
         if (!user) {
             res.status(404).json({
                 success: false,
-                message: 'User not found to delete',
+                message: 'User not found',
             });
             return;
         }
+
+        if (user.role === 'admin') {
+            res.status(403).json({
+                success: false,
+                message: 'Admin user cannot be deleted.',
+            });
+            return;
+        }
+
+        await User.deleteOne({ _id: id });
+
 
         res.status(200).json({
             success: true,
