@@ -1,8 +1,7 @@
 import express from 'express';
 import type { Request, Response } from 'express'
-import Trainees from '../models/Trainees.js';
-import Expense from '../models/Expense.js';
-import Trainers from '../models/Trainers.js';
+import { db } from '../models/index.js';
+
 const router = express.Router();
 
 // routes/dashboard.ts
@@ -12,6 +11,8 @@ const router = express.Router();
 // GET /api/dashboard/raw-data
 router.get('/raw-data', async (req, res) => {
     try {
+        const { Trainees, Expense, Trainers } = db(req);
+
         const [trainees, expenses, trainers] = await Promise.all([
             Trainees.find(),
             Expense.find(),
@@ -32,6 +33,9 @@ router.get('/raw-data', async (req, res) => {
 // GET /api/dashboard/stats
 router.get('/stats', async (req: Request, res: Response): Promise<void> => {
     try {
+        const { Trainees, Expense } = db(req);
+
+
         const today = new Date();
         const sixMonthsAgo = new Date();
         sixMonthsAgo.setMonth(today.getMonth() - 6);

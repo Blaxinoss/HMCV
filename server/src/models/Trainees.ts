@@ -47,10 +47,10 @@ export interface ITrainee {
     updatedAt: Date;
 }
 
-// 3. Define Virtuals (Computed properties)
-interface ITraineeVirtuals {
-    daysLeft: number | null;
-}
+// // 3. Define Virtuals (Computed properties)
+// interface ITraineeVirtuals {
+//     daysLeft: number | null;
+// }
 
 // 4. Define Methods (Instance methods, if you add any later)
 interface ITraineeMethods {
@@ -58,10 +58,10 @@ interface ITraineeMethods {
 }
 
 // 5. Combine into a Model Type
-type TraineeModel = Model<ITrainee, {}, ITraineeMethods, ITraineeVirtuals>;
+type TraineeModel = Model<ITrainee, {}, ITraineeMethods>;
 
 // 6. Define the Schema
-const TraineeSchema = new Schema<ITrainee, TraineeModel, ITraineeMethods, ITraineeVirtuals>(
+const TraineeSchema = new Schema<ITrainee, TraineeModel, ITraineeMethods>(
     {
         memberId: {
             type: Number,
@@ -229,6 +229,8 @@ TraineeSchema.pre('save', function (next) {
 });
 
 // 9. Export the Model
-const Trainees = mongoose.model<ITrainee, TraineeModel>('Trainees', TraineeSchema);
+// const Trainees = mongoose.model<ITrainee, TraineeModel>('Trainees', TraineeSchema);
 
-export default Trainees;
+// export default Trainees;
+
+export { TraineeSchema };

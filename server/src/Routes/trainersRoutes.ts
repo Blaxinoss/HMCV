@@ -1,8 +1,9 @@
 import express, { Router } from 'express';
-import Trainers from '../models/Trainers.js';
 import verifyToken from '../../midware/verifyToken.js';
-import type { Request, Response } from 'express';
+import type { Response } from 'express';
 import type { AuthRequest } from '../../midware/verifyToken.js';
+import { db } from '../models/index.js';
+
 const router: Router = express.Router();
 
 // Apply JWT verification to all routes
@@ -11,6 +12,8 @@ router.use(verifyToken);
 // GET all trainers
 router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
     try {
+        const { Trainers } = db(req);
+
         const result = await Trainers.find({ deleteFlag: false }).sort({ name: 1 });
         res.status(200).json({
             success: true,
@@ -27,6 +30,8 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
 // POST create trainer
 router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
     try {
+        const { Trainers } = db(req);
+
         const { name, phone, salary, raise } = req.body;
 
         // Validate input
@@ -62,6 +67,8 @@ router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
 // PUT update trainer
 router.put('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
     try {
+        const { Trainers } = db(req);
+
         const updatedTrainer = await Trainers.findByIdAndUpdate(
             req.params.id,
             req.body,
@@ -92,6 +99,8 @@ router.put('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
 // DELETE trainer (soft delete with deleteFlag)
 router.delete('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
     try {
+        const { Trainers } = db(req);
+
         const trainerToDelete = await Trainers.findByIdAndUpdate(
             req.params.id,
             { deleteFlag: true },

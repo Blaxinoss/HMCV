@@ -52,4 +52,5 @@ const CouponSchema: Schema = new Schema({
     }
 }, { timestamps: true });
 
-export default mongoose.model<ICoupon>('Coupon', CouponSchema);
+// export default mongoose.model<ICoupon>('Coupon', CouponSchema);
+export { CouponSchema }
