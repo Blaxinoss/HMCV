@@ -5,8 +5,8 @@ export interface User {
   _id: string;
   username: string;
   role: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface UserCredentials {
@@ -274,6 +274,7 @@ export interface AuthState {
   loading: boolean;
   error: string | null;
   isAuthenticated: boolean;
+  initialized: boolean;
 }
 
 export interface UsersState {

@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import express, { Router } from 'express';
 import verifyToken from '../../midware/verifyToken.js';
+import type { AuthRequest } from '../../midware/verifyToken.js';
 import type { Request, Response } from 'express';
 import { requireAdmin } from '../../midware/requireAdmin.js';
 import { db } from '../models/index.js';
@@ -121,8 +122,9 @@ router.post('/login', loginRateLimit, async (req: Request, res: Response): Promi
             message: 'Login successful.',
             token,
             user: {
-                id: user._id,
+                _id: user._id,
                 username: user.username,
+                role: user.role,
             },
         });
     } catch (error: any) {
@@ -131,6 +133,23 @@ router.post('/login', loginRateLimit, async (req: Request, res: Response): Promi
             message: error.message || 'Internal Server Error',
         });
     }
+});
+
+router.get('/me', verifyToken, (req: AuthRequest, res: Response): void => {
+    if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required.' });
+        return;
+    }
+
+    res.status(200).json({
+        success: true,
+        message: 'Authenticated user loaded from the tenant database.',
+        user: {
+            _id: req.user.id,
+            username: req.user.username,
+            role: req.user.role,
+        },
+    });
 });
 
 

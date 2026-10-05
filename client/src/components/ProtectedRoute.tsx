@@ -10,7 +10,15 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const { initialized, isAuthenticated } = useSelector((state: RootState) => state.auth);
+
+  if (!initialized) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-950 text-gray-400">
+        Verifying session…
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/auth/login" replace />;

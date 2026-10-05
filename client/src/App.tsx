@@ -18,8 +18,7 @@ import { useTranslation } from 'react-i18next';
 import './i18n';
 import store, { AppDispatch, RootState } from './store';
 import './App.css';
-import { getStoredUser } from './utils/auth';
-import { setUser } from './slices/authSlice';
+import { restoreSession } from './slices/authSlice';
 import { Toaster } from 'react-hot-toast';
 import AllTrainees from './components/DetailedTrainees/AllTrainees';
 import CRMManager from './components/CRM/CRMManager';
@@ -43,12 +42,11 @@ function AppContent() {
       document.documentElement.style.fontFamily = "'Roboto', sans-serif";
     }
 
-    // Check for stored user on mount
-    const storedUser = getStoredUser();
-    if (storedUser) {
-      dispatch(setUser(storedUser));
-    }
   }, [i18n.language, dispatch]);
+
+  useEffect(() => {
+    dispatch(restoreSession());
+  }, [dispatch]);
 
   return (
     <BrowserRouter>
