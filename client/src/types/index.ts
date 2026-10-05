@@ -77,9 +77,8 @@ export interface TopMember {
   name: string;
   memberId: number;
   totalCost: number;
-  remaining: number;
   isSession: boolean;
-  paid: number;
+  ledgerSummary: LedgerSummary;
 }
 
 export interface DashboardLists {
@@ -136,8 +135,6 @@ export interface Trainee {
   subscriptionEndDate: string;
   billingCycleId: string;
   totalCost: number;
-  paid: number;
-  remaining: number;
   discount: number;
   deleteFlag: boolean;
   accountFreezeStatus: boolean;
@@ -168,6 +165,7 @@ export interface Trainee {
   daysLeft: number | null;
   createdAt: string;
   updatedAt: string;
+  ledgerSummary: LedgerSummary;
 }
 
 export interface FreezeHistoryEntry {
@@ -185,6 +183,7 @@ export type PaymentTransactionType = 'payment' | 'refund' | 'adjustment';
 export interface PaymentTransaction {
   _id: string;
   traineeId: string;
+  billingCycleId: string;
   type: PaymentTransactionType;
   amountMinor: number;
   currency: string;

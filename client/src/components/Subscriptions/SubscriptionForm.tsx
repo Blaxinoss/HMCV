@@ -45,7 +45,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
     subscriptionStartDate: new Date().toISOString().split('T')[0],
     subscriptionEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     totalCost: 0,
-    paid: 0,
+    initialPayment: 0,
     couponCode: '',
     program: '',
     hasCustomDiscount: false,
@@ -66,7 +66,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
         subscriptionStartDate: new Date(trainee.subscriptionStartDate).toISOString().split('T')[0],
         subscriptionEndDate: new Date(trainee.subscriptionEndDate).toISOString().split('T')[0],
         totalCost: trainee.totalCost,
-        paid: trainee.paid,
+        initialPayment: 0,
         program: trainee.program,
         couponCode: trainee.usedCoupon || "",
         hasCustomDiscount: trainee.appliedDiscount?.hasCustomDiscount || false,
@@ -101,7 +101,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
       [name]:
         type === 'checkbox'
           ? (e.target as HTMLInputElement).checked
-          : ['totalCost', 'paid', 'sessionsCount'].includes(name)
+          : ['totalCost', 'initialPayment', 'sessionsCount'].includes(name)
             ? parseFloat(value) || 0
             : value,
     }));
@@ -114,7 +114,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
   };
 
   const handlePayFull = () => {
-    setFormData(prev => ({ ...prev, paid: financialSummary.netTotal }));
+    setFormData(prev => ({ ...prev, initialPayment: financialSummary.netTotal }));
   };
 
   const handleValidateCoupon = async () => {
@@ -156,7 +156,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
     }
 
     if (financialSummary.isOverpaid) {
-      toast.error(`Payment exceeds total cost! You are overpaying by ${Math.abs(financialSummary.rawRemaining)} EGP`);
+      toast.error(`Payment exceeds total cost by ${financialSummary.overpayment} EGP`);
       return;
     }
 
@@ -167,10 +167,16 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
       };
 
       if (trainee) {
-        await dispatch(updateTrainee({ id: trainee._id, data: payload as any })).unwrap();
+        const { initialPayment: _initialPayment, ...updatePayload } = payload;
+        void _initialPayment;
+        await dispatch(updateTrainee({ id: trainee._id, data: updatePayload as any })).unwrap();
         toast.success(t('TraineeUpdated') || "Member Updated");
       } else {
-        await dispatch(addTrainee(payload as any)).unwrap();
+        const { initialPayment, ...traineeData } = payload;
+        await dispatch(addTrainee({
+          ...traineeData,
+          initialPaymentMinor: Math.round(initialPayment * 100),
+        })).unwrap();
         toast.success(t('TraineeAdded') || "Member Added");
       }
       onSuccess();
@@ -194,11 +200,16 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
     }
 
     const netTotal = Math.max(0, original - discount);
-    const rawRemaining = netTotal - formData.paid;
-    const isOverpaid = rawRemaining < 0;
-    const remaining = Math.max(0, rawRemaining);
-    return { discount, netTotal, remaining, isOverpaid, rawRemaining };
-  }, [formData.totalCost, formData.paid, appliedCoupon]);
+    const balanceDue = netTotal - formData.initialPayment;
+    const isOverpaid = balanceDue < 0;
+    return {
+      discount,
+      netTotal,
+      balanceDue: Math.max(0, balanceDue),
+      overpayment: Math.max(0, -balanceDue),
+      isOverpaid,
+    };
+  }, [formData.totalCost, formData.initialPayment, appliedCoupon]);
   return (
     <form onSubmit={handleSubmit} className="w-full text-left">
 
@@ -299,23 +310,23 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
             />
           </div>
 
-          {/* Paid & Coupon Row */}
+          {/* Initial payment and coupon */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+            {!trainee && <div className="space-y-2">
               <label className="text-sm font-medium text-gray-400 flex items-center gap-2">
-                <CreditCard className="w-4 h-4" /> {t('trainees.paid')}
+                <CreditCard className="w-4 h-4" /> Initial payment
               </label>
               <input
                 type="number"
-                name="paid"
-                value={formData.paid}
+                name="initialPayment"
+                value={formData.initialPayment}
                 onChange={handleChange}
                 className="w-full px-4 py-3 bg-gray-800 rounded-xl border border-gray-700 focus:border-blue-500 outline-none transition-all text-white font-mono"
                 disabled={loading}
                 min="0"
                 step="0.01"
               />
-            </div>
+            </div>}
 
             {/* Coupon Input */}
             <div className="space-y-2">
@@ -463,11 +474,11 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
             </div>
           </div>
 
-          {/* 3. Remaining */}
+          {/* 3. Outstanding balance */}
           <div className="flex flex-col">
             <div className="flex justify-between items-center">
-              <span className="text-gray-500 text-sm">Remaining</span>
-              {financialSummary.remaining > 0 && (
+              <span className="text-gray-500 text-sm">Outstanding</span>
+              {!trainee && financialSummary.balanceDue > 0 && (
                 <button
                   type="button"
                   onClick={handlePayFull}
@@ -479,8 +490,8 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
             </div>
 
             <div className="flex items-center gap-2 mt-1">
-              <span className={`text-xl font-bold font-mono ${financialSummary.remaining > 0 ? 'text-red-400' : 'text-gray-400'}`}>
-                {financialSummary.remaining.toLocaleString()} EGP
+              <span className={`text-xl font-bold font-mono ${financialSummary.balanceDue > 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                {financialSummary.balanceDue.toLocaleString()} EGP
               </span>
             </div>
           </div>

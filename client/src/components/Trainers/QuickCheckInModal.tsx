@@ -5,6 +5,7 @@ import { AppDispatch, RootState } from '../../store';
 import { checkInTrainee } from '../../slices/subscriptionSlice';
 import toast from 'react-hot-toast';
 import { Blocks, Zap } from 'lucide-react';
+import { getOutstandingBalance } from '../../utils/finance';
 
 interface QuickCheckInModalProps {
   onClose: () => void;
@@ -101,7 +102,7 @@ const QuickCheckInModal: React.FC<QuickCheckInModalProps> = ({ onClose }) => {
 
                 {/* حالة الاشتراك */}
                 <div className="mt-2">
-                  {selectedTrainee.remaining > 0 && <span className="text-red-400 text-xs bg-red-900/30 px-2 py-1 rounded mx-1">Debt</span>}
+                  {getOutstandingBalance(selectedTrainee) > 0 && <span className="text-red-400 text-xs bg-red-900/30 px-2 py-1 rounded mx-1">Debt</span>}
                   {selectedTrainee.accountFreezeStatus && <span className="text-yellow-400 text-xs bg-yellow-900/30 px-2 py-1 rounded mx-1">Frozen</span>}
                   {new Date(selectedTrainee.subscriptionEndDate) < new Date() && <span className="text-red-400 text-xs bg-red-900/30 px-2 py-1 rounded mx-1">Expired</span>}
                 </div>

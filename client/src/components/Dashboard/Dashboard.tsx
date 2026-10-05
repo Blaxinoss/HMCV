@@ -31,6 +31,7 @@ import PeakHoursChart from './PeakHoursChart';
 import RecentActivityFeed from './RecentActivityFeed';
 import DemoFeatureGate from '../Wrappers/DemoFeatureGate';
 import { Expense, Trainee, Trainer } from '../../types';
+import { getOutstandingBalance } from '../../utils/finance';
 
 
 
@@ -311,9 +312,9 @@ const Dashboard: React.FC = () => {
                       </td>
                       <td className="p-3 text-green-400 font-mono font-bold">{t.totalCost.toLocaleString()} EGP</td>
                       <td className="p-3">
-                        {t.remaining > 0
-                          ? <span className="text-red-400 text-xs font-semibold bg-red-900/20 px-2 py-1 rounded">Owes {t.remaining} EGP</span>
-                          : <span className="text-green-500 text-xs font-semibold bg-green-900/20 px-2 py-1 rounded">Paid</span>}
+                        {getOutstandingBalance(t) > 0
+                          ? <span className="text-red-400 text-xs font-semibold bg-red-900/20 px-2 py-1 rounded">Owes {getOutstandingBalance(t)} EGP</span>
+                          : <span className="text-green-500 text-xs font-semibold bg-green-900/20 px-2 py-1 rounded">Settled</span>}
                       </td>
                     </tr>
                   ))}

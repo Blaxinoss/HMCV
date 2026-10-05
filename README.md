@@ -14,7 +14,7 @@ Verified on 2026-10-05:
 
 - Client production build: passed.
 - Server TypeScript build: passed.
-- Server behavioral tests: 12 passed.
+- Server behavioral tests: 13 passed.
 - Client build warning: the main JavaScript bundle is larger than 500 kB and should eventually be split.
 
 ## Technology
@@ -33,7 +33,7 @@ Verified on 2026-10-05:
 
 ### Server
 
-- Node.js, Express, and TypeScript
+- Bun, Express, and TypeScript
 - MongoDB and Mongoose
 - JWT authentication and bcrypt password hashing
 - Tenant-specific MongoDB databases
@@ -95,7 +95,7 @@ HMCV/
 - Fixed and percentage coupons with expiry and usage limits.
 - Atomic coupon usage increments.
 - Soft-deleted expenses with validation and audit records.
-- Legacy financial snapshots remain temporarily available during ledger migration.
+- Legacy financial fields may remain in existing raw database documents until the per-tenant ledger migration removes them; application code no longer uses them.
 
 ### Dashboard and user experience
 
@@ -109,8 +109,7 @@ HMCV/
 
 ### Prerequisites
 
-- Node.js 20 or newer
-- npm
+- Bun 1.3 or newer
 - MongoDB
 - Optional: n8n for welcome and campaign webhooks
 
@@ -118,10 +117,10 @@ HMCV/
 
 ```powershell
 Set-Location client
-npm install
+bun install
 
 Set-Location ..\server
-npm install
+bun install
 ```
 
 ### 2. Configure the server
@@ -144,7 +143,7 @@ N8N_WELCOME_WEBHOOK=http://localhost:5678/webhook-test/welcome_user
 N8N_CAMPAIGN_WEBHOOK=http://localhost:5678/webhook-test/campaign
 ```
 
-`MONGO_URI` is used only by the older seed script. Prefer `DB_URI` for the application and migration commands.
+`DB_URI` is the MongoDB connection setting used by the application and migration commands.
 
 The client API base URL is currently defined in `client/src/utils/constants.ts` as `http://localhost:5000/api`. Change that value, or restore its existing `VITE_API_URL` expression, for a non-local environment.
 
@@ -154,14 +153,14 @@ In one terminal:
 
 ```powershell
 Set-Location server
-npm run dev
+bun run dev
 ```
 
 In another terminal:
 
 ```powershell
 Set-Location client
-npm run dev
+bun run dev
 ```
 
 The default client is served by Vite and the default API listens on port `5000`.
@@ -260,7 +259,7 @@ Response envelopes are not yet fully standardized. Client code should accept ser
 - Voided transactions do not contribute to summaries.
 - Outstanding balance never becomes negative.
 - A billing cycle is regenerated when a subscription renews.
-- The legacy `paid` and `remaining` trainee fields are compatibility snapshots until migration is complete.
+- Trainee documents do not store payment balances. Current-cycle balances are derived from immutable ledger transactions.
 
 ### Freeze and attendance
 
@@ -281,25 +280,25 @@ Trainees, trainers, and expenses use soft deletion for normal workflows. Queries
 
 ```powershell
 Set-Location client
-npm run dev       # Vite development server
-npm run build     # Production build
-npm run lint      # ESLint
-npm run preview   # Preview production output
+bun run dev       # Vite development server
+bun run build     # Production build
+bun run lint      # ESLint
+bun run preview   # Preview production output
 ```
 
 ### Server
 
 ```powershell
 Set-Location server
-npm run dev       # Nodemon + ts-node
-npm run build     # TypeScript compilation
-npm test          # Build and execute behavioral tests
-npm start         # Run compiled dist/server.js
+bun run dev       # Bun watch mode
+bun run build     # TypeScript compilation check
+bun test          # Execute behavioral tests
+bun start         # Run server.ts with Bun
 ```
 
 ## Legacy payment migration
 
-The ledger migration creates an initial payment transaction from each unmigrated trainee's legacy `paid` value, assigns a billing cycle when needed, and records `ledgerMigratedAt`.
+The tenant-aware migration creates an initial payment transaction when a legacy record has no current-cycle ledger history, then removes the old balance fields from the trainee document. It runs as a read-only dry run unless the apply command is used.
 
 Before running it:
 
@@ -310,10 +309,14 @@ Before running it:
 
 ```powershell
 Set-Location server
-npm run migrate:legacy-payments
+$env:MIGRATION_TENANT_ID = "demo-gym"
+bun run migrate:legacy-payments
+
+# After reviewing the dry-run counts and backing up the tenant database:
+bun run migrate:legacy-payments:apply
 ```
 
-Do not run the migration blindly against production. The current script uses the database selected by `DB_URI`; tenant-by-tenant execution and verification must be part of the deployment plan.
+Run and verify one tenant at a time. Any reported conflict means the ledger exceeds the subscription's net price and requires manual review; conflicting records are not changed.
 
 ## Testing
 
@@ -330,12 +333,12 @@ Before merging substantial changes, run:
 
 ```powershell
 Set-Location client
-npm run build
-npm run lint
+bun run build
+bun run lint
 
 Set-Location ..\server
-npm run build
-npm test
+bun run build
+bun test
 ```
 
 Database-backed route tests, concurrent MongoDB transaction tests, and complete browser end-to-end tests are still required.
@@ -355,7 +358,7 @@ Complete these items before a formal product transfer:
 1. Rotate every database, JWT, webhook, system, and administrator secret that has been used during development.
 2. Make CORS environment-specific and remove duplicate server CORS middleware.
 3. Back up staging data and complete the legacy payment migration per tenant.
-4. Move all dashboard finance calculations from legacy snapshots to the ledger.
+4. Reconcile dashboard and ledger totals after every tenant migration.
 5. Add MongoDB replica-set integration tests for ledger, coupon, freeze, check-in, and concurrent requests.
 6. Standardize request validation and response/error envelopes across all routes.
 7. Finish authorization review for user-management and sensitive mutation routes.

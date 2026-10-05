@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
 import { fetchTrainees } from '../../slices/subscriptionSlice';
-import { PaymentTransaction, Trainee } from '../../types';
+import { Trainee } from '../../types';
 import TraineeList from './TraineeList';
 import SubscriptionForm from './SubscriptionForm';
 import ClearDebtButton from './ClearDebtButton';
@@ -47,21 +47,10 @@ const SubscriptionPage: React.FC = () => {
     ).length;
 
     // حسبة الديون
-    const debt = raw.transactions?.length
-      ? allTrainees.reduce((sum: number, trainee: Trainee) => {
-        const cycleTransactions = (raw.transactions as PaymentTransaction[])
-          .filter(transaction => transaction.traineeId === trainee._id && transaction.status === 'posted');
-        const paidMinor = cycleTransactions
-          .filter(transaction => transaction.type === 'payment' || transaction.type === 'adjustment')
-          .reduce((total, transaction) => total + transaction.amountMinor, 0);
-        const refundedMinor = cycleTransactions
-          .filter(transaction => transaction.type === 'refund')
-          .reduce((total, transaction) => total + transaction.amountMinor, 0);
-        const netPriceMinor = Math.max(0, trainee.totalCost - trainee.discount) * 100;
-        const outstandingMinor = Math.max(0, netPriceMinor - paidMinor + refundedMinor);
-        return sum + outstandingMinor / 100;
-      }, 0)
-      : allTrainees.reduce((sum: number, t: Trainee) => sum + (t.remaining || 0), 0);
+    const debt = allTrainees.reduce(
+      (sum: number, trainee: Trainee) => sum + trainee.ledgerSummary.outstandingMinor / 100,
+      0,
+    );
 
     return { total, active, debt };
   }, [raw]); // الاعتماد هنا على raw ككل

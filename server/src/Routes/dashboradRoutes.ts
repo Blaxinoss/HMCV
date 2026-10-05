@@ -1,123 +1,144 @@
 import express from 'express';
-import type { Request, Response } from 'express'
+import type { Request, Response } from 'express';
 import { db } from '../models/index.js';
+import { getLedgerSummaryMap } from '../services/financeService.js';
+
 const router = express.Router();
 
-// routes/dashboard.ts
-
-
-
-// GET /api/dashboard/raw-data
-router.get('/raw-data', async (req, res) => {
+router.get('/raw-data', async (req: Request, res: Response) => {
     try {
         const { Trainees, Expense, Trainers, PaymentTransaction } = db(req);
-        const [trainees, expenses, trainers, transactions] = await Promise.all([
+        const [traineeDocuments, expenses, trainers, transactions] = await Promise.all([
             Trainees.find({ deleteFlag: false }),
             Expense.find({ deleteFlag: false }),
             Trainers.find({ deleteFlag: false }),
-            PaymentTransaction.find({ status: 'posted' }).sort({ createdAt: -1 }).limit(5000),
+            PaymentTransaction.find({ status: 'posted' }).sort({ createdAt: -1 }),
         ]);
+        const summaries = await getLedgerSummaryMap(PaymentTransaction, traineeDocuments);
+        const trainees = traineeDocuments.map(trainee => ({
+            ...trainee.toObject(),
+            ledgerSummary: summaries.get(String(trainee._id)),
+        }));
 
         res.json({
             success: true,
-            data: { trainees, expenses, trainers, transactions }
+            data: { trainees, expenses, trainers, transactions },
         });
     } catch (error: any) {
         res.status(500).json({ success: false, error: error.message });
     }
 });
 
+const signedTransactionAmount = {
+    $cond: [
+        { $eq: ['$type', 'refund'] },
+        { $multiply: ['$amountMinor', -1] },
+        '$amountMinor',
+    ],
+};
 
-
-// GET /api/dashboard/stats
 router.get('/stats', async (req: Request, res: Response): Promise<void> => {
     try {
-        const { Trainees, Expense } = db(req);
-
-
+        const { Trainees, Expense, PaymentTransaction } = db(req);
         const today = new Date();
         const sixMonthsAgo = new Date();
         sixMonthsAgo.setMonth(today.getMonth() - 6);
 
         const [
             counts,
-            financials,
+            totalDebt,
             attendanceGraph,
             revenueGraph,
-            expensesTotal,
-            revenueTotal
+            expenseTotals,
+            revenueTotals,
         ] = await Promise.all([
-
-            // 1. العدادات الأساسية (Snapshot)
             Promise.all([
-                Trainees.countDocuments({}), // Total
-                Trainees.countDocuments({ accountFreezeStatus: false, subscriptionEndDate: { $gte: today } }), // Active
-                Trainees.countDocuments({ subscriptionEndDate: { $gte: today, $lte: new Date(today.getTime() + 5 * 86400000) } }), // Expiring
-                Trainees.countDocuments({ lastAttendance: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) } }) // Today's Attendance
+                Trainees.countDocuments({ deleteFlag: false }),
+                Trainees.countDocuments({
+                    deleteFlag: false,
+                    accountFreezeStatus: false,
+                    subscriptionEndDate: { $gte: today },
+                }),
+                Trainees.countDocuments({
+                    deleteFlag: false,
+                    subscriptionEndDate: {
+                        $gte: today,
+                        $lte: new Date(today.getTime() + 5 * 86400000),
+                    },
+                }),
+                Trainees.countDocuments({
+                    deleteFlag: false,
+                    lastAttendance: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+                }),
             ]),
-
-            // 2. إجمالي الديون (Aggregation)
+            (async () => {
+                const trainees = await Trainees.find({ deleteFlag: false });
+                const summaries = await getLedgerSummaryMap(PaymentTransaction, trainees);
+                return [...summaries.values()].reduce(
+                    (total, summary) => total + summary.outstandingMinor,
+                    0,
+                ) / 100;
+            })(),
             Trainees.aggregate([
-                { $match: { remaining: { $gt: 0 } } },
-                { $group: { _id: null, total: { $sum: "$remaining" } } }
-            ]),
-
-            // 3. (جديد) الرسم البياني للحضور أخر 7 أيام 📊
-            // النتيجة هتكون: [{date: "2026-01-20", count: 15}, {date: "2026-01-21", count: 20}]
-            // ملحوظة: ده بيتطلب إن attendanceHistory يكون Array of Dates في السكيما
-            Trainees.aggregate([
-                { $unwind: "$attendanceHistory" }, // نفك مصفوفة التاريخ
+                { $match: { deleteFlag: false } },
+                { $unwind: '$attendanceHistory' },
                 {
                     $match: {
-                        "attendanceHistory.checkIn": { $gte: new Date(new Date().setDate(today.getDate() - 7)) }
-                    }
+                        'attendanceHistory.checkIn': {
+                            $gte: new Date(new Date().setDate(today.getDate() - 7)),
+                        },
+                    },
                 },
                 {
                     $group: {
-                        _id: { $dateToString: { format: "%Y-%m-%d", date: "$attendanceHistory.checkIn" } },
-                        count: { $sum: 1 }
-                    }
+                        _id: { $dateToString: { format: '%Y-%m-%d', date: '$attendanceHistory.checkIn' } },
+                        count: { $sum: 1 },
+                    },
                 },
-                { $sort: { "_id": 1 } }
+                { $sort: { _id: 1 } },
             ]),
-
-            // 4. (جديد) الرسم البياني للدخل أخر 6 شهور 💰
-            // النتيجة: [{_id: 1, total: 5000}, {_id: 2, total: 7000}] (حسب الشهر)
-            Trainees.aggregate([
-                {
-                    $match: {
-                        createdAt: { $gte: sixMonthsAgo } // هات الناس بتوع أخر 6 شهور
-                    }
-                },
+            PaymentTransaction.aggregate([
+                { $match: { status: 'posted', createdAt: { $gte: sixMonthsAgo } } },
                 {
                     $group: {
-                        _id: { $month: "$createdAt" }, // جمعهم بالشهر (1, 2, 3...)
-                        monthName: { $first: { $month: "$createdAt" } }, // ممكن نحسنها لاسم الشهر
-                        totalRevenue: { $sum: "$paid" },
-                        count: { $sum: 1 } // وكمان عدد المشتركين في الشهر ده
-                    }
+                        _id: {
+                            year: { $year: '$createdAt' },
+                            month: { $month: '$createdAt' },
+                        },
+                        monthName: { $first: { $month: '$createdAt' } },
+                        totalRevenueMinor: { $sum: signedTransactionAmount },
+                        count: { $sum: 1 },
+                    },
                 },
-                { $sort: { "_id": 1 } }
+                { $sort: { '_id.year': 1, '_id.month': 1 } },
+                { $set: { totalRevenue: { $divide: ['$totalRevenueMinor', 100] } } },
+                {
+                    $project: {
+                        _id: '$_id.month',
+                        monthName: 1,
+                        totalRevenue: 1,
+                        count: 1,
+                    },
+                },
             ]),
-
             Expense.aggregate([
-                { $match: {} },
+                { $match: { deleteFlag: false } },
+                { $group: { _id: null, totalExpenses: { $sum: '$amount' } } },
+            ]),
+            PaymentTransaction.aggregate([
+                { $match: { status: 'posted' } },
                 {
                     $group: {
                         _id: null,
-                        totalExpenses: { $sum: "$amount" }
-                    }
-                }
+                        totalPaidMinor: { $sum: signedTransactionAmount },
+                    },
+                },
             ]),
-            Trainees.aggregate([
-                { $group: { _id: null, totalPaid: { $sum: "$paid" } } }
-            ])
         ]);
 
-        const totalDebt = financials[0]?.total || 0;
-        const totalLifetimeRevenue = revenueTotal[0]?.totalPaid || 0;
-        const totalLifetimeExpenses = expensesTotal[0]?.totalExpenses || 0;
-        const netProfit = totalLifetimeRevenue - totalLifetimeExpenses;
+        const totalLifetimeRevenue = (revenueTotals[0]?.totalPaidMinor || 0) / 100;
+        const totalLifetimeExpenses = expenseTotals[0]?.totalExpenses || 0;
+
         res.status(200).json({
             success: true,
             data: {
@@ -126,18 +147,17 @@ router.get('/stats', async (req: Request, res: Response): Promise<void> => {
                     activeMembers: counts[1],
                     expiringSoon: counts[2],
                     attendanceToday: counts[3],
-                    totalDebt: totalDebt,
-                    totalRevenue: totalLifetimeRevenue, // اعرضله ده
+                    totalDebt,
+                    totalRevenue: totalLifetimeRevenue,
                     totalExpenses: totalLifetimeExpenses,
-                    netProfit: netProfit
+                    netProfit: totalLifetimeRevenue - totalLifetimeExpenses,
                 },
                 graphs: {
-                    attendanceLast7Days: attendanceGraph, // ارمي ده في Bar Chart
-                    revenueLast6Months: revenueGraph      // ارمي ده في Line/Area Chart
-                }
-            }
+                    attendanceLast7Days: attendanceGraph,
+                    revenueLast6Months: revenueGraph,
+                },
+            },
         });
-
     } catch (error: any) {
         res.status(500).json({ success: false, error: error.message });
     }

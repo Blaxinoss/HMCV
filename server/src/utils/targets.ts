@@ -2,12 +2,17 @@
 import axios from 'axios';
 import type { Model } from 'mongoose';
 import type { ITrainee } from '../models/Trainees.js';
-export const getTargets = async (type: string, Trainees: Model<ITrainee>) => {
+import type { IPaymentTransaction } from '../models/PaymentTransaction.js';
+import { getLedgerSummaryMap } from '../services/financeService.js';
+
+export const getTargets = async (
+    type: string,
+    Trainees: Model<ITrainee>,
+    PaymentTransaction: Model<IPaymentTransaction>,
+) => {
 
 
     let query = {}
-    let targets = []
-
     const today = new Date();
 
     const threeDaysFromNow = new Date();
@@ -53,7 +58,6 @@ export const getTargets = async (type: string, Trainees: Model<ITrainee>) => {
 
         case "debt":
             query = {
-                remaining: { $gt: 0 },
                 $or: [
                     { 'crmInfo.lastMessageSent': null },
                     { 'crmInfo.lastMessageSent': { $exists: false } },
@@ -84,14 +88,21 @@ export const getTargets = async (type: string, Trainees: Model<ITrainee>) => {
 
 
 
-    const results = await Trainees.find(query).select('name phone subscriptionEndDate memberId remaining');
-    return results.map(t => {
+    const results = await Trainees.find({ ...query, deleteFlag: false })
+        .select('name phone subscriptionEndDate memberId totalCost discount billingCycleId daysLeft');
+    const summaries = await getLedgerSummaryMap(PaymentTransaction, results);
+    const withSummaries = type === 'debt'
+        ? results.filter(t => (summaries.get(String(t._id))?.outstandingMinor ?? 0) > 0)
+        : results;
+
+    return withSummaries.map(t => {
+        const summary = summaries.get(String(t._id));
         return {
             id: t._id,
             name: t.name,
             phone: t.phone,
             daysLeft: t.daysLeft,
-            amountDue: t.remaining || 0,
+            amountDue: (summary?.outstandingMinor ?? 0) / 100,
             memberId: t.memberId,
             type: type
         };

@@ -3,12 +3,12 @@ import api from '../utils/api';
 import { addTrainee, checkInTrainee, deleteTrainee, freezeTrainee, patchTrainee, renewTrainee, updateTrainee } from './subscriptionSlice';
 import { addExpense, deleteExpense, updateExpense } from './expensesSlice';
 import { addTrainer, deleteTrainer, updateTrainer } from './trainersSlice';
-import { PaymentTransaction } from '../types';
+import { PaymentTransaction, Trainee } from '../types';
 // import { DashboardState } from '../types'; // ممكن نستغنى عنها ونعرف الـ State هنا لو التايب القديم مختلف
 
 // 1. تعريف شكل الداتا الخام
 export interface RawData {
-    trainees: any[];
+    trainees: Trainee[];
     expenses: any[];
     trainers: any[];
     transactions: PaymentTransaction[];

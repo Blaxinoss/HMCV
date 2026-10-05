@@ -39,10 +39,7 @@ export interface ITrainee {
     subscriptionStartDate: Date;
     subscriptionEndDate: Date;
     billingCycleId: string;
-    ledgerMigratedAt?: Date | null;
     totalCost: number;
-    paid: number;
-    remaining: number;
     discount: number;
     deleteFlag: boolean;
     deletedAt?: Date | null;
@@ -111,23 +108,9 @@ export const TraineeSchema = new Schema<ITrainee, TraineeModel, ITraineeMethods>
             default: randomUUID,
             index: true,
         },
-        ledgerMigratedAt: {
-            type: Date,
-            default: null,
-        },
         totalCost: {
             type: Number,
             required: true,
-            min: 0,
-        },
-        paid: {
-            type: Number,
-            default: 0,
-            min: 0,
-        },
-        remaining: {
-            type: Number,
-            default: 0,
             min: 0,
         },
         discount: {
@@ -245,23 +228,6 @@ TraineeSchema.pre('save', function (next) {
             const activeDiff = endDate.getTime() - today.getTime();
             this.daysLeft = Math.max(0, Math.ceil(activeDiff / (1000 * 60 * 60 * 24)));
         }
-    }
-
-    // ---------------------------------------------------
-    // 2. Calculate Remaining Balance 💰
-    // ---------------------------------------------------
-    if (this.isModified('totalCost') || this.isModified('paid') || this.isModified('discount')) {
-        // حماية من القيم الـ undefined
-        const cost = Number(this.totalCost) || 0;
-        const paid = Number(this.paid) || 0;
-        const discount = Number(this.discount) || 0;
-        const netTotal = cost - discount;
-        const calculatedRemaining = netTotal - paid;
-        if (calculatedRemaining < 0) {
-            return next(new Error(`Overpayment! You paid (${paid}) but net cost is (${netTotal}). Difference: ${calculatedRemaining}`));
-        }
-
-        this.remaining = calculatedRemaining;
     }
 
     // ---------------------------------------------------

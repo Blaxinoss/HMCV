@@ -5,12 +5,12 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 
 const Charts: React.FC = () => {
-  const { trainees } = useSelector((state: RootState) => state.trainees);
+  const { raw } = useSelector((state: RootState) => state.dashboard);
   const { expenses } = useSelector((state: RootState) => state.expenses);
 
-  const totalRevenue = trainees.reduce(
-    (sum, trainee) => sum + (trainee.paid || 0),
-    0
+  const totalRevenue = (raw?.transactions ?? []).reduce(
+    (sum, transaction) => sum + (transaction.type === 'refund' ? -1 : 1) * transaction.amountMinor / 100,
+    0,
   );
   const totalExpenses = expenses.reduce(
     (sum, expense) => sum + (expense.amount || 0),

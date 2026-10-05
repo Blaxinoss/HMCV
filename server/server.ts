@@ -17,9 +17,13 @@ import seedAdminRoutes from './src/models/seedAdmin.js';
 import { tenantMiddleware } from './midware/tenant.js';
 import couponRoutes from './src/Routes/couponRoutes.js'
 import auditRoutes from './src/Routes/auditRoutes.js';
-
+import dns from 'dns';
 // Load environment variables
 dotenv.config();
+
+
+dns.setServers(["8.8.8.8"])
+
 
 // Initialize Express app
 const app: Express = express();

@@ -24,18 +24,18 @@ export const patchTrainee = createAsyncThunk(
 );
 
 export const createPaymentTransaction = createAsyncThunk<
-  { transaction: PaymentTransaction; summary: LedgerSummary },
+  { transaction: PaymentTransaction; summary: LedgerSummary; trainee: Trainee },
   { id: string; type: PaymentTransactionType; amountMinor: number; reason?: string },
   { rejectValue: string }
 >(
   'trainees/createPaymentTransaction',
   async ({ id, ...data }, { rejectWithValue }) => {
     try {
-      const response = await api.post<ApiResponse<{ transaction: PaymentTransaction; summary: LedgerSummary }>>(
+      const response = await api.post<ApiResponse<{ transaction: PaymentTransaction; summary: LedgerSummary; trainee: Trainee }>>(
         `/trainees/${id}/transactions`,
         data,
       );
-      return response.data.data as { transaction: PaymentTransaction; summary: LedgerSummary };
+      return response.data.data as { transaction: PaymentTransaction; summary: LedgerSummary; trainee: Trainee };
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to record transaction');
     }
@@ -67,7 +67,7 @@ export const fetchTrainees = createAsyncThunk<
 
 export const addTrainee = createAsyncThunk<
   Trainee,
-  Omit<Trainee, '_id' | 'createdAt' | 'updatedAt' | 'memberId' | 'paid' | 'discount' | 'remaining' | 'daysLeft'>,
+  Record<string, unknown>,
   { rejectValue: string }
 >(
   'trainees/addTrainee',
@@ -210,8 +210,11 @@ const subscriptionSlice = createSlice({
         const transaction = action.payload.transaction;
         const index = state.trainees.findIndex(t => t._id === transaction.traineeId);
         if (index !== -1) {
-          state.trainees[index].paid = action.payload.summary.netPaidMinor / 100;
-          state.trainees[index].remaining = action.payload.summary.outstandingMinor / 100;
+          state.trainees[index] = {
+            ...state.trainees[index],
+            ...action.payload.trainee,
+            ledgerSummary: action.payload.summary,
+          };
         }
         state.error = null;
       })

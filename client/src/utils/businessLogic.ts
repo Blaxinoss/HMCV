@@ -14,8 +14,7 @@ export const calculateMonthlyStats = (
     const year = selectedDate.getFullYear();
 
     // 1. Filter Data for this Month
-    const monthlyRevenue = transactions.length > 0
-        ? transactions
+    const monthlyRevenue = transactions
             .filter(transaction => {
                 const date = new Date(transaction.createdAt);
                 return transaction.type !== 'refund' &&
@@ -30,13 +29,7 @@ export const calculateMonthlyStats = (
                     date.getMonth() === month &&
                     date.getFullYear() === year;
             })
-            .reduce((sum, transaction) => sum + toMajorUnits(transaction.amountMinor), 0)
-        : trainees
-            .filter(t => {
-                const d = new Date(t.createdAt);
-                return d.getMonth() === month && d.getFullYear() === year;
-            })
-            .reduce((sum, t) => sum + t.paid, 0);
+            .reduce((sum, transaction) => sum + toMajorUnits(transaction.amountMinor), 0);
 
     const monthlyExpenses = expenses
         .filter(e => {
@@ -153,8 +146,7 @@ export const getRecentTransactions = (
     limit = 10,
 ) => {
     const traineeNames = new Map(trainees.map(trainee => [trainee._id, trainee.name]));
-    const incomes = transactions.length > 0
-        ? transactions
+    const incomes = transactions
             .filter(transaction => transaction.type === 'payment')
             .map(transaction => ({
                 id: transaction._id,
@@ -163,15 +155,7 @@ export const getRecentTransactions = (
                 amount: toMajorUnits(transaction.amountMinor),
                 date: new Date(transaction.createdAt),
                 category: 'Subscription'
-            }))
-        : trainees.map(t => ({
-            id: t._id,
-            type: 'INCOME',
-            label: `Payment: ${t.name}`,
-            amount: t.paid,
-            date: new Date(t.createdAt),
-            category: t.isSession ? 'Session Pack' : 'Subscription'
-        }));
+            }));
 
     const outflows = expenses.map(e => ({
         id: e._id,

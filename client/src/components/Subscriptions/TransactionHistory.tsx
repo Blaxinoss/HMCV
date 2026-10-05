@@ -61,7 +61,7 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ traineeId }) =>
     <div className="space-y-3">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-gray-800 rounded-lg p-3">
-          <span className="block text-[10px] uppercase text-gray-500">Paid</span>
+          <span className="block text-[10px] uppercase text-gray-500">Net collected</span>
           <strong className="text-green-400">{((summary?.netPaidMinor || 0) / 100).toLocaleString()} EGP</strong>
         </div>
         <div className="bg-gray-800 rounded-lg p-3">

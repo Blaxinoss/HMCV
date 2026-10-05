@@ -33,6 +33,7 @@ import Pagination from '../Pagination/Pagination';
 import ClearDebtButton from './ClearDebtButton';
 import TransactionHistory from './TransactionHistory';
 import DemoFeatureGate from '../Wrappers/DemoFeatureGate';
+import { getNetCollected, getOutstandingBalance } from '../../utils/finance';
 
 interface TraineeListProps {
     onEdit: (trainee: Trainee) => void;
@@ -130,7 +131,7 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
             );
         }
 
-        if (trainee.remaining > 0) {
+        if (getOutstandingBalance(trainee) > 0) {
             return (
                 <span className="flex items-center gap-1 px-3 py-1 bg-orange-500/10 text-orange-500 border border-orange-500/20 rounded-full text-xs font-semibold">
                     <DollarSign className="w-3 h-3" /> {t('trainees.debt')}
@@ -154,7 +155,7 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
             case 'active': return all.filter((t: any) => new Date(t.subscriptionEndDate) > new Date() && !t.accountFreezeStatus).length;
             case 'frozen': return all.filter((t: any) => t.accountFreezeStatus).length;
             case 'expired': return all.filter((t: any) => new Date(t.subscriptionEndDate) < new Date()).length;
-            case 'debt': return all.filter((t: any) => t.remaining > 0).length;
+            case 'debt': return all.filter((trainee: Trainee) => getOutstandingBalance(trainee) > 0).length;
             case 'session': return all.filter((t: any) => t.isSession).length;
             default: return all.length;
         }
@@ -323,14 +324,14 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
                                                 <DollarSign className="w-3 h-3" /> Financials
                                             </p>
                                             <div className="flex gap-4">
-                                                {/* Total & Paid (زي ما هما) */}
+                                                {/* Subscription price and current-cycle ledger total */}
                                                 <div className="text-sm">
                                                     <span className="text-gray-400 block text-[10px]">TOTAL</span>
                                                     {trainee.totalCost} EGP
                                                 </div>
                                                 <div className="text-sm">
-                                                    <span className="text-gray-400 block text-[10px]">PAID</span>
-                                                    <span className="text-green-400">{trainee.paid} EGP</span>
+                                                    <span className="text-gray-400 block text-[10px]">NET COLLECTED</span>
+                                                    <span className="text-green-400">{getNetCollected(trainee)} EGP</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -339,10 +340,10 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
 
                                         <div>
                                             <p className="text-gray-500 text-xs uppercase font-bold mb-1 flex items-center gap-1">
-                                                <CreditCard className="w-3 h-3" /> Remaining
+                                                <CreditCard className="w-3 h-3" /> Outstanding
                                             </p>
-                                            <p className={`font-bold text-lg ${trainee.remaining > 0 ? 'text-red-400' : 'text-green-400'}`}>
-                                                {trainee.remaining} EGP
+                                            <p className={`font-bold text-lg ${getOutstandingBalance(trainee) > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                                                {getOutstandingBalance(trainee)} EGP
                                             </p>
                                         </div>
 
@@ -382,7 +383,7 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
                                     <div className="pt-4 border-t border-gray-700/50 mb-4">
                                         <h4 className="text-sm font-bold text-gray-300 mb-3">Financial history</h4>
                                         <TransactionHistory
-                                            key={`${trainee._id}-${trainee.paid}-${trainee.remaining}`}
+                                            key={`${trainee._id}-${trainee.ledgerSummary.netPaidMinor}-${trainee.ledgerSummary.outstandingMinor}`}
                                             traineeId={trainee._id}
                                         />
                                     </div>

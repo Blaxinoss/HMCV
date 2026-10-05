@@ -3,11 +3,20 @@ import type {
     IPaymentTransaction,
     PaymentTransactionType,
 } from '../models/PaymentTransaction.js';
-import { calculateLedgerSummary, type LedgerTransaction } from '../utils/finance.js';
+import {
+    calculateLedgerSummary,
+    type LedgerSummary,
+    type LedgerTransaction,
+} from '../utils/finance.js';
 
 interface TraineePriceSource {
     totalCost: number;
     discount?: number;
+}
+
+interface TraineeLedgerIdentity extends TraineePriceSource {
+    _id: mongoose.Types.ObjectId;
+    billingCycleId: string;
 }
 
 export function toMinorUnits(amount: number): number {
@@ -65,11 +74,50 @@ export async function getLedgerSummary(
     if (session) query.session(session);
     const transactions = await query.lean();
 
-    const ledgerTransactions: LedgerTransaction[] = transactions.map((transaction) => ({
-        type: transaction.type,
-        amountMinor: transaction.amountMinor,
-        status: transaction.status,
-    }));
+    return calculateLedgerSummary(
+        netPriceMinor,
+        transactions.map(transaction => ({
+            type: transaction.type,
+            amountMinor: transaction.amountMinor,
+            status: transaction.status,
+        })),
+    );
+}
 
-    return calculateLedgerSummary(netPriceMinor, ledgerTransactions);
+export async function getLedgerSummaryMap(
+    transactionModel: Model<IPaymentTransaction>,
+    trainees: TraineeLedgerIdentity[],
+): Promise<Map<string, LedgerSummary>> {
+    const summaries = new Map<string, LedgerSummary>();
+    if (trainees.length === 0) return summaries;
+
+    const transactions = await transactionModel.find({
+        status: 'posted',
+        $or: trainees.map(trainee => ({
+            traineeId: trainee._id,
+            billingCycleId: trainee.billingCycleId,
+        })),
+    }).lean();
+
+    const transactionsByTrainee = new Map<string, LedgerTransaction[]>();
+    for (const transaction of transactions) {
+        const key = String(transaction.traineeId);
+        const current = transactionsByTrainee.get(key) ?? [];
+        current.push({
+            type: transaction.type,
+            amountMinor: transaction.amountMinor,
+            status: transaction.status,
+        });
+        transactionsByTrainee.set(key, current);
+    }
+
+    for (const trainee of trainees) {
+        const key = String(trainee._id);
+        summaries.set(key, calculateLedgerSummary(
+            getNetPriceMinor(trainee),
+            transactionsByTrainee.get(key) ?? [],
+        ));
+    }
+
+    return summaries;
 }

@@ -13,11 +13,11 @@ import { getTargets, sendToN8N } from '../utils/targets.js';
 
 // 1. زرار "Run Expiring Reminders Now" في الداشبورد
 router.post('/trigger-reminders', async (req, res) => {
-    const { Trainees } = db(req);
+    const { Trainees, PaymentTransaction } = db(req);
 
     const { type } = req.body;
     try {
-        const targets = await getTargets(type, Trainees);
+        const targets = await getTargets(type, Trainees, PaymentTransaction);
 
         // نبعت لـ Webhook مخصص للنوع ده
         const webhook = process.env.N8N_CAMPAIGN_WEBHOOK;

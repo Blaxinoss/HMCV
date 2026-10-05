@@ -6,6 +6,7 @@ import { AppDispatch } from '../../store';
 import toast from 'react-hot-toast';
 import { Trainee } from '../../types';
 import { useConfirmToast } from '../toasters/deleteToaster';
+import { getOutstandingBalance } from '../../utils/finance';
 
 interface ClearDebtButtonProps {
     trainee: Trainee;
@@ -17,8 +18,9 @@ const ClearDebtButton: React.FC<ClearDebtButtonProps> = ({ trainee }) => {
 
     // بنستخدم الهوك بتاع التوستر
     const { showConfirm } = useConfirmToast();
+    const outstandingBalance = getOutstandingBalance(trainee);
 
-    if (trainee.remaining <= 0) return null;
+    if (outstandingBalance <= 0) return null;
 
     const handleClearDebt = (e: React.MouseEvent) => {
         e.stopPropagation(); // منع فتح كارت التفاصيل
@@ -30,7 +32,7 @@ const ClearDebtButton: React.FC<ClearDebtButtonProps> = ({ trainee }) => {
                 await dispatch(createPaymentTransaction({
                     id: trainee._id,
                     type: 'payment',
-                    amountMinor: Math.round(trainee.remaining * 100),
+                    amountMinor: trainee.ledgerSummary.outstandingMinor,
                     reason: 'Debt cleared',
                 })).unwrap();
 
@@ -52,10 +54,10 @@ const ClearDebtButton: React.FC<ClearDebtButtonProps> = ({ trainee }) => {
             onClick={handleClearDebt}
             disabled={loading}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 hover:bg-green-500 text-green-500 hover:text-white border border-green-500/20 rounded-lg text-xs font-bold transition-all disabled:opacity-50"
-            title={`Pay remaining ${trainee.remaining} EGP`}
+            title={`Pay outstanding ${outstandingBalance} EGP`}
         >
             {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
-            PAY FULL ({trainee.remaining})
+            PAY FULL ({outstandingBalance})
         </button>
     );
 };

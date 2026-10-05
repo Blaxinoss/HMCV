@@ -7,6 +7,7 @@
   "scripts": {
     "test": "bun test ./tests",
     "migrate:legacy-payments": "bun run src/scripts/migrateLegacyPayments.ts",
+    "migrate:legacy-payments:apply": "bun run src/scripts/migrateLegacyPayments.ts --apply",
     "dev": "bun --watch server.ts",
     "start": "bun server.ts",
     "build": "tsc"

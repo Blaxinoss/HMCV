@@ -2,6 +2,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trainee } from '../../types';
+import { getOutstandingBalance } from '../../utils/finance';
 import {
   Clock,
   AlertCircle,
@@ -35,7 +36,7 @@ const TraineeCard: React.FC<TraineeCardProps> = ({ trainee, isSelected, onSelect
     if (trainee.accountFreezeStatus)
       return 'border-yellow-500/20 bg-gradient-to-br from-yellow-900/10 to-transparent hover:border-yellow-500/40';
 
-    if (trainee.remaining > 0)
+    if (getOutstandingBalance(trainee) > 0)
       return 'border-red-500/20 bg-gradient-to-br from-red-900/10 to-transparent hover:border-red-500/40';
 
     // Default Active
@@ -82,7 +83,7 @@ const TraineeCard: React.FC<TraineeCardProps> = ({ trainee, isSelected, onSelect
         <div className="flex items-center gap-3">
           {/* Avatar with Gradient */}
           <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-lg shadow-lg ring-2 ring-opacity-20
-              ${trainee.remaining > 0
+              ${getOutstandingBalance(trainee) > 0
               ? 'bg-gradient-to-br from-red-500 to-pink-600 ring-red-500 text-white'
               : 'bg-gradient-to-br from-blue-500 to-indigo-600 ring-blue-500 text-white'}
           `}>
@@ -106,7 +107,7 @@ const TraineeCard: React.FC<TraineeCardProps> = ({ trainee, isSelected, onSelect
           <span className="bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
             <Snowflake className="w-3 h-3" /> {t('trainees.frozen')}
           </span>
-        ) : trainee.remaining > 0 ? (
+        ) : getOutstandingBalance(trainee) > 0 ? (
           <span className="bg-red-500/10 text-red-500 border border-red-500/20 text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 animate-pulse-slow">
             <AlertCircle className="w-3 h-3" /> {t('trainees.debt')}
           </span>
@@ -142,10 +143,10 @@ const TraineeCard: React.FC<TraineeCardProps> = ({ trainee, isSelected, onSelect
         </div>
 
         {/* Debt Warning (Conditionally Rendered) */}
-        {trainee.remaining > 0 && (
+        {getOutstandingBalance(trainee) > 0 && (
           <div className="flex justify-between items-center text-xs bg-red-500/10 border border-red-500/10 px-3 py-2 rounded-lg">
             <span className="text-red-400 font-medium opacity-80">{t('trainees.remaining')}:</span>
-            <span className="text-red-400 font-bold font-mono tracking-wide">{trainee.remaining} EGP</span>
+            <span className="text-red-400 font-bold font-mono tracking-wide">{getOutstandingBalance(trainee)} EGP</span>
           </div>
         )}
       </div>

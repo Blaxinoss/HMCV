@@ -5,6 +5,13 @@ import PaymentTransaction from '../src/models/PaymentTransaction.js';
 import { validateExpenseInput } from '../src/utils/validation.js';
 import { calculateCouponDiscount } from '../src/services/couponService.js';
 import { DiscountType } from '../src/models/Coupons.js';
+import { TraineeSchema } from '../src/models/Trainees.js';
+
+test('trainee documents do not define legacy balance fields', () => {
+    assert.equal(TraineeSchema.path('paid'), undefined);
+    assert.equal(TraineeSchema.path('remaining'), undefined);
+    assert.equal(TraineeSchema.path('ledgerMigratedAt'), undefined);
+});
 
 test('ledger calculates net paid and outstanding balance from posted transactions', () => {
     const summary = calculateLedgerSummary(10_000, [

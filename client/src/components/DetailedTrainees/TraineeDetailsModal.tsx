@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trainee } from '../../types';
+import { getNetCollected, getOutstandingBalance } from '../../utils/finance';
 import {
   X,
   User,
@@ -69,9 +70,9 @@ const TraineeDetailsModal: React.FC<TraineeDetailsModalProps> = ({ trainee, isOp
                     <Snowflake className="w-3 h-3" /> {t('trainees.frozen')}
                   </span>
                 )}
-                {trainee.remaining > 0 && (
+                {getOutstandingBalance(trainee) > 0 && (
                   <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-500/10 text-red-500 border border-red-500/20 flex items-center gap-1">
-                    <DollarSign className="w-3 h-3" /> {t('trainees.debt')}: {trainee.remaining} EGP
+                    <DollarSign className="w-3 h-3" /> {t('trainees.debt')}: {getOutstandingBalance(trainee)} EGP
                   </span>
                 )}
                 {trainee.daysLeft !== null && trainee.daysLeft !== 0 && trainee.daysLeft < 5 && (
@@ -162,15 +163,15 @@ const TraineeDetailsModal: React.FC<TraineeDetailsModalProps> = ({ trainee, isOp
                   <p className="text-xl font-bold text-white">{trainee.totalCost} EGP</p>
                 </div>
                 <div className="p-4 bg-gray-800 rounded-xl text-center">
-                  <p className="text-xs text-gray-500 uppercase mb-1">Paid</p>
-                  <p className="text-xl font-bold text-green-400">{trainee.paid} EGP</p>
+                  <p className="text-xs text-gray-500 uppercase mb-1">Net collected</p>
+                  <p className="text-xl font-bold text-green-400">{getNetCollected(trainee)} EGP</p>
                 </div>
               </div>
 
               <div className="flex justify-between items-center p-4 bg-gray-800/50 rounded-xl border border-gray-800">
                 <span className="text-sm text-gray-400">Outstanding Balance</span>
-                <span className={`text-xl font-mono font-bold ${trainee.remaining > 0 ? 'text-red-500' : 'text-gray-500'}`}>
-                  {trainee.remaining} EGP
+                <span className={`text-xl font-mono font-bold ${getOutstandingBalance(trainee) > 0 ? 'text-red-500' : 'text-gray-500'}`}>
+                  {getOutstandingBalance(trainee)} EGP
                 </span>
               </div>
 

@@ -7,14 +7,14 @@ import { randomUUID } from 'node:crypto';
 const router = express.Router();
 import { db } from '../models/index.js';
 import { redeemCoupon } from '../services/couponService.js';
-import { createTransaction, getLedgerSummary, getNetPriceMinor, toMinorUnits } from '../services/financeService.js';
+import { createTransaction, getLedgerSummary, getLedgerSummaryMap, getNetPriceMinor, toMinorUnits } from '../services/financeService.js';
 import { calculateFreezeStart, calculateUnfreezeEndDate, sameGymDay } from '../utils/freezePolicy.js';
 import { recordAudit } from '../services/auditService.js';
 // GET: Fetch all trainees
 router.get('/', async (req: Request, res: Response) => {
     try {
 
-        const { Trainees } = db(req);
+        const { Trainees, PaymentTransaction } = db(req);
 
 
         const page = parseInt(req.query.page as string) || 1;
@@ -48,22 +48,27 @@ router.get('/', async (req: Request, res: Response) => {
             query.accountFreezeStatus = false;
         } else if (status === 'frozen') {
             query.accountFreezeStatus = true;
-        } else if (status === 'debt') {
-            query.remaining = { $gt: 0 };
         } else if (status === 'session') {
             query.isSession = true;
         }
 
         const trainees = await Trainees.find(query)
-            .limit(limit)
-            .skip(skip)
             .sort({ createdAt: -1 });
 
-        const totalSearchBoxResults = await Trainees.countDocuments(query);
+        const summaries = await getLedgerSummaryMap(PaymentTransaction, trainees);
+        const traineesWithLedger = trainees.map(trainee => ({
+                ...trainee.toObject(),
+                ledgerSummary: summaries.get(String(trainee._id)),
+            }));
+        const filteredTrainees = status === 'debt'
+            ? traineesWithLedger.filter(trainee => (trainee.ledgerSummary?.outstandingMinor ?? 0) > 0)
+            : traineesWithLedger;
+        const totalSearchBoxResults = filteredTrainees.length;
+        const data = filteredTrainees.slice(skip, skip + limit);
 
         res.status(200).json({
             success: true,
-            data: trainees,
+            data,
             pagination: {
                 totalUsers: totalSearchBoxResults,
                 totalPages: Math.ceil(totalSearchBoxResults / limit),
@@ -98,7 +103,7 @@ router.post('/', async (req: Request, res: Response) => {
             totalCost,
             isSession,
             sessionsCount,
-            paid,
+            initialPaymentMinor = 0,
             couponCode,
             program,
         } = req.body;
@@ -140,24 +145,39 @@ router.post('/', async (req: Request, res: Response) => {
             isSession,
             sessionsRemaining: isSession ? sessionsCount : 0,
             discount: discountAmount,
-            paid,
             program,
             usedCoupon: finalUsedCouponCode,
             appliedDiscount: appliedDiscountData,
         });
 
+        if (!Number.isInteger(initialPaymentMinor) || initialPaymentMinor < 0) {
+            res.status(400).json({ error: 'initialPaymentMinor must be a non-negative integer' });
+            return;
+        }
+        if (initialPaymentMinor > getNetPriceMinor(newTrainee)) {
+            res.status(400).json({ error: 'Initial payment exceeds the subscription price' });
+            return;
+        }
+
         const savedTrainee = await newTrainee.save();
 
-        if (Number(paid) > 0) {
+        if (initialPaymentMinor > 0) {
             await createTransaction({
                 transactionModel: PaymentTransaction,
                 traineeId: savedTrainee._id,
                 billingCycleId: savedTrainee.billingCycleId,
                 type: 'payment',
-                amountMinor: toMinorUnits(Number(paid)),
+                amountMinor: initialPaymentMinor,
                 reason: 'Initial subscription payment',
             });
         }
+
+        const ledgerSummary = await getLedgerSummary(
+            PaymentTransaction,
+            savedTrainee._id,
+            savedTrainee.billingCycleId,
+            getNetPriceMinor(savedTrainee),
+        );
 
         const N8N_WEBHOOK_URL = process.env.N8N_WELCOME_WEBHOOK || 'http://localhost:5678/webhook-test/welcome_user';
         const N8N_API_SECRET = process.env.N8N_API_SECRET
@@ -184,15 +204,16 @@ router.post('/', async (req: Request, res: Response) => {
         }
 
 
-        res.status(201).json({ success: true, data: savedTrainee });
+        res.status(201).json({
+            success: true,
+            data: { ...savedTrainee.toObject(), ledgerSummary },
+        });
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
 })
 
 // POST: Record a payment, refund, or approved adjustment for a trainee.
-// Legacy paid/remaining fields are intentionally not changed here; they are
-// compatibility snapshots until existing records are migrated to the ledger.
 router.post('/:id/transactions', async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { Trainees, PaymentTransaction, AuditLog } = db(req);
@@ -216,6 +237,22 @@ router.post('/:id/transactions', async (req: AuthRequest, res: Response): Promis
             return;
         }
 
+        const currentSummary = await getLedgerSummary(
+            PaymentTransaction,
+            trainee._id,
+            trainee.billingCycleId,
+            getNetPriceMinor(trainee),
+        );
+
+        if ((type === 'payment' || type === 'adjustment') && normalizedAmountMinor > currentSummary.outstandingMinor) {
+            res.status(400).json({ success: false, message: 'Transaction exceeds the outstanding balance' });
+            return;
+        }
+        if (type === 'refund' && normalizedAmountMinor > currentSummary.netPaidMinor) {
+            res.status(400).json({ success: false, message: 'Refund exceeds the paid balance' });
+            return;
+        }
+
         const transaction = await createTransaction({
             transactionModel: PaymentTransaction,
             traineeId: trainee._id,
@@ -235,12 +272,21 @@ router.post('/:id/transactions', async (req: AuthRequest, res: Response): Promis
             requestId: req.headers['x-request-id'] as string | undefined,
             after: { traineeId: String(trainee._id), billingCycleId: trainee.billingCycleId, type, amountMinor: normalizedAmountMinor },
         });
-        const summary = await getLedgerSummary(PaymentTransaction, trainee._id, trainee.billingCycleId, getNetPriceMinor(trainee));
+        const summary = await getLedgerSummary(
+            PaymentTransaction,
+            trainee._id,
+            trainee.billingCycleId,
+            getNetPriceMinor(trainee),
+        );
 
         res.status(201).json({
             success: true,
             message: 'Financial transaction recorded',
-            data: { transaction, summary },
+            data: {
+                transaction,
+                summary,
+                trainee: { ...trainee.toObject(), ledgerSummary: summary },
+            },
         });
     } catch (error: any) {
         res.status(400).json({ success: false, message: error.message });
@@ -276,7 +322,7 @@ router.get('/:id/transactions', async (req: Request, res: Response): Promise<voi
 
 router.put('/:id/freeze', async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { Trainees, AuditLog } = db(req);
+        const { Trainees, AuditLog, PaymentTransaction } = db(req);
 
         const trainee = await Trainees.findById(req.params.id);
 
@@ -330,9 +376,15 @@ router.put('/:id/freeze', async (req: AuthRequest, res: Response): Promise<void>
                 return;
             }
 
-            if (trainee.remaining > 0) {
+            const summary = await getLedgerSummary(
+                PaymentTransaction,
+                trainee._id,
+                trainee.billingCycleId,
+                getNetPriceMinor(trainee),
+            );
+            if (summary.outstandingMinor > 0) {
                 res.status(400).json({
-                    error: `Cannot freeze account with outstanding debt (${trainee.remaining} EGP). Please clear debt first.`
+                    error: `Cannot freeze account with outstanding debt (${summary.outstandingMinor / 100} EGP). Please clear debt first.`
                 });
                 return;
             }
@@ -390,7 +442,7 @@ router.put('/:id/freeze', async (req: AuthRequest, res: Response): Promise<void>
 });
 
 router.post("/check-in/:id", async (req: Request, res: Response) => {
-    const { Trainees } = db(req);
+    const { Trainees, PaymentTransaction } = db(req);
 
     const { id } = req.params;
 
@@ -438,7 +490,7 @@ router.post("/check-in/:id", async (req: Request, res: Response) => {
         if (trainee.sessionsRemaining <= 0) {
             return res.status(400).json({
                 error: "No sessions left! Please renew. 🎟️",
-                remaining: 0
+                sessionsRemaining: 0
             });
         }
 
@@ -449,8 +501,14 @@ router.post("/check-in/:id", async (req: Request, res: Response) => {
     }
 
 
-    if (trainee.remaining > 0) {
-        warnings.push(`Has Debt: ${trainee.remaining}`);
+    const summary = await getLedgerSummary(
+        PaymentTransaction,
+        trainee._id,
+        trainee.billingCycleId,
+        getNetPriceMinor(trainee),
+    );
+    if (summary.outstandingMinor > 0) {
+        warnings.push(`Has Debt: ${summary.outstandingMinor / 100}`);
     }
 
     trainee.lastAttendance = today;
@@ -473,14 +531,26 @@ router.post("/check-in/:id", async (req: Request, res: Response) => {
 // GET: Fetch single trainee
 router.get('/:id', async (req: Request, res: Response) => {
     try {
-        const { Trainees } = db(req);
+        const { Trainees, PaymentTransaction } = db(req);
 
         const trainee = await Trainees.findById(req.params.id);
         if (!trainee) {
             res.status(404).json({ error: 'Trainee not found' });
             return;
         }
-        res.status(200).json({ success: true, data: trainee });
+        const summary = await getLedgerSummary(
+            PaymentTransaction,
+            trainee._id,
+            trainee.billingCycleId,
+            getNetPriceMinor(trainee),
+        );
+        res.status(200).json({
+            success: true,
+            data: {
+                ...trainee.toObject(),
+                ledgerSummary: summary,
+            },
+        });
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
@@ -520,7 +590,7 @@ router.delete('/:id', async (req: AuthRequest, res: Response) => {
 // PUT: Update trainee details
 router.put('/:id', async (req: Request, res: Response) => {
     try {
-        const { Trainees, Coupon } = db(req);
+        const { Trainees, Coupon, PaymentTransaction } = db(req);
         const { id } = req.params;
 
         const trainee = await Trainees.findById(id);
@@ -529,12 +599,18 @@ router.put('/:id', async (req: Request, res: Response) => {
             return res.status(404).json({ error: 'Trainee not found' });
         }
 
+        const currentSummary = await getLedgerSummary(
+            PaymentTransaction,
+            trainee._id,
+            trainee.billingCycleId,
+            getNetPriceMinor(trainee),
+        );
+
         const {
             name,
             phone,
             subscriptionStartDate,
             totalCost,
-            paid,
             program,
             couponCode, // 🔥 لازم نستقبله هنا
             sessionsCount // لو بيعدل عدد الحصص
@@ -546,7 +622,6 @@ router.put('/:id', async (req: Request, res: Response) => {
         if (subscriptionStartDate) trainee.subscriptionStartDate = subscriptionStartDate;
         if (program !== undefined) trainee.program = program;
         if (totalCost !== undefined) trainee.totalCost = totalCost;
-        if (paid !== undefined) trainee.paid = paid;
         if (sessionsCount !== undefined && trainee.isSession) trainee.sessionsRemaining = sessionsCount;
 
         // ---------------------------------------------------------
@@ -600,11 +675,25 @@ router.put('/:id', async (req: Request, res: Response) => {
             trainee.discount = (trainee.totalCost * trainee.appliedDiscount.discountValue) / 100;
         }
 
+        const newNetPriceMinor = getNetPriceMinor(trainee);
+        if (currentSummary.netPaidMinor > newNetPriceMinor) {
+            return res.status(400).json({
+                error: 'The new subscription price is below the recorded paid balance. Record a refund first.',
+            });
+        }
 
-        // 3. الحفظ (الـ Pre-save Hook هيشتغل ويحسب الـ Remaining أوتوماتيك)
         const updatedTrainee = await trainee.save();
 
-        res.status(200).json(updatedTrainee);
+        const summary = await getLedgerSummary(
+            PaymentTransaction,
+            updatedTrainee._id,
+            updatedTrainee.billingCycleId,
+            getNetPriceMinor(updatedTrainee),
+        );
+        res.status(200).json({
+            success: true,
+            data: { ...updatedTrainee.toObject(), ledgerSummary: summary },
+        });
     } catch (error: any) {
         res.status(400).json({ error: error.message });
     }
@@ -630,8 +719,7 @@ router.post('/:id/renew', async (req: Request, res: Response): Promise<void> => 
         const {
             durationInDays, // مدة التجديد (30 يوم مثلاً)
             totalCost,      // سعر الباقة الجديد
-            paid,           // المبلغ المدفوع الآن
-            paymentAmountMinor,
+            paymentAmountMinor = 0,
             couponCode,      // الكوبون (اختياري)
             sessionsCount
         } = req.body;
@@ -643,10 +731,17 @@ router.post('/:id/renew', async (req: Request, res: Response): Promise<void> => 
             return;
         }
 
-        if (trainee.remaining > 0) {
+        const existingSummary = await getLedgerSummary(
+            PaymentTransaction,
+            trainee._id,
+            trainee.billingCycleId,
+            getNetPriceMinor(trainee),
+        );
+
+        if (existingSummary.outstandingMinor > 0) {
             res.status(400).json({
                 success: false,
-                error: `Cannot renew. Trainee has an outstanding debt of ${trainee.remaining} EGP. Please clear debt first.`
+                error: `Cannot renew. Trainee has an outstanding debt of ${existingSummary.outstandingMinor / 100} EGP. Please clear debt first.`
             });
             return;
         }
@@ -685,18 +780,22 @@ router.post('/:id/renew', async (req: Request, res: Response): Promise<void> => 
         // أو ممكن تجمع الديون القديمة لو حابب (Business Decision)
         // هنا هنفترض إن التجديد عملية جديدة منفصلة
 
-        const normalizedPaymentMinor = paymentAmountMinor ?? toMinorUnits(Number(paid) || 0);
-        const normalizedPayment = normalizedPaymentMinor / 100;
-        const remainingAmount = (totalCost - discountAmount) - normalizedPayment;
-
+        const normalizedPaymentMinor = paymentAmountMinor;
+        const renewedNetPriceMinor = toMinorUnits(Math.max(0, Number(totalCost) - discountAmount));
+        if (!Number.isInteger(normalizedPaymentMinor) || normalizedPaymentMinor < 0) {
+            res.status(400).json({ error: 'Payment must be a non-negative amount in minor currency units' });
+            return;
+        }
+        if (normalizedPaymentMinor > renewedNetPriceMinor) {
+            res.status(400).json({ error: 'Payment exceeds the renewed subscription price' });
+            return;
+        }
         trainee.subscriptionStartDate = newStartDate;
         trainee.subscriptionEndDate = newEndDate;
         trainee.totalCost = totalCost;
         trainee.discount = discountAmount;
-        trainee.paid = normalizedPayment;
-        trainee.remaining = remainingAmount; // تحديث المتبقي
         trainee.billingCycleId = randomUUID();
-        trainee.usedCoupon = finalUsedCouponCode || trainee.usedCoupon; // سجل الكوبون الجديد
+        trainee.usedCoupon = finalUsedCouponCode || undefined; // سجل الكوبون الجديد
         trainee.appliedDiscount = appliedDiscountData as any; // التفاصيل (عشان الـ Edit Form تفهم)
 
         if (trainee.isSession) {
@@ -730,10 +829,20 @@ router.post('/:id/renew', async (req: Request, res: Response): Promise<void> => 
             });
         }
 
+        const renewedSummary = await getLedgerSummary(
+            PaymentTransaction,
+            trainee._id,
+            trainee.billingCycleId,
+            getNetPriceMinor(trainee),
+        );
+
         res.status(200).json({
             success: true,
             message: "Subscription Renewed Successfully",
-            data: trainee
+            data: {
+                ...trainee.toObject(),
+                ledgerSummary: renewedSummary,
+            }
         });
 
     } catch (error: any) {
@@ -745,7 +854,7 @@ router.post('/:id/renew', async (req: Request, res: Response): Promise<void> => 
 
 router.patch('/:id', async (req: Request, res: Response) => {
     try {
-        const { Trainees } = db(req);
+        const { Trainees, PaymentTransaction } = db(req);
         const { id } = req.params;
         const updates = req.body;
 
@@ -756,12 +865,18 @@ router.patch('/:id', async (req: Request, res: Response) => {
             return res.status(404).json({ error: 'Trainee not found' });
         }
 
+        const currentSummary = await getLedgerSummary(
+            PaymentTransaction,
+            trainee._id,
+            trainee.billingCycleId,
+            getNetPriceMinor(trainee),
+        );
+
         // 2. قائمة الحقول المسموح بتعديلها (عشان محدش يلعب في الـ ID أو التواريخ الحساسة بالغلط)
         const allowedUpdates = [
             'name',
             'phone',
             'totalCost',
-            'paid',
             'sessionsRemaining',
             'subscriptionEndDate',
             'program',
@@ -780,9 +895,6 @@ router.patch('/:id', async (req: Request, res: Response) => {
             }
         });
 
-        // 4. حالة خاصة: لو بنعمل Clear Debt (بنخلي المدفوع = الصافي)
-        // الـ Pre-save hook هيقوم بالواجب ويحسب الـ remaining
-
         // 5. حالة خاصة: لو بنعدل الـ appliedDiscount (مثلاً بنمسح الكوبون)
         // لازم نتأكد إننا مش بنبوظ الـ Schema
         if (updates.appliedDiscount) {
@@ -792,13 +904,26 @@ router.patch('/:id', async (req: Request, res: Response) => {
             };
         }
 
-        // 6. الحفظ (هنا السحر كله بيحصل والـ Hooks بتشتغل) 🔥
+        const updatedNetPriceMinor = getNetPriceMinor(trainee);
+        if (currentSummary.netPaidMinor > updatedNetPriceMinor) {
+            return res.status(400).json({
+                error: 'The new subscription price is below the recorded paid balance. Record a refund first.',
+            });
+        }
+
         const updatedTrainee = await trainee.save();
+
+        const summary = await getLedgerSummary(
+            PaymentTransaction,
+            updatedTrainee._id,
+            updatedTrainee.billingCycleId,
+            getNetPriceMinor(updatedTrainee),
+        );
 
         res.status(200).json({
             success: true,
             message: "Trainee updated successfully",
-            data: updatedTrainee
+            data: { ...updatedTrainee.toObject(), ledgerSummary: summary }
         });
 
     } catch (error: any) {
