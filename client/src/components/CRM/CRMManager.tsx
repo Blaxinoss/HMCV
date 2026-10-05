@@ -68,11 +68,8 @@ const CRMManager: React.FC = () => {
     ];
 
     return (
-        <div className="relative group max-h-screen">
-            {/* الطبقة المموّهة (الداشبورد بتاعتك) */}
-            <div className="p-6 lg:p-10 bg-gray-950 text-white font-sans blur-[6px] pointer-events-none select-none">
-                {/* كود الداشبورد القديم بتاعك هنا */}
-
+        <div className="relative max-h-screen">
+            <div className="p-6 lg:p-10 bg-gray-950 text-white font-sans">
                 <div className="p-6 lg:p-10 bg-gray-950 min-h-screen text-white font-sans ">
 
                     {/* Header */}
@@ -105,8 +102,8 @@ const CRMManager: React.FC = () => {
 
                                 {/* Action Button */}
                                 <button
-                                    onClick={() => alert('good try')}
-                                    disabled={true}
+                                    onClick={() => handleTrigger(campaign.type)}
+                                    disabled={loadingType !== null}
                                     className={`w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed
                 ${loadingType === campaign.type
                                             ? 'bg-gray-800 text-gray-400 cursor-wait'
@@ -140,14 +137,6 @@ const CRMManager: React.FC = () => {
                 </div>
             </div>
 
-            {/* الطبقة اللي فوق اللي فيها الرسالة */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-950/40 transition-all duration-300 group-hover:bg-gray-950/20">
-                <div className="bg-yellow-500/10 border border-yellow-500/50 p-4 rounded-xl backdrop-blur-[0.25px] text-center shadow-2xl">
-                    <span className="text-yellow-500 text-2xl mb-2 block">🔒</span>
-                    <h3 className="text-xl font-bold text-yellow-500 uppercase tracking-wider">Premium Feature</h3>
-
-                </div>
-            </div>
         </div>
     );
 };

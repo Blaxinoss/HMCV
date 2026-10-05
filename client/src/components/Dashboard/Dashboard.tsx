@@ -3,7 +3,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
-import { Coins, Lock } from 'lucide-react'; // ضفنا Lock icon
 
 import { AppDispatch, RootState } from '../../store';
 // 👇 بننادي الـ Action الجديد اللي بيجيب الداتا الخام
@@ -376,18 +375,6 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
 
-        </div>
-        {/* 1. الطبقة المغطية (تظهر فقط لو مش بريميوم) */}
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-gray-900/40 backdrop-blur-[10px] rounded-2xl border-2 border-dashed border-yellow-600/30 transition-all duration-500 group">
-          <div className="bg-gray-900/90 p-6 rounded-2xl shadow-2xl text-center border border-yellow-500/50 transform group-hover:scale-105 transition-transform">
-            <div className="bg-yellow-500/20 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Lock className="w-6 h-6 text-yellow-500" />
-            </div>
-            <h4 className="text-yellow-500 font-bold text-lg mb-1 uppercase tracking-widest">
-              {t('Premium Analytics')}
-            </h4>
-
-          </div>
         </div>
       </div>
 

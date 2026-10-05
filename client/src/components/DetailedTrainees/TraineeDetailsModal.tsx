@@ -222,7 +222,7 @@ const TraineeDetailsModal: React.FC<TraineeDetailsModalProps> = ({ trainee, isOp
                 </div>
               </div>
 
-              {/* Decorative corner accent (Optional for Premium feel) */}
+              {/* Decorative corner accent */}
               {trainee.program && (
                 <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-bl from-blue-500/10 to-transparent rounded-tr-xl opacity-0 group-hover:opacity-100 transition-opacity" />
               )}

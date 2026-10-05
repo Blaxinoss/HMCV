@@ -12,7 +12,7 @@ import {
     Filter,
     Search,
     Zap,
-    Lock,
+    Send,
     UserPlus,
     ChevronDown,
     ChevronUp,
@@ -85,6 +85,20 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
                 .catch(() => showError(t('common.error_occurred')));
         });
     }
+
+    const handleSendProgram = (trainee: Trainee, e: React.MouseEvent) => {
+        e.stopPropagation();
+
+        if (!trainee.program?.trim()) {
+            showError(t('trainees.no_program'));
+            return;
+        }
+
+        const digits = trainee.phone.replace(/\D/g, '');
+        const internationalPhone = digits.startsWith('0') ? `20${digits.slice(1)}` : digits;
+        const message = encodeURIComponent(`${trainee.name}\n\n${trainee.program}`);
+        window.open(`https://wa.me/${internationalPhone}?text=${message}`, '_blank', 'noopener,noreferrer');
+    };
 
 
 
@@ -423,19 +437,13 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
                                         </button>
 
                                         {/* 2. Send Program (Changed to Blue - Communication Action) */}
-                                        <div className="  flex-col bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-orange-900/20 transition-all transform hover:scale-105 flex items-center gap-2"
+                                        <button
+                                            onClick={(e) => handleSendProgram(trainee, e)}
+                                            className="group/sendBtn flex items-center gap-2 px-4 py-2 bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white rounded-xl text-sm font-semibold transition-all duration-300 border border-blue-500/20 hover:shadow-[0_0_15px_rgba(59,130,246,0.3)]"
                                         >
-
-
-                                            <button
-                                                onClick={(e) => alert('Premium Feature')}
-                                                className="group/sendBtn flex items-center   bg-blue-500/10 text-#e0c007-500 hover:bg-#dde00b-500 hover:text-white rounded-xl text-sm font-semibold transition-all duration-300 border border-blue-500/20 hover:shadow-[0_0_15px_rgba(59,130,246,0.3)]"
-                                            >
-                                                <Lock className=" transition-transform duration-300 group-hover/sendBtn:translate-x-1 group-hover/sendBtn:-translate-y-1" />
-
-                                                {t('common.send_program')}
-                                            </button>
-                                        </div>
+                                            <Send className="w-4 h-4 transition-transform duration-300 group-hover/sendBtn:translate-x-1 group-hover/sendBtn:-translate-y-1" />
+                                            {t('common.send_program')}
+                                        </button>
 
                                         <button
                                             onClick={(e) => handleDelete(trainee._id, e)}

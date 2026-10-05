@@ -10,7 +10,6 @@ import {
   Settings as SettingsIcon,
   User as UserIcon,
   Shield,
-  Lock,
   Trash2,
   Key,
   Plus,
@@ -221,24 +220,10 @@ const Settings: React.FC = () => {
 
 
         <div>
-          {/* غيرنا الـ div الرئيسي عشان يبقى relative و overflow-hidden */}
           <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6 sticky top-24 relative overflow-hidden group">
 
 
-            <div className="absolute inset-0 z-20 backdrop-blur-[0.25px] flex flex-col items-center justify-center text-center p-6 border border-amber-500/20 rounded-2xl transition-all duration-300">
-
-
-              <button
-                onClick={() => alert("let's do it then!")}
-                className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-orange-900/20 transition-all transform hover:scale-105 flex items-center gap-2"
-              >
-                <Lock className="w-4 h-4" /> Premium feature
-              </button>
-            </div>
-
-
-            {/* --- ORIGINAL CONTENT (معمولة باهتة لو مش بريميم) --- */}
-            <div className="opacity-20 pointer-events-none filter blur-[1px]">
+            <div>
               <h3 className="text-xl font-bold text-white flex items-center gap-2 mb-6">
                 <Plus className="w-5 h-5 text-green-500" /> {t('settings.add_account')}
               </h3>
