@@ -3,7 +3,7 @@ import type { Express } from 'express';
 import mongoose, { mongo } from 'mongoose';
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
-import cors from 'cors'
+import cors, { type CorsOptions } from 'cors'
 import traineeRoutes from './src/Routes/traineeRoutes.js';
 import expensesRoutes from './src/Routes/expensesRoutes.js';
 import trainersRoutes from './src/Routes/trainersRoutes.js';
@@ -27,12 +27,34 @@ dotenv.config();
 // Initialize Express app
 const app: Express = express();
 
-// CORS configuration
-app.use(cors({
-    origin: '*', // Allow all origins
+const configuredOrigins = process.env.CORS_ORIGINS
+    ?.split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean) ?? [];
+
+const allowedOrigins = new Set([
+    'https://hustlecv.vercel.app',
+    'http://localhost:5173',
+    ...configuredOrigins,
+]);
+
+const corsOptions: CorsOptions = {
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.has(origin)) {
+            callback(null, true);
+            return;
+        }
+
+        callback(new Error(`Origin ${origin} is not allowed by CORS`));
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-tenant-id'],
     credentials: true,
-}));
+    optionsSuccessStatus: 204,
+};
+
+// This middleware also answers preflight OPTIONS requests.
+app.use(cors(corsOptions));
 // Middleware
 app.use(bodyParser.json());
 
