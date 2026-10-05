@@ -4,10 +4,14 @@ export interface User {
 
   _id: string;
   username: string;
-  password: string;
   role: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface UserCredentials {
+  username: string;
+  password: string;
 }
 
 export interface AuthUser extends User {
@@ -33,15 +37,14 @@ export interface ApiResponse<T> {
   user?: User;
 }
 export interface DashboardCards {
-  revenue: number;           // إيراد الشهر المحدد
-  expenses: number;          // مصاريف الشهر المحدد
-  netProfit: number;         // صافي ربح الشهر
-  profitMargin: number;      // نسبة الربح
-  activeMembers: number;     // الأعضاء النشطين (ثابت)
-  newSignups: number;        // المشتركين الجدد في الشهر المحدد
-  salaryRatio: number;       // نسبة الرواتب
-  churnRate: number;         // معدل التسرب
-  expiringSoon: number;      // هيخلصوا قريب
+  totalMembers: number;
+  activeMembers: number;
+  expiringSoon: number;
+  attendanceToday: number;
+  totalDebt: number;
+  totalRevenue: number;
+  totalExpenses: number;
+  netProfit: number;
 }
 
 export interface TrendPoint {
@@ -60,11 +63,13 @@ export interface PeakHourPoint {
 }
 
 export interface DashboardGraphs {
-  revenueTrend: TrendPoint[];
-  expenseTrend: TrendPoint[];
   attendanceLast7Days: AttendancePoint[];
-  peakHours: PeakHourPoint[];
-  expensesByCategory: { _id: string; totalExpenses: number }[];
+  revenueLast6Months: {
+    _id: number;
+    monthName: number;
+    totalRevenue: number;
+    count: number;
+  }[];
 }
 
 export interface TopMember {
@@ -129,6 +134,7 @@ export interface Trainee {
   phone: string;
   subscriptionStartDate: string;
   subscriptionEndDate: string;
+  billingCycleId: string;
   totalCost: number;
   paid: number;
   remaining: number;
@@ -136,6 +142,7 @@ export interface Trainee {
   deleteFlag: boolean;
   accountFreezeStatus: boolean;
   freezeStartDate: string | null;
+  freezeHistory: FreezeHistoryEntry[];
   isSession: boolean;
   program: string;
   sessionsRemaining?: number
@@ -163,6 +170,40 @@ export interface Trainee {
   updatedAt: string;
 }
 
+export interface FreezeHistoryEntry {
+  action: 'freeze' | 'unfreeze';
+  actorUserId?: string;
+  reason: string;
+  effectiveDate: string;
+  previousEndDate: string;
+  resultingEndDate: string;
+  createdAt: string;
+}
+
+export type PaymentTransactionType = 'payment' | 'refund' | 'adjustment';
+
+export interface PaymentTransaction {
+  _id: string;
+  traineeId: string;
+  type: PaymentTransactionType;
+  amountMinor: number;
+  currency: string;
+  status: 'posted' | 'voided';
+  reason?: string;
+  reference?: string;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LedgerSummary {
+  grossPaidMinor: number;
+  refundedMinor: number;
+  adjustmentsMinor: number;
+  netPaidMinor: number;
+  outstandingMinor: number;
+}
+
 
 export interface PaginationData {
   totalUsers: number;
@@ -177,7 +218,7 @@ export interface TraineeWithPagination {
 
 export interface TraineesApiResponse {
   success: boolean;
-  error: string;
+  error?: string;
   data: Trainee[];
   pagination: PaginationData;
 }

@@ -57,6 +57,7 @@ const Dashboard: React.FC = () => {
   const trainees: Trainee[] = raw?.trainees || [];
   const expenses: Expense[] = raw?.expenses || [];
   const trainers: Trainer[] = raw?.trainers || [];
+  const transactions = raw?.transactions || [];
 
   // ==========================================
   // 🔥 CALCULATIONS ENGINE (CLIENT-SIDE) 🔥
@@ -64,14 +65,14 @@ const Dashboard: React.FC = () => {
 
   // A. إحصائيات الشهر المختار (للكروت)
   const currentStats = useMemo(() => {
-    return calculateMonthlyStats(trainees, expenses, trainers, selectedDate);
-  }, [trainees, expenses, trainers, selectedDate]);
+    return calculateMonthlyStats(trainees, expenses, trainers, selectedDate, transactions);
+  }, [trainees, expenses, trainers, selectedDate, transactions]);
 
   // B. ساعات الذروة (بناءً على كل الداتا)
   const peakHoursData = useMemo(() => calculatePeakHours(trainees), [trainees]);
 
   // C. أحدث المعاملات (آخر 5)
-  const recentTx = useMemo(() => getRecentTransactions(trainees, expenses), [trainees, expenses]);
+  const recentTx = useMemo(() => getRecentTransactions(trainees, expenses, transactions), [trainees, expenses, transactions]);
 
   // D. بيانات الرسم البياني (آخر 6 شهور)
   const trendData = useMemo(() => {
@@ -79,7 +80,7 @@ const Dashboard: React.FC = () => {
       const d = new Date(selectedDate);
       d.setMonth(d.getMonth() - (5 - i));
       // بنحسب إحصائيات كل شهر لوحده
-      const stats = calculateMonthlyStats(trainees, expenses, trainers, d);
+      const stats = calculateMonthlyStats(trainees, expenses, trainers, d, transactions);
       return {
         month: d.toLocaleDateString('en-US', { month: 'short' }),
         revenue: stats.revenue,
@@ -87,7 +88,7 @@ const Dashboard: React.FC = () => {
         margin: parseFloat(stats.profitMargin.toFixed(1))
       };
     });
-  }, [selectedDate, trainees, expenses, trainers]);
+  }, [selectedDate, trainees, expenses, trainers, transactions]);
 
   // E. توزيع المصاريف للشهر المختار (Pie Chart)
   const expenseData = useMemo(() => {

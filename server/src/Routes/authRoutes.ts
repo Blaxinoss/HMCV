@@ -5,6 +5,7 @@ import verifyToken from '../../midware/verifyToken.js';
 import type { Request, Response } from 'express';
 import { requireAdmin } from '../../midware/requireAdmin.js';
 import { db } from '../models/index.js';
+import { loginRateLimit } from '../../midware/rateLimit.js';
 const router: Router = express.Router();
 
 // // POST /api/auth/register// POST /api/auth/register
@@ -70,7 +71,7 @@ const router: Router = express.Router();
 //     }
 // });
 // POST /api/auth/login
-router.post('/login', async (req: Request, res: Response): Promise<void> => {
+router.post('/login', loginRateLimit, async (req: Request, res: Response): Promise<void> => {
     try {
         const { username, password } = req.body;
         const { User } = db(req);

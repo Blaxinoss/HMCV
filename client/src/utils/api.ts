@@ -56,14 +56,22 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     // 1. هات عنوان الصفحة الحالي والرابط اللي بنطلبه
-    const isLoginPage = window.location.pathname.includes('/login');
-    const isLoginRequest = error.config.url.includes('/auth/login');
-    const isLoginRequest2 = error.config.url.includes('/');
+    const isLoginPage = window.location.pathname === '/auth/login';
+    const requestUrl = error.config?.url || '';
+    const isLoginRequest = requestUrl.includes('/auth/login');
+    const isLoginRequest2 = requestUrl === '/' || requestUrl === '';
     // 2. لو الخطأ 401، بس إحنا مش في عملية تسجيل دخول
-    if (error.response && error.response.status === 401 && !isLoginRequest && !isLoginRequest2) {
+    if (error.response && error.response.status === 401 && !isLoginPage && !isLoginRequest && !isLoginRequest2) {
       // هنا بس اعمل طرد للمستخدم
       localStorage.clear();
       window.location.href = '/auth/login';
+    }
+
+    if (error.response?.data) {
+      const serverMessage = error.response.data.message || error.response.data.error;
+      if (serverMessage) {
+        error.message = serverMessage;
+      }
     }
 
     return Promise.reject(error);

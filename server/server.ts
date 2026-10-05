@@ -24,7 +24,12 @@ dotenv.config();
 const app: Express = express();
 
 // CORS configuration
-
+app.use(cors({
+    origin: '*', // Allow all origins
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 // Middleware
 app.use(bodyParser.json());
 
@@ -85,6 +90,19 @@ app.get('/health', (req, res) => {
         success: true,
         message: 'Server is running',
         timestamp: new Date().toISOString(),
+    });
+});
+
+app.get('/health/live', (req, res) => {
+    res.status(200).json({ success: true, status: 'live' });
+});
+
+app.get('/health/ready', (req, res) => {
+    const ready = mongoose.connection.readyState === 1;
+    res.status(ready ? 200 : 503).json({
+        success: ready,
+        status: ready ? 'ready' : 'not_ready',
+        database: ready ? 'connected' : 'disconnected',
     });
 });
 

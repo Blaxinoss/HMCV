@@ -31,6 +31,7 @@ import {
 import RenewModal from './RenewModal';
 import Pagination from '../Pagination/Pagination';
 import ClearDebtButton from './ClearDebtButton';
+import TransactionHistory from './TransactionHistory';
 
 interface TraineeListProps {
     onEdit: (trainee: Trainee) => void;
@@ -152,13 +153,13 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
         { key: 'session', label: 'Session', icon: Calendar }
     ];
 
-    // if (loading) {
-    //     return (
-    //         <div className="flex items-center justify-center h-64">
-    //             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-    //         </div>
-    //     );
-    // }
+    if (loading && trainees.length === 0) {
+        return (
+            <div className="flex items-center justify-center h-64" aria-live="polite">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500" />
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -361,6 +362,29 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
                                         </div>
 
                                     </div>
+
+                                    {/* Actions Row */}
+                                    <div className="pt-4 border-t border-gray-700/50 mb-4">
+                                        <h4 className="text-sm font-bold text-gray-300 mb-3">Financial history</h4>
+                                        <TransactionHistory
+                                            key={`${trainee._id}-${trainee.paid}-${trainee.remaining}`}
+                                            traineeId={trainee._id}
+                                        />
+                                    </div>
+
+                                    {trainee.freezeHistory?.length > 0 && (
+                                        <div className="pt-4 border-t border-gray-700/50 mb-4">
+                                            <h4 className="text-sm font-bold text-gray-300 mb-2">Freeze history</h4>
+                                            <div className="space-y-2">
+                                                {trainee.freezeHistory.slice().reverse().map((entry, index) => (
+                                                    <div key={`${entry.createdAt}-${index}`} className="text-xs text-gray-400 flex justify-between gap-3">
+                                                        <span className="capitalize">{entry.action}: {entry.reason}</span>
+                                                        <span>{new Date(entry.effectiveDate).toLocaleDateString()}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* Actions Row */}
                                     <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-700/50">

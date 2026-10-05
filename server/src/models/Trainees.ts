@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
+import { randomUUID } from 'node:crypto';
 
 // 1. Define Interfaces for Sub-documents (Cleanliness)
 interface IAppliedDiscount {
@@ -20,6 +21,16 @@ interface ICrmInfo {
     lastMessageType?: string;
 }
 
+interface IFreezeHistoryEntry {
+    action: 'freeze' | 'unfreeze';
+    actorUserId?: mongoose.Types.ObjectId;
+    reason: string;
+    effectiveDate: Date;
+    previousEndDate: Date;
+    resultingEndDate: Date;
+    createdAt: Date;
+}
+
 // 2. Define the Main Interface (The shape of the data in DB)
 export interface ITrainee {
     memberId?: number;
@@ -27,13 +38,18 @@ export interface ITrainee {
     phone: string;
     subscriptionStartDate: Date;
     subscriptionEndDate: Date;
+    billingCycleId: string;
+    ledgerMigratedAt?: Date | null;
     totalCost: number;
     paid: number;
     remaining: number;
     discount: number;
     deleteFlag: boolean;
+    deletedAt?: Date | null;
+    deletedBy?: mongoose.Types.ObjectId | null;
     accountFreezeStatus: boolean;
     freezeStartDate?: Date | null;
+    freezeHistory: IFreezeHistoryEntry[];
     isSession: boolean;
     program: string;
     sessionsRemaining: number;
@@ -61,7 +77,7 @@ interface ITraineeMethods {
 type TraineeModel = Model<ITrainee, {}, ITraineeMethods>;
 
 // 6. Define the Schema
-const TraineeSchema = new Schema<ITrainee, TraineeModel, ITraineeMethods>(
+export const TraineeSchema = new Schema<ITrainee, TraineeModel, ITraineeMethods>(
     {
         memberId: {
             type: Number,
@@ -89,6 +105,16 @@ const TraineeSchema = new Schema<ITrainee, TraineeModel, ITraineeMethods>(
             required: true,
             index: true,
         },
+        billingCycleId: {
+            type: String,
+            required: true,
+            default: randomUUID,
+            index: true,
+        },
+        ledgerMigratedAt: {
+            type: Date,
+            default: null,
+        },
         totalCost: {
             type: Number,
             required: true,
@@ -113,6 +139,15 @@ const TraineeSchema = new Schema<ITrainee, TraineeModel, ITraineeMethods>(
             type: Boolean,
             default: false,
         },
+        deletedAt: {
+            type: Date,
+            default: null,
+        },
+        deletedBy: {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+            default: null,
+        },
         accountFreezeStatus: {
             type: Boolean,
             default: false,
@@ -121,6 +156,17 @@ const TraineeSchema = new Schema<ITrainee, TraineeModel, ITraineeMethods>(
             type: Date,
             default: null,
         },
+        freezeHistory: [
+            {
+                action: { type: String, enum: ['freeze', 'unfreeze'], required: true },
+                actorUserId: { type: Schema.Types.ObjectId, ref: 'User' },
+                reason: { type: String, required: true, trim: true, maxlength: 500 },
+                effectiveDate: { type: Date, required: true },
+                previousEndDate: { type: Date, required: true },
+                resultingEndDate: { type: Date, required: true },
+                createdAt: { type: Date, default: Date.now },
+            },
+        ],
         program: {
             type: String,
             default: "",
@@ -160,6 +206,7 @@ const TraineeSchema = new Schema<ITrainee, TraineeModel, ITraineeMethods>(
     },
     {
         timestamps: true,
+        optimisticConcurrency: true,
         toJSON: { virtuals: true },
         toObject: { virtuals: true },
     }
@@ -227,10 +274,3 @@ TraineeSchema.pre('save', function (next) {
 
     next();
 });
-
-// 9. Export the Model
-// const Trainees = mongoose.model<ITrainee, TraineeModel>('Trainees', TraineeSchema);
-
-// export default Trainees;
-
-export { TraineeSchema };

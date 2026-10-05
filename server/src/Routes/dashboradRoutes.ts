@@ -1,7 +1,6 @@
 import express from 'express';
 import type { Request, Response } from 'express'
 import { db } from '../models/index.js';
-
 const router = express.Router();
 
 // routes/dashboard.ts
@@ -11,17 +10,17 @@ const router = express.Router();
 // GET /api/dashboard/raw-data
 router.get('/raw-data', async (req, res) => {
     try {
-        const { Trainees, Expense, Trainers } = db(req);
-
-        const [trainees, expenses, trainers] = await Promise.all([
-            Trainees.find(),
-            Expense.find(),
-            Trainers.find()
+        const { Trainees, Expense, Trainers, PaymentTransaction } = db(req);
+        const [trainees, expenses, trainers, transactions] = await Promise.all([
+            Trainees.find({ deleteFlag: false }),
+            Expense.find({ deleteFlag: false }),
+            Trainers.find({ deleteFlag: false }),
+            PaymentTransaction.find({ status: 'posted' }).sort({ createdAt: -1 }).limit(5000),
         ]);
 
         res.json({
             success: true,
-            data: { trainees, expenses, trainers }
+            data: { trainees, expenses, trainers, transactions }
         });
     } catch (error: any) {
         res.status(500).json({ success: false, error: error.message });

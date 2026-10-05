@@ -13,6 +13,9 @@ export interface IExpense extends Document {
     'Other';
     amount: number;
     dateOfPayment: Date;
+    deleteFlag: boolean;
+    deletedAt?: Date | null;
+    deletedBy?: mongoose.Types.ObjectId | null;
     createdAt: Date;
     description?: String;
 }
@@ -45,6 +48,20 @@ const expenseSchema = new Schema<IExpense>(
         dateOfPayment: {
             type: Date,
             required: true,
+        },
+        deleteFlag: {
+            type: Boolean,
+            default: false,
+            index: true,
+        },
+        deletedAt: {
+            type: Date,
+            default: null,
+        },
+        deletedBy: {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+            default: null,
         },
         description: {
             type: String,

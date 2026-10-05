@@ -5,10 +5,12 @@ import { fetchDashboardRawData } from '../../slices/dashboardSlice';
 
 const GlobalDataLoader: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
-    // بنراقب الداتا والعلم
     const { raw, needsRefresh } = useSelector((state: RootState) => state.dashboard);
+    const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
 
     useEffect(() => {
+        if (!isAuthenticated) return;
+
         // الحالة 1: التطبيق لسه فاتح والداتا فاضية -> هات الداتا
         if (!raw) {
             dispatch(fetchDashboardRawData());
@@ -19,7 +21,7 @@ const GlobalDataLoader: React.FC = () => {
             // ده اسمه Silent Refresh (تحديث في الخلفية)
             dispatch(fetchDashboardRawData());
         }
-    }, [dispatch, raw, needsRefresh]);
+    }, [dispatch, raw, needsRefresh, isAuthenticated]);
 
     return null; // الكومبوننت ده خفي ومجرد لوجيك
 };

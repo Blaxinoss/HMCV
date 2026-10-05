@@ -4,7 +4,6 @@ import React, { useEffect } from 'react';
 import { Provider, useDispatch, useSelector } from 'react-redux';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import Login from './components/Auth/Login';
-import Register from './components/Auth/Register';
 import Dashboard from './components/Dashboard/Dashboard';
 import AllUsers from './components/DetailedTrainees/AllTrainees';
 import TraineeDetailsModal from './components/DetailedTrainees/TraineeDetailsModal';
@@ -56,7 +55,7 @@ function AppContent() {
       <Routes>
         {/* Auth Routes - Public */}
         <Route path="/auth/login" element={<Login />} />
-        <Route path="/auth/register" element={<Register />} />
+        <Route path="/auth/register" element={<Navigate to="/auth/login" replace />} />
 
         {/* Protected Routes */}
         <Route

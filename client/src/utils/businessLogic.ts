@@ -1,22 +1,42 @@
 // src/utils/businessLogic.ts
-import { Trainee, Expense, Trainer } from '../types';
+import { Trainee, Expense, Trainer, PaymentTransaction } from '../types';
+
+const toMajorUnits = (amountMinor: number) => amountMinor / 100;
 
 export const calculateMonthlyStats = (
     trainees: Trainee[],
     expenses: Expense[],
     trainers: Trainer[],
-    selectedDate: Date
+    selectedDate: Date,
+    transactions: PaymentTransaction[] = [],
 ) => {
     const month = selectedDate.getMonth();
     const year = selectedDate.getFullYear();
 
     // 1. Filter Data for this Month
-    const monthlyRevenue = trainees
-        .filter(t => {
-            const d = new Date(t.createdAt); // Or payment date if available
-            return d.getMonth() === month && d.getFullYear() === year;
-        })
-        .reduce((sum, t) => sum + t.paid, 0);
+    const monthlyRevenue = transactions.length > 0
+        ? transactions
+            .filter(transaction => {
+                const date = new Date(transaction.createdAt);
+                return transaction.type !== 'refund' &&
+                    date.getMonth() === month &&
+                    date.getFullYear() === year;
+            })
+            .reduce((sum, transaction) => sum + toMajorUnits(transaction.amountMinor), 0)
+        - transactions
+            .filter(transaction => {
+                const date = new Date(transaction.createdAt);
+                return transaction.type === 'refund' &&
+                    date.getMonth() === month &&
+                    date.getFullYear() === year;
+            })
+            .reduce((sum, transaction) => sum + toMajorUnits(transaction.amountMinor), 0)
+        : trainees
+            .filter(t => {
+                const d = new Date(t.createdAt);
+                return d.getMonth() === month && d.getFullYear() === year;
+            })
+            .reduce((sum, t) => sum + t.paid, 0);
 
     const monthlyExpenses = expenses
         .filter(e => {
@@ -126,15 +146,32 @@ export const calculatePeakHours = (trainees: Trainee[]) => {
 /**
  * Merges Trainee Payments and Expenses into a single sorted timeline.
  */
-export const getRecentTransactions = (trainees: Trainee[], expenses: Expense[], limit = 10) => {
-    const incomes = trainees.map(t => ({
-        id: t._id,
-        type: 'INCOME',
-        label: `Payment: ${t.name}`,
-        amount: t.paid,
-        date: new Date(t.createdAt), // Or update this to a real paymentDate field if you have it
-        category: t.isSession ? 'Session Pack' : 'Subscription'
-    }));
+export const getRecentTransactions = (
+    trainees: Trainee[],
+    expenses: Expense[],
+    transactions: PaymentTransaction[] = [],
+    limit = 10,
+) => {
+    const traineeNames = new Map(trainees.map(trainee => [trainee._id, trainee.name]));
+    const incomes = transactions.length > 0
+        ? transactions
+            .filter(transaction => transaction.type === 'payment')
+            .map(transaction => ({
+                id: transaction._id,
+                type: 'INCOME',
+                label: `Payment: ${traineeNames.get(transaction.traineeId) || 'Member'}`,
+                amount: toMajorUnits(transaction.amountMinor),
+                date: new Date(transaction.createdAt),
+                category: 'Subscription'
+            }))
+        : trainees.map(t => ({
+            id: t._id,
+            type: 'INCOME',
+            label: `Payment: ${t.name}`,
+            amount: t.paid,
+            date: new Date(t.createdAt),
+            category: t.isSession ? 'Session Pack' : 'Subscription'
+        }));
 
     const outflows = expenses.map(e => ({
         id: e._id,

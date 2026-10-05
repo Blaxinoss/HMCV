@@ -3,6 +3,7 @@ import api from '../utils/api';
 import { addTrainee, checkInTrainee, deleteTrainee, freezeTrainee, patchTrainee, renewTrainee, updateTrainee } from './subscriptionSlice';
 import { addExpense, deleteExpense, updateExpense } from './expensesSlice';
 import { addTrainer, deleteTrainer, updateTrainer } from './trainersSlice';
+import { PaymentTransaction } from '../types';
 // import { DashboardState } from '../types'; // ممكن نستغنى عنها ونعرف الـ State هنا لو التايب القديم مختلف
 
 // 1. تعريف شكل الداتا الخام
@@ -10,6 +11,7 @@ export interface RawData {
     trainees: any[];
     expenses: any[];
     trainers: any[];
+    transactions: PaymentTransaction[];
 }
 
 // 2. تعريف حالة السلايس
@@ -30,7 +32,10 @@ export const fetchDashboardRawData = createAsyncThunk<
     async (_, { rejectWithValue }) => {
         try {
             const response = await api.get('/dashboard/raw-data');
-            return response.data.data;
+            return {
+                ...response.data.data,
+                transactions: response.data.data.transactions || [],
+            };
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.message || 'Failed to fetch data');
         }

@@ -7,6 +7,8 @@ import { userSchema } from './User.js';
 import { TrainersSchema } from './Trainers.js';
 import { CouponSchema } from './Coupons.js';
 import { expenseSchema } from './Expense.js';
+import { PaymentTransactionSchema } from './PaymentTransaction.js';
+import { AuditLogSchema } from './AuditLog.js';
 
 
 export const db = (req: Request) => ({
@@ -15,5 +17,7 @@ export const db = (req: Request) => ({
     Coupon: req.getModel('Coupon', CouponSchema),
     User: req.getModel('User', userSchema),
     Expense: req.getModel('Expense', expenseSchema),
+    PaymentTransaction: req.getModel('PaymentTransaction', PaymentTransactionSchema),
+    AuditLog: req.getModel('AuditLog', AuditLogSchema),
 
 });

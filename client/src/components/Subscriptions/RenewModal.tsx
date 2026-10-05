@@ -41,7 +41,7 @@ const RenewModal: React.FC<RenewModalProps> = ({ traineeId, traineeName, isSessi
                 data: {
                     durationInDays: durationInDays,
                     totalCost: formData.totalCost,
-                    paid: formData.amountPaid,
+                    paymentAmountMinor: Math.round(formData.amountPaid * 100),
                     couponCode: formData.couponCode,
                     sessionsCount: isSession ? formData.sessionsCount : undefined
                 }

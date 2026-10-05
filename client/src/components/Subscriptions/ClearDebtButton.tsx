@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { CheckCircle, Loader2 } from 'lucide-react';
 import { useDispatch } from 'react-redux';
-import { patchTrainee } from '../../slices/subscriptionSlice';
+import { createPaymentTransaction } from '../../slices/subscriptionSlice';
 import { AppDispatch } from '../../store';
 import toast from 'react-hot-toast';
 import { Trainee } from '../../types';
@@ -27,22 +27,11 @@ const ClearDebtButton: React.FC<ClearDebtButtonProps> = ({ trainee }) => {
         showConfirm(trainee._id, async () => {
             setLoading(true);
             try {
-                // 1. الحسابات (بتتعمل بس لما يوافق)
-                let discount = trainee.discount || 0;
-
-                if (trainee.appliedDiscount?.hasCustomDiscount) {
-                    if (trainee.appliedDiscount.discountType === 'percentage') {
-                        discount = (trainee.totalCost * trainee.appliedDiscount.discountValue) / 100;
-                    } else {
-                        discount = trainee.appliedDiscount.discountValue;
-                    }
-                }
-
-                const netTotal = trainee.totalCost - discount;
-
-                await dispatch(patchTrainee({
+                await dispatch(createPaymentTransaction({
                     id: trainee._id,
-                    data: { paid: netTotal }
+                    type: 'payment',
+                    amountMinor: Math.round(trainee.remaining * 100),
+                    reason: 'Debt cleared',
                 })).unwrap();
 
                 toast.success("Debt Cleared Successfully! 💸");

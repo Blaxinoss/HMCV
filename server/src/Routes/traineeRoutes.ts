@@ -1,11 +1,15 @@
 import express from "express"
 import type { Request, Response } from 'express';
+import type { AuthRequest } from '../../midware/verifyToken.js';
 import axios from "axios"
-import mongoose, { Mongoose } from "mongoose";
+import mongoose from "mongoose";
+import { randomUUID } from 'node:crypto';
 const router = express.Router();
-import { type ICoupon, DiscountType } from '../models/Coupons.js'
 import { db } from '../models/index.js';
-
+import { redeemCoupon } from '../services/couponService.js';
+import { createTransaction, getLedgerSummary, getNetPriceMinor, toMinorUnits } from '../services/financeService.js';
+import { calculateFreezeStart, calculateUnfreezeEndDate, sameGymDay } from '../utils/freezePolicy.js';
+import { recordAudit } from '../services/auditService.js';
 // GET: Fetch all trainees
 router.get('/', async (req: Request, res: Response) => {
     try {
@@ -20,7 +24,7 @@ router.get('/', async (req: Request, res: Response) => {
         const skip = (page - 1) * limit;
 
         // 1. بناء جملة البحث (الذكية)
-        let query: any = {};
+        let query: any = { deleteFlag: false };
 
         if (search) {
             const searchConditions = [
@@ -32,7 +36,7 @@ router.get('/', async (req: Request, res: Response) => {
                 searchConditions.push({ memberId: Number(search) } as any);
             }
 
-            query = { $or: searchConditions };
+            query.$or = searchConditions;
         }
 
         const today = new Date();
@@ -76,7 +80,7 @@ router.get('/', async (req: Request, res: Response) => {
 // POST: Create a new trainee
 router.post('/', async (req: Request, res: Response) => {
     try {
-        const { Trainees, Coupon } = db(req);
+        const { Trainees, Coupon, PaymentTransaction } = db(req);
 
         const lastTrainee = await Trainees.findOne({
             memberId: { $exists: true }
@@ -108,34 +112,13 @@ router.post('/', async (req: Request, res: Response) => {
         };
 
         if (couponCode) {
-            const coupon: ICoupon | null = await Coupon.findOne({
-                code: couponCode.toUpperCase(),
-                isActive: true
-            });
-
-            if (coupon) {
-                const isExpired = new Date() > coupon.expiryDate;
-                const isLimitReached = coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit;
-
-                if (!isExpired && !isLimitReached) {
-                    // حساب قيمة الخصم
-                    if (coupon.discountType === DiscountType.PERCENTAGE) {
-                        discountAmount = (totalCost * coupon.value) / 100;
-                        appliedDiscountData.discountType = 'percentage';
-                    } else if (coupon.discountType === DiscountType.FIXED) {
-                        discountAmount = coupon.value;
-                        appliedDiscountData.discountType = 'fixed';
-                    }
-
-                    // تحديث بيانات الكوبون
-                    coupon.usedCount += 1;
-
-                    await coupon.save();
-
-                    finalUsedCouponCode = coupon.code;
-                    appliedDiscountData.hasCustomDiscount = true
-                    appliedDiscountData.discountValue = coupon.value;
-                }
+            const redeemedCoupon = await redeemCoupon(Coupon, couponCode, Number(totalCost));
+            if (redeemedCoupon) {
+                discountAmount = redeemedCoupon.discountAmount;
+                finalUsedCouponCode = redeemedCoupon.coupon.code;
+                appliedDiscountData.hasCustomDiscount = true;
+                appliedDiscountData.discountValue = redeemedCoupon.appliedDiscount.discountValue;
+                appliedDiscountData.discountType = redeemedCoupon.appliedDiscount.discountType;
             }
         }
 
@@ -164,6 +147,17 @@ router.post('/', async (req: Request, res: Response) => {
         });
 
         const savedTrainee = await newTrainee.save();
+
+        if (Number(paid) > 0) {
+            await createTransaction({
+                transactionModel: PaymentTransaction,
+                traineeId: savedTrainee._id,
+                billingCycleId: savedTrainee.billingCycleId,
+                type: 'payment',
+                amountMinor: toMinorUnits(Number(paid)),
+                reason: 'Initial subscription payment',
+            });
+        }
 
         const N8N_WEBHOOK_URL = process.env.N8N_WELCOME_WEBHOOK || 'http://localhost:5678/webhook-test/welcome_user';
         const N8N_API_SECRET = process.env.N8N_API_SECRET
@@ -196,10 +190,93 @@ router.post('/', async (req: Request, res: Response) => {
     }
 })
 
-
-router.put('/:id/freeze', async (req: Request, res: Response): Promise<void> => {
+// POST: Record a payment, refund, or approved adjustment for a trainee.
+// Legacy paid/remaining fields are intentionally not changed here; they are
+// compatibility snapshots until existing records are migrated to the ledger.
+router.post('/:id/transactions', async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { Trainees } = db(req);
+        const { Trainees, PaymentTransaction, AuditLog } = db(req);
+
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            res.status(400).json({ success: false, message: 'Invalid trainee ID' });
+            return;
+        }
+
+        const trainee = await Trainees.findById(req.params.id);
+        if (!trainee) {
+            res.status(404).json({ success: false, message: 'Trainee not found' });
+            return;
+        }
+
+        const { type = 'payment', amount, amountMinor, reason, reference } = req.body;
+        const normalizedAmountMinor = amountMinor ?? toMinorUnits(Number(amount));
+
+        if (!['payment', 'refund', 'adjustment'].includes(type)) {
+            res.status(400).json({ success: false, message: 'Invalid transaction type' });
+            return;
+        }
+
+        const transaction = await createTransaction({
+            transactionModel: PaymentTransaction,
+            traineeId: trainee._id,
+            type,
+            amountMinor: normalizedAmountMinor,
+            reason,
+            reference,
+            createdBy: req.user ? new mongoose.Types.ObjectId(req.user.id) : undefined,
+            billingCycleId: trainee.billingCycleId,
+        });
+        await recordAudit({
+            auditLogModel: AuditLog,
+            action: type === 'payment' ? 'payment.recorded' : `transaction.${type}.recorded`,
+            entity: 'PaymentTransaction',
+            entityId: String(transaction._id),
+            actorUserId: req.user ? new mongoose.Types.ObjectId(req.user.id) : undefined,
+            requestId: req.headers['x-request-id'] as string | undefined,
+            after: { traineeId: String(trainee._id), billingCycleId: trainee.billingCycleId, type, amountMinor: normalizedAmountMinor },
+        });
+        const summary = await getLedgerSummary(PaymentTransaction, trainee._id, trainee.billingCycleId, getNetPriceMinor(trainee));
+
+        res.status(201).json({
+            success: true,
+            message: 'Financial transaction recorded',
+            data: { transaction, summary },
+        });
+    } catch (error: any) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+});
+
+// GET: Return the immutable financial history and derived balance.
+router.get('/:id/transactions', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { Trainees, PaymentTransaction } = db(req);
+
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            res.status(400).json({ success: false, message: 'Invalid trainee ID' });
+            return;
+        }
+
+        const trainee = await Trainees.findById(req.params.id);
+        if (!trainee) {
+            res.status(404).json({ success: false, message: 'Trainee not found' });
+            return;
+        }
+
+        const transactions = await PaymentTransaction.find({ traineeId: trainee._id })
+            .sort({ createdAt: -1 });
+        const summary = await getLedgerSummary(PaymentTransaction, trainee._id, trainee.billingCycleId, getNetPriceMinor(trainee));
+
+        res.status(200).json({ success: true, data: { transactions, summary } });
+    } catch (error: any) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+
+router.put('/:id/freeze', async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const { Trainees, AuditLog } = db(req);
 
         const trainee = await Trainees.findById(req.params.id);
 
@@ -209,30 +286,40 @@ router.put('/:id/freeze', async (req: Request, res: Response): Promise<void> => 
         }
 
         const currentDate = new Date();
+        const beforeFreeze = {
+            accountFreezeStatus: trainee.accountFreezeStatus,
+            freezeStartDate: trainee.freezeStartDate,
+            subscriptionEndDate: trainee.subscriptionEndDate,
+        };
+        const reason = typeof req.body.reason === 'string' && req.body.reason.trim()
+            ? req.body.reason.trim()
+            : 'Manual membership freeze';
+        const previousEndDate = new Date(trainee.subscriptionEndDate);
 
         // -------------------------------------------------------
         //(Unfreeze)
         // -------------------------------------------------------
         if (trainee.accountFreezeStatus) {
-            if (trainee.freezeStartDate && trainee.daysLeft) {
-                const start = new Date(trainee.freezeStartDate)//  21/10/2022 at 10 pm 
-                start.setHours(0, 0, 0, 0);
-
-                const current = new Date(currentDate)//  23/10/2022 at 5 pm
-                current.setHours(0, 0, 0, 0);
-                const freezeDurationMs = current.getTime() - start.getTime();
-
-                if (freezeDurationMs > 0) {
-                    const currentEndDate = new Date(trainee.subscriptionEndDate).getTime();
-                    trainee.subscriptionEndDate = new Date(currentEndDate + freezeDurationMs);
-                    // trainee.daysLeft += Math.ceil(freezeDurationMs / (1000 * 60 * 60 * 24)) // okay getting the freezing duration
-
-                    console.log(`Unfreezing: Added ${freezeDurationMs / (1000 * 60 * 60 * 24)} days`);
-                }
+            if (trainee.freezeStartDate) {
+                const result = calculateUnfreezeEndDate(
+                    trainee.subscriptionEndDate,
+                    trainee.freezeStartDate,
+                    currentDate,
+                );
+                trainee.subscriptionEndDate = result.endDate;
             }
 
             trainee.freezeStartDate = null;
             trainee.accountFreezeStatus = false;
+            trainee.freezeHistory.push({
+                action: 'unfreeze',
+                actorUserId: req.user ? new mongoose.Types.ObjectId(req.user.id) : undefined,
+                reason,
+                effectiveDate: currentDate,
+                previousEndDate,
+                resultingEndDate: trainee.subscriptionEndDate,
+                createdAt: currentDate,
+            });
 
             // -------------------------------------------------------
             // (Freeze)
@@ -250,27 +337,36 @@ router.put('/:id/freeze', async (req: Request, res: Response): Promise<void> => 
                 return;
             }
 
-            let freezeStart = new Date(currentDate);
-            freezeStart.setHours(0, 0, 0, 0);
-
-            if (trainee.lastAttendance) {
-                const lastAtt = new Date(trainee.lastAttendance);
-                lastAtt.setHours(0, 0, 0, 0);
-
-
-                if (lastAtt.getTime() === freezeStart.getTime()) {
-                    console.log("User attended today. Freeze starts TOMORROW");
-
-                    // زحزح بداية التجميد ليوم بكرة
-                    freezeStart.setDate(freezeStart.getDate() + 1);
-                }
-            }
+            const freezeStart = calculateFreezeStart(currentDate, trainee.lastAttendance);
 
             trainee.accountFreezeStatus = true;
             trainee.freezeStartDate = freezeStart;
+            trainee.freezeHistory.push({
+                action: 'freeze',
+                actorUserId: req.user ? new mongoose.Types.ObjectId(req.user.id) : undefined,
+                reason,
+                effectiveDate: freezeStart,
+                previousEndDate,
+                resultingEndDate: previousEndDate,
+                createdAt: currentDate,
+            });
         }
 
         const updatedTrainee = await trainee.save();
+        await recordAudit({
+            auditLogModel: AuditLog,
+            action: updatedTrainee.accountFreezeStatus ? 'subscription.frozen' : 'subscription.unfrozen',
+            entity: 'Trainee',
+            entityId: String(updatedTrainee._id),
+            actorUserId: req.user ? new mongoose.Types.ObjectId(req.user.id) : undefined,
+            requestId: req.headers['x-request-id'] as string | undefined,
+            before: beforeFreeze,
+            after: {
+                accountFreezeStatus: updatedTrainee.accountFreezeStatus,
+                freezeStartDate: updatedTrainee.freezeStartDate,
+                subscriptionEndDate: updatedTrainee.subscriptionEndDate,
+            },
+        });
 
         res.status(200).json({
             success: true,
@@ -285,6 +381,10 @@ router.put('/:id/freeze', async (req: Request, res: Response): Promise<void> => 
         });
 
     } catch (error: any) {
+        if (error instanceof mongoose.Error.VersionError) {
+            res.status(409).json({ error: 'Trainee changed by another request. Please reload and try again.' });
+            return;
+        }
         res.status(400).json({ error: error.message });
     }
 });
@@ -322,13 +422,8 @@ router.post("/check-in/:id", async (req: Request, res: Response) => {
         return res.status(400).json({ error: "Cannot check-in: No Sessions Remaining 🎫" });
     }
 
-    if (trainee.lastAttendance) {
-        const lastDate = new Date(trainee.lastAttendance).toDateString(); // "Mon Jan 20 2026"
-        const todayDate = today.toDateString(); // "Mon Jan 20 2026"
-
-        if (lastDate === todayDate) {
-            return res.status(400).json({ error: "Already checked in today!" });
-        }
+    if (trainee.lastAttendance && sameGymDay(trainee.lastAttendance, today)) {
+        return res.status(400).json({ error: "Already checked in today!" });
     }
 
     let warnings = [];
@@ -349,18 +444,8 @@ router.post("/check-in/:id", async (req: Request, res: Response) => {
 
         trainee.sessionsRemaining -= 1;
 
-        if (trainee.subscriptionEndDate && new Date(trainee.subscriptionEndDate) < today) {
-            warnings.push("Session Pack Expired (Date)");
-        }
-
-
     } else {
-        // ---------------------------------------------------------
-        // Normal CASE
-        // -----------------------------------------------------
-        if (trainee.subscriptionEndDate && new Date(trainee.subscriptionEndDate) < today) {
-            warnings.push("Subscription Expired 📅");
-        }
+        // Date expiry was checked before reaching this branch.
     }
 
 
@@ -402,15 +487,31 @@ router.get('/:id', async (req: Request, res: Response) => {
 });
 
 // DELETE: Remove trainee
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', async (req: AuthRequest, res: Response) => {
     try {
-        const { Trainees } = db(req);
-
-        const deletedTrainee = await Trainees.findByIdAndDelete(req.params.id);
+        const { Trainees, AuditLog } = db(req);
+        const deletedTrainee = await Trainees.findByIdAndUpdate(
+            req.params.id,
+            {
+                deleteFlag: true,
+                deletedAt: new Date(),
+                deletedBy: req.user?.id,
+            },
+            { new: true },
+        );
         if (!deletedTrainee) {
             res.status(404).json({ error: 'Trainee not found' });
             return;
         }
+        await recordAudit({
+            auditLogModel: AuditLog,
+            action: 'trainee.deleted',
+            entity: 'Trainee',
+            entityId: String(deletedTrainee._id),
+            actorUserId: req.user ? new mongoose.Types.ObjectId(req.user.id) : undefined,
+            requestId: req.headers['x-request-id'] as string | undefined,
+            after: { deleteFlag: true, deletedAt: deletedTrainee.deletedAt },
+        });
         res.status(200).json({ message: 'Trainee deleted successfully' });
     } catch (error: any) {
         res.status(500).json({ error: error.message });
@@ -512,7 +613,7 @@ router.put('/:id', async (req: Request, res: Response) => {
 // POST: /api/trainees/:id/renew
 router.post('/:id/renew', async (req: Request, res: Response): Promise<void> => {
     try {
-        const { Trainees, Coupon } = db(req);
+        const { Trainees, Coupon, PaymentTransaction } = db(req);
 
         const { id } = req.params;
 
@@ -530,6 +631,7 @@ router.post('/:id/renew', async (req: Request, res: Response): Promise<void> => 
             durationInDays, // مدة التجديد (30 يوم مثلاً)
             totalCost,      // سعر الباقة الجديد
             paid,           // المبلغ المدفوع الآن
+            paymentAmountMinor,
             couponCode,      // الكوبون (اختياري)
             sessionsCount
         } = req.body;
@@ -568,35 +670,13 @@ router.post('/:id/renew', async (req: Request, res: Response): Promise<void> => 
 
 
         if (couponCode) {
-            const coupon = await Coupon.findOne({
-                code: couponCode.toUpperCase(),
-                isActive: true
-            });
-
-            if (coupon) {
-                const isExpired = new Date() > coupon.expiryDate;
-                const isLimitReached = coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit;
-
-                if (!isExpired && !isLimitReached) {
-                    if (coupon.discountType === 'PERCENTAGE') {
-                        discountAmount = (totalCost * coupon.value) / 100;
-                        appliedDiscountData.discountType = 'percentage';
-                    } else if (coupon.discountType === 'FIXED') {
-                        discountAmount = coupon.value;
-                        appliedDiscountData.discountType = 'fixed';
-                    }
-
-                    // تحديث الكوبون
-                    coupon.usedCount += 1;
-
-                    await coupon.save();
-
-                    finalUsedCouponCode = coupon.code;
-                    appliedDiscountData.hasCustomDiscount = true;
-                    appliedDiscountData.discountValue = coupon.value;
-
-                    finalUsedCouponCode = coupon.code;
-                }
+            const redeemedCoupon = await redeemCoupon(Coupon, couponCode, Number(totalCost));
+            if (redeemedCoupon) {
+                discountAmount = redeemedCoupon.discountAmount;
+                finalUsedCouponCode = redeemedCoupon.coupon.code;
+                appliedDiscountData.hasCustomDiscount = true;
+                appliedDiscountData.discountValue = redeemedCoupon.appliedDiscount.discountValue;
+                appliedDiscountData.discountType = redeemedCoupon.appliedDiscount.discountType;
             }
         }
 
@@ -605,14 +685,17 @@ router.post('/:id/renew', async (req: Request, res: Response): Promise<void> => 
         // أو ممكن تجمع الديون القديمة لو حابب (Business Decision)
         // هنا هنفترض إن التجديد عملية جديدة منفصلة
 
-        const remainingAmount = (totalCost - discountAmount) - paid;
+        const normalizedPaymentMinor = paymentAmountMinor ?? toMinorUnits(Number(paid) || 0);
+        const normalizedPayment = normalizedPaymentMinor / 100;
+        const remainingAmount = (totalCost - discountAmount) - normalizedPayment;
 
         trainee.subscriptionStartDate = newStartDate;
         trainee.subscriptionEndDate = newEndDate;
         trainee.totalCost = totalCost;
         trainee.discount = discountAmount;
-        trainee.paid = paid;
+        trainee.paid = normalizedPayment;
         trainee.remaining = remainingAmount; // تحديث المتبقي
+        trainee.billingCycleId = randomUUID();
         trainee.usedCoupon = finalUsedCouponCode || trainee.usedCoupon; // سجل الكوبون الجديد
         trainee.appliedDiscount = appliedDiscountData as any; // التفاصيل (عشان الـ Edit Form تفهم)
 
@@ -635,6 +718,17 @@ router.post('/:id/renew', async (req: Request, res: Response): Promise<void> => 
         trainee.freezeStartDate = null;
 
         await trainee.save();
+
+        if (normalizedPaymentMinor > 0) {
+            await createTransaction({
+                transactionModel: PaymentTransaction,
+                traineeId: trainee._id,
+                billingCycleId: trainee.billingCycleId,
+                type: 'payment',
+                amountMinor: normalizedPaymentMinor,
+                reason: 'Subscription renewal payment',
+            });
+        }
 
         res.status(200).json({
             success: true,

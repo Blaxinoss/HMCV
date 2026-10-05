@@ -1,7 +1,7 @@
 // src/slices/subscriptionSlice.ts
 
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { TraineesState, Trainee, ApiResponse, TraineeWithPagination, TraineesApiResponse } from '../types';
+import { TraineesState, Trainee, ApiResponse, TraineeWithPagination, TraineesApiResponse, LedgerSummary, PaymentTransaction, PaymentTransactionType } from '../types';
 import api from '../utils/api';
 
 interface FetchTraineesArgs {
@@ -21,6 +21,25 @@ export const patchTrainee = createAsyncThunk(
       return thunkAPI.rejectWithValue(error.response?.data?.message || 'Update failed');
     }
   }
+);
+
+export const createPaymentTransaction = createAsyncThunk<
+  { transaction: PaymentTransaction; summary: LedgerSummary },
+  { id: string; type: PaymentTransactionType; amountMinor: number; reason?: string },
+  { rejectValue: string }
+>(
+  'trainees/createPaymentTransaction',
+  async ({ id, ...data }, { rejectWithValue }) => {
+    try {
+      const response = await api.post<ApiResponse<{ transaction: PaymentTransaction; summary: LedgerSummary }>>(
+        `/trainees/${id}/transactions`,
+        data,
+      );
+      return response.data.data as { transaction: PaymentTransaction; summary: LedgerSummary };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to record transaction');
+    }
+  },
 );
 
 export const fetchTrainees = createAsyncThunk<
@@ -187,6 +206,18 @@ const subscriptionSlice = createSlice({
 
     // Add Trainee
     builder
+      .addCase(createPaymentTransaction.fulfilled, (state, action) => {
+        const transaction = action.payload.transaction;
+        const index = state.trainees.findIndex(t => t._id === transaction.traineeId);
+        if (index !== -1) {
+          state.trainees[index].paid = action.payload.summary.netPaidMinor / 100;
+          state.trainees[index].remaining = action.payload.summary.outstandingMinor / 100;
+        }
+        state.error = null;
+      })
+      .addCase(createPaymentTransaction.rejected, (state, action) => {
+        state.error = action.payload || 'Failed to record transaction';
+      })
       .addCase(addTrainee.pending, (state) => {
         state.loading = true;
         state.error = null;

@@ -3,7 +3,9 @@ import verifyToken from '../../midware/verifyToken.js';
 import type { Request, Response } from 'express';
 import type { AuthRequest } from '../../midware/verifyToken.js';
 import { db } from '../models/index.js';
-
+import { validateExpenseInput } from '../utils/validation.js';
+import mongoose from 'mongoose';
+import { recordAudit } from '../services/auditService.js';
 const router: Router = express.Router();
 
 // Apply JWT verification to all routes
@@ -13,8 +15,7 @@ router.use(verifyToken);
 router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { Expense } = db(req);
-
-        const expenses = await Expense.find().sort({ dateOfPayment: -1 });
+        const expenses = await Expense.find({ deleteFlag: false }).sort({ dateOfPayment: -1 });
         res.status(200).json({
             success: true,
             data: expenses,
@@ -34,11 +35,14 @@ router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
 
         const { name, category, amount, dateOfPayment, description } = req.body;
 
-        // Validate input
-        if (!name || !category || !amount || !dateOfPayment) {
+        const validationErrors = validateExpenseInput(
+            { name, category, amount, dateOfPayment, description },
+            'create',
+        );
+        if (validationErrors.length > 0) {
             res.status(400).json({
                 success: false,
-                message: 'All fields are required.',
+                message: validationErrors.join('; '),
             });
             return;
         }
@@ -69,6 +73,11 @@ router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
 router.put('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { Expense } = db(req);
+        const validationErrors = validateExpenseInput(req.body, 'update');
+        if (validationErrors.length > 0) {
+            res.status(400).json({ success: false, message: validationErrors.join('; ') });
+            return;
+        }
 
         const expense = await Expense.findById(req.params.id);
         if (!expense) {
@@ -79,11 +88,11 @@ router.put('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
             return;
         }
 
-        expense.name = req.body.name || expense.name;
-        expense.category = req.body.category || expense.category;
-        expense.amount = req.body.amount || expense.amount;
-        expense.dateOfPayment = req.body.dateOfPayment || expense.dateOfPayment;
-        expense.description = req.body.description || expense.description;
+        if (req.body.name !== undefined) expense.name = req.body.name;
+        if (req.body.category !== undefined) expense.category = req.body.category;
+        if (req.body.amount !== undefined) expense.amount = req.body.amount;
+        if (req.body.dateOfPayment !== undefined) expense.dateOfPayment = req.body.dateOfPayment;
+        if (req.body.description !== undefined) expense.description = req.body.description;
 
         const updatedExpense = await expense.save();
         res.status(200).json({
@@ -102,9 +111,16 @@ router.put('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
 // DELETE Expense
 router.delete('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { Expense } = db(req);
-
-        const expense = await Expense.findByIdAndDelete(req.params.id);
+        const { Expense, AuditLog } = db(req);
+        const expense = await Expense.findByIdAndUpdate(
+            req.params.id,
+            {
+                deleteFlag: true,
+                deletedAt: new Date(),
+                deletedBy: req.user?.id,
+            },
+            { new: true },
+        );
         if (!expense) {
             res.status(404).json({
                 success: false,
@@ -112,6 +128,16 @@ router.delete('/:id', async (req: AuthRequest, res: Response): Promise<void> => 
             });
             return;
         }
+
+        await recordAudit({
+            auditLogModel: AuditLog,
+            action: 'expense.deleted',
+            entity: 'Expense',
+            entityId: String(expense._id),
+            actorUserId: req.user?.id ? new mongoose.Types.ObjectId(req.user.id) : undefined,
+            requestId: req.headers['x-request-id'] as string | undefined,
+            after: { deleteFlag: true, deletedAt: expense.deletedAt },
+        });
 
         res.status(200).json({
             success: true,

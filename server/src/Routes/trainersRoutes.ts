@@ -68,10 +68,19 @@ router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
 router.put('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { Trainers } = db(req);
+        const allowedFields = new Set(['name', 'phone', 'salary', 'raise']);
+        const unknownFields = Object.keys(req.body).filter((field) => !allowedFields.has(field));
+        if (unknownFields.length > 0) {
+            res.status(400).json({
+                success: false,
+                message: `Unknown fields: ${unknownFields.join(', ')}`,
+            });
+            return;
+        }
 
         const updatedTrainer = await Trainers.findByIdAndUpdate(
             req.params.id,
-            req.body,
+            Object.fromEntries(Object.entries(req.body).filter(([key]) => allowedFields.has(key))),
             { new: true, runValidators: true }
         );
 

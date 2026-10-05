@@ -4,6 +4,9 @@ import reactHooks from 'eslint-plugin-react-hooks';
 
 export default [
   {
+    ignores: ['dist/**', 'node_modules/**'],
+  },
+  {
     files: ['**/*.jsx', '**/*.js'],
     languageOptions: {
       ecmaVersion: 2021,
