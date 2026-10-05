@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useConfirmToast } from './toasters/deleteToaster';
+import DemoFeatureGate from './Wrappers/DemoFeatureGate';
 
 const Settings: React.FC = () => {
   const { t } = useTranslation();
@@ -219,7 +220,8 @@ const Settings: React.FC = () => {
 
 
 
-        <div>
+        <DemoFeatureGate label="Additional admin accounts are available in the full version">
+          <div>
           <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6 sticky top-24 relative overflow-hidden group">
 
 
@@ -271,8 +273,8 @@ const Settings: React.FC = () => {
               </form>
             </div>
           </div>
-        </div>
-        );
+          </div>
+        </DemoFeatureGate>
 
       </div>
     </div>

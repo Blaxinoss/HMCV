@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import api from '../../utils/api'; // Axios instance
 import toast from 'react-hot-toast';
+import DemoFeatureGate from '../Wrappers/DemoFeatureGate';
 import {
     BellRing,
     DollarSign,
@@ -68,7 +69,8 @@ const CRMManager: React.FC = () => {
     ];
 
     return (
-        <div className="relative max-h-screen">
+        <DemoFeatureGate label="Campaign automation is available in the full version">
+          <div className="relative max-h-screen">
             <div className="p-6 lg:p-10 bg-gray-950 text-white font-sans">
                 <div className="p-6 lg:p-10 bg-gray-950 min-h-screen text-white font-sans ">
 
@@ -137,7 +139,8 @@ const CRMManager: React.FC = () => {
                 </div>
             </div>
 
-        </div>
+          </div>
+        </DemoFeatureGate>
     );
 };
 

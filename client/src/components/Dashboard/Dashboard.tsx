@@ -29,6 +29,7 @@ import BusinessCharts from './BusinessCharts';
 import StatCard from './StatCards';
 import PeakHoursChart from './PeakHoursChart';
 import RecentActivityFeed from './RecentActivityFeed';
+import DemoFeatureGate from '../Wrappers/DemoFeatureGate';
 import { Expense, Trainee, Trainer } from '../../types';
 
 
@@ -227,6 +228,7 @@ const Dashboard: React.FC = () => {
 
 
 
+        <DemoFeatureGate label="Business insights are available in the full version">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           {/* 1. Financial Health Check */}
@@ -376,6 +378,7 @@ const Dashboard: React.FC = () => {
           </div>
 
         </div>
+        </DemoFeatureGate>
       </div>
 
     </div>

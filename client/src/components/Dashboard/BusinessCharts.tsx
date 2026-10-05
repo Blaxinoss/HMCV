@@ -5,6 +5,7 @@ import {
     ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
     PieChart, Pie, Cell
 } from 'recharts';
+import DemoFeatureGate from '../Wrappers/DemoFeatureGate';
 
 interface BusinessChartsProps {
     revenueTrend: any[];
@@ -21,6 +22,7 @@ const BusinessCharts: React.FC<BusinessChartsProps> = ({ revenueTrend, expenseBr
     );
 
     return (
+      <DemoFeatureGate label="Advanced financial charts are available in the full version">
         <div className="relative">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -75,6 +77,7 @@ const BusinessCharts: React.FC<BusinessChartsProps> = ({ revenueTrend, expenseBr
                 </div>
             </div>
         </div>
+      </DemoFeatureGate>
     );
 };
 

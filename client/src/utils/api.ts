@@ -11,6 +11,11 @@ export const api = axios.create({
 });
 
 const getTenantId = () => {
+  const configuredTenant = import.meta.env.VITE_DEFAULT_TENANT?.trim();
+  if (configuredTenant) {
+    return configuredTenant;
+  }
+
   const hostname = window.location.hostname; // مثلاً: gym1.myapp.com
 
   if (hostname.includes('localhost') || hostname.includes('127.0.0.1')) {

@@ -32,6 +32,7 @@ import RenewModal from './RenewModal';
 import Pagination from '../Pagination/Pagination';
 import ClearDebtButton from './ClearDebtButton';
 import TransactionHistory from './TransactionHistory';
+import DemoFeatureGate from '../Wrappers/DemoFeatureGate';
 
 interface TraineeListProps {
     onEdit: (trainee: Trainee) => void;
@@ -437,13 +438,18 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
                                         </button>
 
                                         {/* 2. Send Program (Changed to Blue - Communication Action) */}
-                                        <button
-                                            onClick={(e) => handleSendProgram(trainee, e)}
-                                            className="group/sendBtn flex items-center gap-2 px-4 py-2 bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white rounded-xl text-sm font-semibold transition-all duration-300 border border-blue-500/20 hover:shadow-[0_0_15px_rgba(59,130,246,0.3)]"
+                                        <DemoFeatureGate
+                                            label="Program sharing is available in the full version"
+                                            variant="control"
                                         >
-                                            <Send className="w-4 h-4 transition-transform duration-300 group-hover/sendBtn:translate-x-1 group-hover/sendBtn:-translate-y-1" />
-                                            {t('common.send_program')}
-                                        </button>
+                                            <button
+                                                onClick={(e) => handleSendProgram(trainee, e)}
+                                                className="group/sendBtn flex items-center gap-2 px-4 py-2 bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white rounded-xl text-sm font-semibold transition-all duration-300 border border-blue-500/20 hover:shadow-[0_0_15px_rgba(59,130,246,0.3)]"
+                                            >
+                                                <Send className="w-4 h-4 transition-transform duration-300 group-hover/sendBtn:translate-x-1 group-hover/sendBtn:-translate-y-1" />
+                                                {t('common.send_program')}
+                                            </button>
+                                        </DemoFeatureGate>
 
                                         <button
                                             onClick={(e) => handleDelete(trainee._id, e)}
