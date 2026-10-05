@@ -17,10 +17,7 @@ import seedAdminRoutes from './src/models/seedAdmin.js';
 import { tenantMiddleware } from './midware/tenant.js';
 import couponRoutes from './src/Routes/couponRoutes.js'
 import auditRoutes from './src/Routes/auditRoutes.js';
-import dns from 'dns';
 
-// Force Node.js to use Google's DNS for this application only
-dns.setServers(['8.8.8.8', '8.8.4.4']);
 // Load environment variables
 dotenv.config();
 
@@ -81,7 +78,6 @@ mongoose
     })
     .catch((err: Error) => {
         console.error('✗ MongoDB connection error:', err.message);
-        process.exit(1);
     });
 
 
