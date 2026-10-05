@@ -38,9 +38,12 @@ const allowedOrigins = new Set([
     ...configuredOrigins,
 ]);
 
+const isHustleCvVercelOrigin = (origin: string) =>
+    /^https:\/\/hustlecv(?:-[a-z0-9-]+)?\.vercel\.app$/i.test(origin);
+
 const corsOptions: CorsOptions = {
     origin: (origin, callback) => {
-        if (!origin || allowedOrigins.has(origin)) {
+        if (!origin || allowedOrigins.has(origin) || isHustleCvVercelOrigin(origin)) {
             callback(null, true);
             return;
         }
