@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { logout } from '../slices/authSlice';
-import { AppDispatch } from '../store';
+import { AppDispatch, RootState } from '../store';
+import { FileClock } from 'lucide-react';
 import LanguageSwitcher from './LanguageSwitcher';
 import QuickCheckInModal from './Trainers/QuickCheckInModal';
 // 1. استدعاء مودال الكوبونات (تأكد من المسار)
@@ -28,6 +29,7 @@ const Navbar: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const location = useLocation();
+  const isAdmin = useSelector((state: RootState) => state.auth.user?.role === 'admin');
 
   const [mobileMenu, setMobileMenu] = useState(false);
   const [showQuickCheckIn, setShowQuickCheckIn] = useState(false);
@@ -89,6 +91,7 @@ const Navbar: React.FC = () => {
               <NavItem to="/allTrainees" icon={Users} label={t('navbar.all_users')} />
               <NavItem to="/expenses" icon={CreditCard} label={t('navbar.expenses')} />
               <NavItem to="/crm" icon={Send} label={t('navbar.crm')} />
+              {isAdmin && <NavItem to="/audit-logs" icon={FileClock} label="Audit Log" />}
             </div>
 
             {/* 3. Right Actions */}
@@ -175,6 +178,7 @@ const Navbar: React.FC = () => {
             <NavItem to="/allTrainees" icon={Users} label={t('navbar.all_users')} onClick={() => setMobileMenu(false)} />
             <NavItem to="/expenses" icon={CreditCard} label={t('navbar.expenses')} onClick={() => setMobileMenu(false)} />
             <NavItem to="/crm" icon={Send} label={t('navbar.crm')} onClick={() => setMobileMenu(false)} />
+            {isAdmin && <NavItem to="/audit-logs" icon={FileClock} label="Audit Log" onClick={() => setMobileMenu(false)} />}
             <NavItem to="/settings" icon={Settings} label={t('navbar.settings')} onClick={() => setMobileMenu(false)} />
 
             {/* زرار الكوبونات في قائمة الموبايل */}

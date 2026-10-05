@@ -13,6 +13,7 @@ export const ROUTES = {
   EXPENSES: '/expenses',
   USERS: '/users',
   SETTINGS: '/settings',
+  AUDIT_LOGS: '/audit-logs',
   MARKETING: '/marketing',
   COUPONS: '/coupons',
 };

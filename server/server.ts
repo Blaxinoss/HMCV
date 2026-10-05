@@ -16,6 +16,7 @@ import verifyToken from './midware/verifyToken.js';
 import seedAdminRoutes from './src/models/seedAdmin.js';
 import { tenantMiddleware } from './midware/tenant.js';
 import couponRoutes from './src/Routes/couponRoutes.js'
+import auditRoutes from './src/Routes/auditRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -78,6 +79,7 @@ app.use('/api/trainers', verifyToken, requireAdmin, trainersRoutes);
 app.use('/api/settings', verifyToken, requireAdmin, settingsRoutes);
 app.use('/api/dashboard', verifyToken, requireAdmin, dashboardRoutes)
 app.use('/api/marketing', verifyToken, requireAdmin, marketingRoutes);
+app.use('/api/audit-logs', verifyToken, requireAdmin, auditRoutes);
 
 
 

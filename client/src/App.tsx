@@ -24,6 +24,8 @@ import { Toaster } from 'react-hot-toast';
 import AllTrainees from './components/DetailedTrainees/AllTrainees';
 import CRMManager from './components/CRM/CRMManager';
 import GlobalDataLoader from './components/Wrappers/GlobalDataLoader';
+import AdminRoute from './components/AdminRoute';
+import AuditLogViewer from './components/Audit/AuditLogViewer';
 
 function AppContent() {
   const { i18n } = useTranslation();
@@ -72,6 +74,14 @@ function AppContent() {
           <Route path="/allTrainees" element={<AllTrainees />} />
           <Route path="/crm" element={<CRMManager />} />
           <Route path="/settings" element={<Settings />} />
+          <Route
+            path="/audit-logs"
+            element={
+              <AdminRoute>
+                <AuditLogViewer />
+              </AdminRoute>
+            }
+          />
         </Route>
 
         {/* Redirect to login if not authenticated */}
