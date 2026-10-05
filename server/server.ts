@@ -17,7 +17,10 @@ import seedAdminRoutes from './src/models/seedAdmin.js';
 import { tenantMiddleware } from './midware/tenant.js';
 import couponRoutes from './src/Routes/couponRoutes.js'
 import auditRoutes from './src/Routes/auditRoutes.js';
+import dns from 'dns';
 
+// Force Node.js to use Google's DNS for this application only
+dns.setServers(['8.8.8.8', '8.8.4.4']);
 // Load environment variables
 dotenv.config();
 
@@ -29,23 +32,13 @@ app.use(cors({
     origin: '*', // Allow all origins
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 // Middleware
 app.use(bodyParser.json());
 
-
-// أو الحل الاحترافي (تسمح فقط للـ Frontend بتاعك)
-app.use(cors({
-    origin: 'http://localhost:5173', // عنوان الـ Vite بتاعك
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    credentials: true
-}));
-
-
 // Get configuration from environment
 const PORT = process.env.PORT || 5000;
-const uri = process.env.DB_URI || 'mongodb://localhost:27017';
+const uri = process.env.DB_URI;
 
 // MongoDB connection
 if (!uri) {
