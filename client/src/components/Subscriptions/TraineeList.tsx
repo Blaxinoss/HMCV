@@ -34,6 +34,8 @@ import ClearDebtButton from './ClearDebtButton';
 import TransactionHistory from './TransactionHistory';
 import DemoFeatureGate from '../Wrappers/DemoFeatureGate';
 import { getNetCollected, getOutstandingBalance } from '../../utils/finance';
+import { formatGymDate, isGymDateExpired } from '../../utils/dateTime';
+import { formatCurrency } from '../../utils/format';
 
 interface TraineeListProps {
     onEdit: (trainee: Trainee) => void;
@@ -56,7 +58,7 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
     const [renewData, setRenewData] = useState<{ id: string, name: string, isSession: boolean } | null>(null);
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState(10);
-    const { raw } = useSelector((state: RootState) => state.dashboard);
+    const { stats: dashboardStats } = useSelector((state: RootState) => state.dashboard);
 
 
     useEffect(() => {
@@ -112,9 +114,6 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
 
 
     const getStatusBadge = (trainee: Trainee) => {
-        const endDate = new Date(trainee.subscriptionEndDate);
-        const today = new Date();
-
         if (trainee.accountFreezeStatus) {
             return (
                 <span className="flex items-center gap-1 px-3 py-1 bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 rounded-full text-xs font-semibold">
@@ -123,7 +122,7 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
             );
         }
 
-        if (endDate < today) {
+        if (isGymDateExpired(trainee.subscriptionEndDate)) {
             return (
                 <span className="flex items-center gap-1 px-3 py-1 bg-red-500/10 text-red-500 border border-red-500/20 rounded-full text-xs font-semibold">
                     <Activity className="w-3 h-3" /> {t('trainees.expired')}
@@ -149,24 +148,22 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
 
 
     const getCount = (status: FilterType) => {
-        if (!raw?.trainees) return 0;
-        const all = raw.trainees;
         switch (status) {
-            case 'active': return all.filter((t: any) => new Date(t.subscriptionEndDate) > new Date() && !t.accountFreezeStatus).length;
-            case 'frozen': return all.filter((t: any) => t.accountFreezeStatus).length;
-            case 'expired': return all.filter((t: any) => new Date(t.subscriptionEndDate) < new Date()).length;
-            case 'debt': return all.filter((trainee: Trainee) => getOutstandingBalance(trainee) > 0).length;
-            case 'session': return all.filter((t: any) => t.isSession).length;
-            default: return all.length;
+            case 'active': return dashboardStats?.cards.activeMembers ?? 0;
+            case 'frozen': return dashboardStats?.cards.frozenMembers ?? 0;
+            case 'expired': return dashboardStats?.cards.expiredMembers ?? 0;
+            case 'debt': return dashboardStats?.cards.membersWithDebt ?? 0;
+            case 'session': return dashboardStats?.cards.sessionMembers ?? 0;
+            default: return dashboardStats?.cards.totalMembers ?? pagination?.totalUsers ?? 0;
         }
     };
     const filters: { key: FilterType; label: string, icon: any }[] = [
-        { key: 'all', label: 'All', icon: User },
-        { key: 'active', label: 'Active', icon: Activity },
-        { key: 'frozen', label: 'Frozen', icon: Snowflake },
-        { key: 'expired', label: 'Expired', icon: Clock },
-        { key: 'debt', label: 'Debt', icon: DollarSign },
-        { key: 'session', label: 'Session', icon: Calendar }
+        { key: 'all', label: t('subscription.filter_all'), icon: User },
+        { key: 'active', label: t('subscription.filter_active'), icon: Activity },
+        { key: 'frozen', label: t('subscription.filter_frozen'), icon: Snowflake },
+        { key: 'expired', label: t('subscription.filter_expired'), icon: Clock },
+        { key: 'debt', label: t('subscription.filter_debt'), icon: DollarSign },
+        { key: 'session', label: t('subscription.filter_session'), icon: Calendar }
     ];
 
     if (loading && trainees.length === 0) {
@@ -226,7 +223,7 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
                             className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-lg shadow-purple-900/20"
                         >
                             <Zap className="w-4 h-4 fill-white" />
-                            {t('trainees.quick_check_in', 'Check-in')}
+                            {t('trainees.quick_check_in')}
                         </button>
                         <button
                             onClick={onAddNew}
@@ -278,7 +275,7 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
                                         <div className="flex items-center gap-3 text-sm text-gray-400">
                                             <span>{trainee.phone}</span>
                                             {trainee.isSession && (
-                                                <span className="px-1.5 py-0.5 bg-blue-900/50 text-blue-300 text-[10px] rounded border border-blue-500/20">SESSION</span>
+                                                <span className="px-1.5 py-0.5 bg-blue-900/50 text-blue-300 text-[10px] rounded border border-blue-500/20">{t('subscription.session_badge')}</span>
                                             )}
                                         </div>
                                     </div>
@@ -302,36 +299,36 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-6 mb-6">
                                         <div>
                                             <p className="text-gray-500 text-xs uppercase font-bold mb-1 flex items-center gap-1">
-                                                <Calendar className="w-3 h-3" /> Period
+                                                <Calendar className="w-3 h-3" /> {t('subscription.period_label')}
                                             </p>
                                             <p className="text-gray-300 text-sm font-medium">
-                                                {new Date(trainee.subscriptionStartDate).toLocaleDateString()} -{' '}
-                                                {new Date(trainee.subscriptionEndDate).toLocaleDateString()}
+                                                {formatGymDate(trainee.subscriptionStartDate)} -{' '}
+                                                {formatGymDate(trainee.subscriptionEndDate)}
                                             </p>
                                         </div>
 
                                         <div>
                                             <p className="text-gray-500 text-xs uppercase font-bold mb-1 flex items-center gap-1">
-                                                <Clock className="w-3 h-3" /> Duration
+                                                <Clock className="w-3 h-3" /> {t('subscription.duration_label')}
                                             </p>
                                             <p className="text-white font-bold text-lg">
-                                                {trainee.daysLeft || 0} <span className="text-xs font-normal text-gray-400">days left</span>
+                                                {trainee.daysLeft || 0} <span className="text-xs font-normal text-gray-400">{t('subscription.days_left_suffix')}</span>
                                             </p>
                                         </div>
 
                                         <div>
                                             <p className="text-gray-500 text-xs uppercase font-bold mb-1 flex items-center gap-1">
-                                                <DollarSign className="w-3 h-3" /> Financials
+                                                <DollarSign className="w-3 h-3" /> {t('subscription.financials_label')}
                                             </p>
                                             <div className="flex gap-4">
                                                 {/* Subscription price and current-cycle ledger total */}
                                                 <div className="text-sm">
-                                                    <span className="text-gray-400 block text-[10px]">TOTAL</span>
-                                                    {trainee.totalCost} EGP
+                                                    <span className="text-gray-400 block text-[10px]">{t('ui.total_cost')}</span>
+                                                    {formatCurrency(trainee.totalCost)}
                                                 </div>
                                                 <div className="text-sm">
-                                                    <span className="text-gray-400 block text-[10px]">NET COLLECTED</span>
-                                                    <span className="text-green-400">{getNetCollected(trainee)} EGP</span>
+                                                    <span className="text-gray-400 block text-[10px]">{t('ui.net_collected')}</span>
+                                                    <span className="text-green-400">{formatCurrency(getNetCollected(trainee))}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -340,10 +337,10 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
 
                                         <div>
                                             <p className="text-gray-500 text-xs uppercase font-bold mb-1 flex items-center gap-1">
-                                                <CreditCard className="w-3 h-3" /> Outstanding
+                                                <CreditCard className="w-3 h-3" /> {t('ui.outstanding')}
                                             </p>
                                             <p className={`font-bold text-lg ${getOutstandingBalance(trainee) > 0 ? 'text-red-400' : 'text-green-400'}`}>
-                                                {getOutstandingBalance(trainee)} EGP
+                                                {formatCurrency(getOutstandingBalance(trainee))}
                                             </p>
                                         </div>
 
@@ -359,7 +356,7 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
                                                     {/* Text Content */}
                                                     <div className="flex-1 min-w-0">
                                                         <h4 className="text-[10px] uppercase tracking-wider font-bold text-gray-500 mb-0.5">
-                                                            Program
+                                                            {t('trainees.program_label')}
                                                         </h4>
 
                                                         <div className="text-xs leading-tight whitespace-pre-wrap">
@@ -369,7 +366,7 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
                                                                     {trainee.program}
                                                                 </p>
                                                             ) : (
-                                                                <span className="text-gray-600 italic text-[11px]">No program assigned</span>
+                                                                <span className="text-gray-600 italic text-[11px]">{t('ui.no_program_assigned')}</span>
                                                             )}
                                                         </div>
                                                     </div>
@@ -381,7 +378,7 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
 
                                     {/* Actions Row */}
                                     <div className="pt-4 border-t border-gray-700/50 mb-4">
-                                        <h4 className="text-sm font-bold text-gray-300 mb-3">Financial history</h4>
+                                        <h4 className="text-sm font-bold text-gray-300 mb-3">{t('ui.financial_history')}</h4>
                                         <TransactionHistory
                                             key={`${trainee._id}-${trainee.ledgerSummary.netPaidMinor}-${trainee.ledgerSummary.outstandingMinor}`}
                                             traineeId={trainee._id}
@@ -390,12 +387,12 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
 
                                     {trainee.freezeHistory?.length > 0 && (
                                         <div className="pt-4 border-t border-gray-700/50 mb-4">
-                                            <h4 className="text-sm font-bold text-gray-300 mb-2">Freeze history</h4>
+                                            <h4 className="text-sm font-bold text-gray-300 mb-2">{t('ui.freeze_history')}</h4>
                                             <div className="space-y-2">
                                                 {trainee.freezeHistory.slice().reverse().map((entry, index) => (
                                                     <div key={`${entry.createdAt}-${index}`} className="text-xs text-gray-400 flex justify-between gap-3">
                                                         <span className="capitalize">{entry.action}: {entry.reason}</span>
-                                                        <span>{new Date(entry.effectiveDate).toLocaleDateString()}</span>
+                                                        <span>{formatGymDate(entry.effectiveDate)}</span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -426,13 +423,16 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
+                                                if (trainee.accountFreezeStatus) return;
                                                 setRenewData({
                                                     id: trainee._id,
                                                     name: trainee.name,
                                                     isSession: trainee.isSession
                                                 });
                                             }}
-                                            className="flex items-center justify-center gap-2 px-4 py-2 bg-green-500/10 text-green-500 hover:bg-green-500 hover:text-white rounded-xl text-sm font-semibold transition-all border border-green-500/20"
+                                            disabled={trainee.accountFreezeStatus}
+                                            title={trainee.accountFreezeStatus ? t('common.unfreeze') : undefined}
+                                            className="flex items-center justify-center gap-2 px-4 py-2 bg-green-500/10 text-green-500 hover:bg-green-500 hover:text-white rounded-xl text-sm font-semibold transition-all border border-green-500/20 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-green-500/10 disabled:hover:text-green-500"
                                         >
                                             <RefreshCw className="w-4 h-4" />
                                             {t('common.renew')}
@@ -440,7 +440,7 @@ const TraineeList: React.FC<TraineeListProps> = ({ onEdit, onAddNew }) => {
 
                                         {/* 2. Send Program (Changed to Blue - Communication Action) */}
                                         <DemoFeatureGate
-                                            label="Program sharing is available in the full version"
+                                            label={t('ui.program_sharing_feature')}
                                             variant="control"
                                         >
                                             <button

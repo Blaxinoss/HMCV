@@ -1,3 +1,5 @@
+import { parseGymDate } from './dateTime.js';
+
 const expenseCategories = new Set([
     'Bills',
     'Rent',
@@ -50,8 +52,7 @@ export function validateExpenseInput(
     }
 
     if (mode === 'create' || input.dateOfPayment !== undefined) {
-        const date = new Date(String(input.dateOfPayment));
-        if (!input.dateOfPayment || Number.isNaN(date.getTime())) {
+        if (!parseGymDate(input.dateOfPayment, 'start')) {
             errors.push('dateOfPayment must be a valid date');
         }
     }

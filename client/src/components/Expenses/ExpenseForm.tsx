@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { addExpense, updateExpense } from '../../slices/expensesSlice';
 import { AppDispatch, RootState } from '../../store';
+import { gymTodayInput, toGymDateInput } from '../../utils/dateTime';
 import { Expense } from '../../types';
 import toast from 'react-hot-toast';
 import { Save, X, Calendar, DollarSign, Type, Tag } from 'lucide-react';
@@ -21,7 +22,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ editingId, onSuccess, onCance
   const [formData, setFormData] = useState<Partial<Expense>>({
     category: undefined,
     amount: 0,
-    dateOfPayment: new Date().toISOString().split('T')[0],
+    dateOfPayment: gymTodayInput(),
     name: '',
     description: '',
   });
@@ -30,8 +31,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ editingId, onSuccess, onCance
     if (editingId) {
       const expense = expenses.find((e) => e._id === editingId);
       if (expense) {
-        // Ensure date is formatted correctly for input type="date"
-        const formattedDate = new Date(expense.dateOfPayment).toISOString().split('T')[0];
+        const formattedDate = toGymDateInput(expense.dateOfPayment);
         setFormData({ ...expense, dateOfPayment: formattedDate });
       }
     } else {
@@ -39,7 +39,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ editingId, onSuccess, onCance
       setFormData({
         category: undefined,
         amount: 0,
-        dateOfPayment: new Date().toISOString().split('T')[0],
+        dateOfPayment: gymTodayInput(),
         name: '',
         description: '',
       });
@@ -66,15 +66,15 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ editingId, onSuccess, onCance
     try {
       if (editingId) {
         dispatch(updateExpense({ id: editingId, data: formData as Expense }));
-        toast.success(t('expenses.updated_successfully') || "Expense Updated");
+        toast.success(t('expenses.updated_successfully'));
       } else {
         dispatch(addExpense(formData as Expense));
-        toast.success(t('expenses.added_successfully') || "Expense Added");
+        toast.success(t('expenses.added_successfully'));
       }
       onSuccess();
     } catch (error) {
       console.error('Error:', error);
-      toast.error("Operation failed");
+      toast.error(t('ui.operation_failed'));
     }
   };
 
@@ -127,7 +127,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ editingId, onSuccess, onCance
             >
               <option value="" disabled>{t('expenses.select_category')}</option>
               {categories.map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
+                <option key={cat} value={cat}>{t(`expense_categories.${cat.toLowerCase()}`)}</option>
               ))}
             </select>
             {/* Custom Arrow */}

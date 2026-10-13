@@ -18,6 +18,7 @@ import { tenantMiddleware } from './midware/tenant.js';
 import couponRoutes from './src/Routes/couponRoutes.js'
 import auditRoutes from './src/Routes/auditRoutes.js';
 import dns from 'dns';
+import { utcNowIso } from './src/utils/dateTime.js';
 // Load environment variables
 dotenv.config();
 
@@ -109,7 +110,7 @@ app.get('/health', (req, res) => {
     res.status(200).json({
         success: true,
         message: 'Server is running',
-        timestamp: new Date().toISOString(),
+        timestamp: utcNowIso(),
     });
 });
 

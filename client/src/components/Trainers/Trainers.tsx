@@ -6,6 +6,7 @@ import { fetchTrainers } from '../../slices/trainersSlice'; // 👈 ضفنا ا�
 import TrainersForm from './TrainersForm';
 import TrainersList from './TrainersList';
 import { Users, DollarSign, Plus, ArrowLeft } from 'lucide-react';
+import { formatCurrency } from '../../utils/format';
 
 const Trainers: React.FC = () => {
   const { t } = useTranslation();
@@ -39,7 +40,6 @@ const Trainers: React.FC = () => {
     setShowForm(false);
     setEditingTrainer(null);
     // اختياري: لو عايز تحدث الـ Raw Data كمان عشان الداشبورد تحس بالتغيير
-    // dispatch(fetchDashboardRawData()); 
   };
 
 
@@ -53,10 +53,10 @@ const Trainers: React.FC = () => {
         {/* ... (نفس كود الهيدر بتاعك) ... */}
         <div>
           <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">
-            {showForm ? (editingTrainer ? t('trainers.edit_trainer') : t('trainers.add_new')) : t('trainers.header', 'Trainers Management')}
+            {showForm ? (editingTrainer ? t('trainers.edit_trainer') : t('trainers.add_new')) : t('trainers.header')}
           </h1>
           <p className="text-gray-400 mt-1">
-            {showForm ? t('trainers.manage_subtitle') : t('trainers.subtitle', 'Manage your gym trainers and their salaries.')}
+            {showForm ? t('trainers.manage_subtitle') : t('trainers.subtitle')}
           </p>
         </div>
 
@@ -75,7 +75,7 @@ const Trainers: React.FC = () => {
               className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-lg shadow-blue-900/20 transition-all transform hover:scale-105"
             >
               <Plus className="w-5 h-5" />
-              {t('trainers.add_new', 'Add Trainer')}
+              {t('trainers.add_new')}
             </button>
           )}
         </div>
@@ -89,7 +89,7 @@ const Trainers: React.FC = () => {
               <Users className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-sm text-gray-400">Total Trainers</p>
+              <p className="text-sm text-gray-400">{t('ui.total_trainers')}</p>
               {/* هنا بنعرض العدد */}
               <p className="text-2xl font-bold text-white">{trainers.length}</p>
             </div>
@@ -99,8 +99,8 @@ const Trainers: React.FC = () => {
               <DollarSign className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-sm text-gray-400">Total Payroll</p>
-              <p className="text-2xl font-bold text-white">{totalSalaries.toLocaleString()} EGP</p>
+              <p className="text-sm text-gray-400">{t('ui.total_payroll')}</p>
+              <p className="text-2xl font-bold text-white">{formatCurrency(totalSalaries)}</p>
             </div>
           </div>
         </div>

@@ -9,6 +9,8 @@ import { Trainee, Coupon } from '../../types';
 import useMessage from '../../utils/useMessageHook';
 import toast from 'react-hot-toast';
 import api from '../../utils/api';
+import { addGymCalendarMonthsToInput, gymTodayInput, toGymDateInput } from '../../utils/dateTime';
+import { formatCurrency } from '../../utils/format';
 import {
   User,
   Phone,
@@ -42,8 +44,8 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
-    subscriptionStartDate: new Date().toISOString().split('T')[0],
-    subscriptionEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    subscriptionStartDate: gymTodayInput(),
+    subscriptionEndDate: addGymCalendarMonthsToInput(gymTodayInput(), 1),
     totalCost: 0,
     initialPayment: 0,
     couponCode: '',
@@ -63,8 +65,8 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
       setFormData({
         name: trainee.name,
         phone: trainee.phone,
-        subscriptionStartDate: new Date(trainee.subscriptionStartDate).toISOString().split('T')[0],
-        subscriptionEndDate: new Date(trainee.subscriptionEndDate).toISOString().split('T')[0],
+        subscriptionStartDate: toGymDateInput(trainee.subscriptionStartDate),
+        subscriptionEndDate: toGymDateInput(trainee.subscriptionEndDate),
         totalCost: trainee.totalCost,
         initialPayment: 0,
         program: trainee.program,
@@ -82,12 +84,12 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
           code: trainee.usedCoupon || 'Custom Discount',
           discountType: (trainee.appliedDiscount.discountType?.toUpperCase() || 'FIXED') as 'PERCENTAGE' | 'FIXED',
           value: trainee.appliedDiscount.discountValue,
-          expiryDate: new Date(),
+          expiryDate: gymTodayInput(),
           isActive: true,
           usageLimit: 0,
           usedCount: 0,
-          createdAt: new Date(),
-          updatedAt: new Date()
+          createdAt: gymTodayInput(),
+          updatedAt: gymTodayInput()
 
         } satisfies Coupon);
       }
@@ -110,7 +112,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
   const handleRemoveCoupon = () => {
     setAppliedCoupon(null);
     setFormData(prev => ({ ...prev, couponCode: '' }));
-    toast.success("Coupon removed");
+    toast.success(t('ui.coupon_removed'));
   };
 
   const handlePayFull = () => {
@@ -128,7 +130,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
       if (response.data.success) {
         const couponData = response.data.data;
         setAppliedCoupon(couponData);
-        toast.success(t('trainees.coupon_applied') || "Coupon Applied!");
+        toast.success(t('trainees.coupon_applied'));
       }
     } catch (error: any) {
       setAppliedCoupon(null);
@@ -149,14 +151,14 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
     }
 
     if (formData.isSession && formData.sessionsCount <= 0) {
-      toast.error(t('trainees.sessions_count_required', 'Please enter number of sessions'), {
+      toast.error(t('trainees.sessions_count_required'), {
         style: { borderRadius: '10px', background: '#333', color: '#fff' },
       });
       return;
     }
 
     if (financialSummary.isOverpaid) {
-      toast.error(`Payment exceeds total cost by ${financialSummary.overpayment} EGP`);
+      toast.error(t('ui.payment_exceeds', { amount: formatCurrency(financialSummary.overpayment) }));
       return;
     }
 
@@ -167,17 +169,22 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
       };
 
       if (trainee) {
-        const { initialPayment: _initialPayment, ...updatePayload } = payload;
-        void _initialPayment;
-        await dispatch(updateTrainee({ id: trainee._id, data: updatePayload as any })).unwrap();
-        toast.success(t('TraineeUpdated') || "Member Updated");
+        await dispatch(updateTrainee({
+          id: trainee._id,
+          data: {
+            name: formData.name,
+            phone: formData.phone,
+            program: formData.program,
+          },
+        })).unwrap();
+        toast.success(t('TraineeUpdated'));
       } else {
         const { initialPayment, ...traineeData } = payload;
         await dispatch(addTrainee({
           ...traineeData,
           initialPaymentMinor: Math.round(initialPayment * 100),
         })).unwrap();
-        toast.success(t('TraineeAdded') || "Member Added");
+        toast.success(t('TraineeAdded'));
       }
       onSuccess();
     } catch (error) {
@@ -256,7 +263,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
           </div>
 
           {/* Dates Row */}
-          <div className="grid grid-cols-2 gap-4">
+          {!trainee && <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-400 flex items-center gap-2">
                 <Calendar className="w-4 h-4" /> {t('trainees.start_date')}
@@ -283,11 +290,11 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
                 disabled={loading}
               />
             </div>
-          </div>
+          </div>}
         </div>
 
         {/* === COLUMN 2: Financials & Plan === */}
-        <div className="space-y-6">
+        {!trainee && <div className="space-y-6">
           <h3 className="text-lg font-bold text-gray-300 border-b border-gray-700 pb-2 mb-4">
             {t('subscription.financials_section')}
           </h3>
@@ -365,7 +372,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
                   <Layers className="w-5 h-5" />
                 </div>
                 <div>
-                  <span className="block font-medium text-white">{t('trainees.is_session', 'Session Based Plan')}</span>
+                  <span className="block font-medium text-white">{t('trainees.is_session')}</span>
                   <span className="text-xs text-gray-400">{t('subscription.session_based_hint')}</span>
                 </div>
               </div>
@@ -385,7 +392,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
             <div className={`grid transition-all duration-300 ease-in-out ${formData.isSession ? 'grid-rows-[1fr] opacity-100 mt-4 pt-4 border-t border-gray-700' : 'grid-rows-[0fr] opacity-0'}`}>
               <div className="overflow-hidden">
                 <label className="block text-sm font-semibold text-blue-300 mb-2">
-                  {t('trainees.sessions_count', 'Number of Sessions')} <span className="text-red-500">*</span>
+                  {t('trainees.sessions_count')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -400,14 +407,14 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
             </div>
           </div>
 
-        </div>
+        </div>}
 
         <div className="col-span-full space-y-2">
           <label className="text-sm font-medium text-gray-400 flex items-center gap-2">
             <Dumbbell className="w-4 h-4" />
-            {t('trainees.program_label', 'Workout Program')}
+            {t('trainees.program_label')}
             <span className="text-gray-500 text-xs font-normal">
-              ({t('common.optional', 'Optional')})
+              ({t('common.optional')})
             </span>
           </label>
 
@@ -416,7 +423,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
             value={formData.program}
             onChange={handleChange} // تأكد إن الـ Type متظبط زي ما اتفقنا فوق
             rows={4}
-            placeholder={t('trainees.program_placeholder', 'e.g.\nDay 1: Chest & Triceps\nDay 2: Back & Biceps...')}
+            placeholder={t('trainees.program_placeholder')}
             className="w-full px-4 py-3 bg-gray-800 rounded-xl border border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-white placeholder-gray-600 resize-y min-h-[100px]"
           />
         </div>
@@ -424,24 +431,24 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
       </div>
 
       {/* === FOOTER: Financial Summary === */}
-      <div className="mt-8 bg-gray-900 border border-gray-800 rounded-2xl p-6 relative overflow-hidden">
+      {!trainee && <div className="mt-8 bg-gray-900 border border-gray-800 rounded-2xl p-6 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-3xl rounded-full pointer-events-none"></div>
 
         <h4 className="text-gray-400 text-sm uppercase font-bold tracking-wider mb-4 flex items-center gap-2">
-          <CreditCard className="w-4 h-4" /> Payment Summary
+          <CreditCard className="w-4 h-4" /> {t('ui.payment_summary')}
         </h4>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
           {/* 1. Coupon Status */}
           <div className="flex flex-col">
-            <span className="text-gray-500 text-sm">Coupon Status</span>
+            <span className="text-gray-500 text-sm">{t('ui.coupon_status')}</span>
             {appliedCoupon ? (
               <div className="flex items-center justify-between mt-1 bg-green-500/10 border border-green-500/20 rounded-lg p-2">
                 <div className="flex items-center gap-2 text-green-400 font-medium text-sm">
                   <CheckCircle className="w-4 h-4" />
                   <span>
-                    {appliedCoupon.code} (-{appliedCoupon.discountType === 'PERCENTAGE' ? `${appliedCoupon.value}%` : `${appliedCoupon.value} EGP`})
+                    {appliedCoupon.code} (-{appliedCoupon.discountType === 'PERCENTAGE' ? `${appliedCoupon.value}%` : formatCurrency(appliedCoupon.value)})
                   </span>
                 </div>
                 {/* زرار الحذف */}
@@ -454,16 +461,16 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
                 </button>
               </div>
             ) : (
-              <span className="text-gray-600 italic mt-1 text-sm">No coupon applied</span>
+              <span className="text-gray-600 italic mt-1 text-sm">{t('ui.no_coupon_applied')}</span>
             )}
           </div>
 
           {/* 2. Net Total */}
           <div className="flex flex-col">
-            <span className="text-gray-500 text-sm">Net Total</span>
+            <span className="text-gray-500 text-sm">{t('ui.net_total')}</span>
             <div className="flex items-baseline gap-2 mt-1">
               <span className={`text-xl font-bold font-mono ${financialSummary.discount > 0 ? 'text-green-400' : 'text-white'}`}>
-                {financialSummary.netTotal.toLocaleString()} EGP
+                {formatCurrency(financialSummary.netTotal)}
               </span>
               {/* عرض السعر القديم مشطوب لو فيه خصم */}
               {financialSummary.discount > 0 && (
@@ -477,26 +484,26 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
           {/* 3. Outstanding balance */}
           <div className="flex flex-col">
             <div className="flex justify-between items-center">
-              <span className="text-gray-500 text-sm">Outstanding</span>
+              <span className="text-gray-500 text-sm">{t('ui.outstanding')}</span>
               {!trainee && financialSummary.balanceDue > 0 && (
                 <button
                   type="button"
                   onClick={handlePayFull}
                   className="text-[10px] bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white px-2 py-0.5 rounded transition-all border border-blue-600/30"
                 >
-                  PAY FULL
+                  {t('ui.pay_full')}
                 </button>
               )}
             </div>
 
             <div className="flex items-center gap-2 mt-1">
               <span className={`text-xl font-bold font-mono ${financialSummary.balanceDue > 0 ? 'text-red-400' : 'text-gray-400'}`}>
-                {financialSummary.balanceDue.toLocaleString()} EGP
+                {formatCurrency(financialSummary.balanceDue)}
               </span>
             </div>
           </div>
         </div>
-      </div>
+      </div>}
 
       {/* === ACTION BUTTONS === */}
       <div className="flex gap-4 mt-8 justify-end pt-6 border-t border-gray-800">
@@ -515,7 +522,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
           disabled={loading}
         >
           {loading ? (
-            <span className="flex items-center gap-2">Processing...</span>
+            <span className="flex items-center gap-2">{t('ui.processing')}</span>
           ) : (
             <>
               <Save className="w-5 h-5" />

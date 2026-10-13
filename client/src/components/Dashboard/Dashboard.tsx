@@ -1,390 +1,323 @@
-// src/components/Dashboard/Dashboard.tsx
-
-import React, { useEffect, useState, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useDispatch, useSelector } from 'react-redux';
-
-import { AppDispatch, RootState } from '../../store';
-// 👇 بننادي الـ Action الجديد اللي بيجيب الداتا الخام
-import { fetchDashboardRawData } from '../../slices/dashboardSlice';
-
-// Icons (Lucide React)
+import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useDispatch, useSelector } from "react-redux";
 import {
-  LayoutDashboard, DollarSign, TrendingUp, TrendingDown,
-  Users, CreditCard, UserMinus, Activity, Stethoscope,
-  Scale, Zap, AlertTriangle, Rocket, Crown, Clock
-} from 'lucide-react';
+  Activity,
+  AlertTriangle,
+  Clock,
+  CreditCard,
+  DollarSign,
+  LayoutDashboard,
+  Scale,
+  Snowflake,
+  TrendingDown,
+  TrendingUp,
+  UserMinus,
+  Users,
+  Zap,
+} from "lucide-react";
+import { AppDispatch, RootState } from "../../store";
+import { fetchDashboardStats } from "../../slices/dashboardSlice";
+import MonthSlider from "./MonthSlider";
+import BusinessCharts from "./BusinessCharts";
+import StatCard from "./StatCards";
+import PeakHoursChart from "./PeakHoursChart";
+import RecentActivityFeed from "./RecentActivityFeed";
+import { currentGymMonth, formatGymDate } from "../../utils/dateTime";
+import { formatCurrency, formatNumber } from "../../utils/format";
 
-// Utils (تأكد إن الدوال دي موجودة في businessLogic.ts)
-import {
-  calculateMonthlyStats,
-  getFinancialHealthColor,
-  calculatePeakHours,
-  getRecentTransactions
-} from '../../utils/businessLogic';
-
-// Components
-import MonthSlider from './MonthSlider';
-import BusinessCharts from './BusinessCharts';
-import StatCard from './StatCards';
-import PeakHoursChart from './PeakHoursChart';
-import RecentActivityFeed from './RecentActivityFeed';
-import DemoFeatureGate from '../Wrappers/DemoFeatureGate';
-import { Expense, Trainee, Trainer } from '../../types';
-import { getOutstandingBalance } from '../../utils/finance';
-
-
-
+const financialHealthColor = (margin: number) => {
+  if (margin >= 30) return "text-green-400";
+  if (margin >= 10) return "text-blue-400";
+  if (margin >= 0) return "text-yellow-400";
+  return "text-red-500";
+};
 
 const Dashboard: React.FC = () => {
   const { t } = useTranslation();
   const dispatch = useDispatch<AppDispatch>();
-
-  // 1. State للسلايدر
-  const [selectedDate, setSelectedDate] = useState(new Date());
-
-  // 2. Selectors: بنجيب الداتا الخام
-  const { raw, loading } = useSelector((state: RootState) => state.dashboard);
-
-  // 3. Fetch Data Once on Mount
+  const [selectedMonth, setSelectedMonth] = useState(currentGymMonth);
+  const { stats, loading, error, needsRefresh } = useSelector(
+    (state: RootState) => state.dashboard,
+  );
 
   useEffect(() => {
-    dispatch(fetchDashboardRawData())
-  }, [])
+    if (!stats || stats.meta.selectedMonth !== selectedMonth || needsRefresh) {
+      dispatch(fetchDashboardStats({ month: selectedMonth }));
+    }
+  }, [dispatch, selectedMonth, stats, needsRefresh]);
 
-
-  // 4. Data Extraction (Safe Access)
-  // لو الداتا لسه مجاتش، بنستخدم مصفوفات فاضية عشان الحسابات متضربش
-  const trainees: Trainee[] = raw?.trainees || [];
-  const expenses: Expense[] = raw?.expenses || [];
-  const trainers: Trainer[] = raw?.trainers || [];
-  const transactions = raw?.transactions || [];
-
-  // ==========================================
-  // 🔥 CALCULATIONS ENGINE (CLIENT-SIDE) 🔥
-  // ==========================================
-
-  // A. إحصائيات الشهر المختار (للكروت)
-  const currentStats = useMemo(() => {
-    return calculateMonthlyStats(trainees, expenses, trainers, selectedDate, transactions);
-  }, [trainees, expenses, trainers, selectedDate, transactions]);
-
-  // B. ساعات الذروة (بناءً على كل الداتا)
-  const peakHoursData = useMemo(() => calculatePeakHours(trainees), [trainees]);
-
-  // C. أحدث المعاملات (آخر 5)
-  const recentTx = useMemo(() => getRecentTransactions(trainees, expenses, transactions), [trainees, expenses, transactions]);
-
-  // D. بيانات الرسم البياني (آخر 6 شهور)
-  const trendData = useMemo(() => {
-    return Array.from({ length: 6 }, (_, i) => {
-      const d = new Date(selectedDate);
-      d.setMonth(d.getMonth() - (5 - i));
-      // بنحسب إحصائيات كل شهر لوحده
-      const stats = calculateMonthlyStats(trainees, expenses, trainers, d, transactions);
-      return {
-        month: d.toLocaleDateString('en-US', { month: 'short' }),
-        revenue: stats.revenue,
-        expenses: stats.expenses,
-        margin: parseFloat(stats.profitMargin.toFixed(1))
-      };
-    });
-  }, [selectedDate, trainees, expenses, trainers, transactions]);
-
-  // E. توزيع المصاريف للشهر المختار (Pie Chart)
-  const expenseData = useMemo(() => {
-    // 1. حساب الرواتب
-    const salaries = trainers.reduce((sum, t) => sum + (t.salaryAfterDiscount || t.salary), 0);
-
-    // 2. تجميع المصاريف حسب الفئة
-    const categoryMap: Record<string, number> = {};
-    expenses
-      .filter(e => {
-        const d = new Date(e.dateOfPayment);
-        return d.getMonth() === selectedDate.getMonth() && d.getFullYear() === selectedDate.getFullYear();
-      })
-      .forEach(e => {
-        categoryMap[e.category] = (categoryMap[e.category] || 0) + e.amount;
-      });
-
-    // 3. دمجهم
-    const data = [
-      { name: 'Salaries', value: salaries },
-      ...Object.keys(categoryMap).map(k => ({ name: k, value: categoryMap[k] }))
-    ];
-    return data.filter(d => d.value > 0);
-  }, [selectedDate, expenses, trainers]);
-
-  // F. أعلى الأعضاء (Top Members) - ترتيب في الفرونت
-  const topMembers = useMemo(() => {
-    return [...trainees]
-      .sort((a, b) => b.totalCost - a.totalCost) // الأعلى دفعاً أولاً
-      .slice(0, 5); // هات أول 5 بس
-  }, [trainees]);
-
-
-  // ==========================================
-  // 🖼️ RENDER UI
-  // ==========================================
-
-  if (loading && !raw) {
+  if (loading && !stats) {
     return (
       <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500" />
       </div>
     );
   }
 
+  if (!stats) {
+    return (
+      <div className="min-h-screen bg-gray-950 text-red-400 flex items-center justify-center p-8">
+        {error || t("ui.dashboard_unavailable")}
+      </div>
+    );
+  }
+
+  const { cards, financials, graphs, lists } = stats;
+
   return (
     <div className="min-h-screen bg-gray-950 text-white p-6 lg:p-8 font-sans">
-
-      {/* Header */}
-      <div className="mb-8 flex items-center gap-4">
-        <div className="p-3 bg-blue-900/30 rounded-xl border border-blue-500/20">
-          <LayoutDashboard className="w-8 h-8 text-blue-400" />
+      <div className="mb-8 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-blue-900/30 rounded-xl border border-blue-500/20">
+            <LayoutDashboard className="w-8 h-8 text-blue-400" />
+          </div>
+          <div>
+            <h1 className="text-3xl lg:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500">
+              {t(
+                "dashboard.intelligence_hub_title",
+                "Business Intelligence Hub",
+              )}
+            </h1>
+            <p className="text-gray-400 mt-1">
+              {t("dashboard.subtitle", "Overview & Analytics")} ·{" "}
+              {stats.meta.timezone}
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-3xl lg:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500">
-            {t('dashboard.intelligence_hub_title', 'Business Intelligence Hub')}
-          </h1>
-          <p className="text-gray-400 mt-1">{t('dashboard.subtitle', 'Overview & Analytics')}</p>
-        </div>
+        {loading && (
+          <span className="text-xs text-blue-400 animate-pulse">
+            {t("ui.refreshing")}
+          </span>
+        )}
       </div>
 
-      {/* 🎚️ THE SLIDER */}
-      {/* <MonthSlider currentDate={selectedDate} onChange={setSelectedDate} /> */}
+      <MonthSlider currentMonth={selectedMonth} onChange={setSelectedMonth} />
 
-      {/* 📊 KPI CARDS (INTENSIVE) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard
-          title={t('dashboard.monthly_revenue_title')}
-          value={`${currentStats.revenue.toLocaleString()} EGP`}
-          subValue={t('dashboard.monthly_revenue_subtitle')}
+          title={t("dashboard.monthly_revenue_title")}
+          value={formatCurrency(financials.netRevenue)}
+          subValue={t("ui.paid_refunded", {
+            paid: formatCurrency(financials.payments),
+            refunded: formatCurrency(financials.refunds),
+          })}
           icon={<DollarSign className="w-6 h-6" />}
           color="blue"
         />
         <StatCard
-          title={t('dashboard.net_profit_title')}
-          value={`${currentStats.netProfit.toLocaleString()} EGP`}
-          subValue={`${currentStats.profitMargin.toFixed(1)}${t('dashboard.margin_suffix')}`}
+          title={t("dashboard.net_profit_title")}
+          value={formatCurrency(financials.netProfit)}
+          subValue={`${financials.profitMargin.toFixed(1)}${t("dashboard.margin_suffix")}`}
           icon={<TrendingUp className="w-6 h-6" />}
-          color={currentStats.netProfit >= 0 ? 'green' : 'red'}
+          color={financials.netProfit >= 0 ? "green" : "red"}
         />
-
         <StatCard
-          title={t('dashboard.expenses')}
-          value={`${currentStats.expenses.toLocaleString()} EGP`}
-          subValue={`${currentStats.expenses.toFixed(1)}${t('dashboard.margin_suffix')}`}
+          title={t("dashboard.expenses")}
+          value={formatCurrency(financials.totalExpenses)}
+          subValue={t("ui.actual_payroll", {
+            actual: formatCurrency(financials.operatingExpenses),
+            payroll: formatCurrency(financials.estimatedTrainerPayroll),
+          })}
           icon={<TrendingDown className="w-6 h-6" />}
-          color={currentStats.netProfit >= 0 ? 'green' : 'red'}
+          color="red"
         />
-        {/* <StatCard
-          title={t('dashboard.arpu_title')}
-          value={`${currentStats.arpu.toFixed(1)} EGP`}
-          subValue={t('dashboard.arpu_subtitle')}
-          icon={<CreditCard className="w-6 h-6" />}
-          color="purple"
-        /> */}
         <StatCard
-          title={t('dashboard.active_members_title')}
-          value={currentStats.totalActiveMembers}
-          subValue={`${currentStats.newSignups} ${t('dashboard.new_this_month_prefix')}`}
+          title={t("dashboard.active_members_title")}
+          value={cards.activeMembers}
+          subValue={`${cards.newMembers} ${t("dashboard.new_this_month_prefix")}`}
           icon={<Users className="w-6 h-6" />}
           color="orange"
         />
-        {/* <StatCard
-          title={t('dashboard.churn_rate_title')}
-          value={`${currentStats.churnRate.toFixed(1)}%`}
-          subValue={t('dashboard.churn_rate_subtitle')}
-          icon={<UserMinus className="w-6 h-6" />}
-          color={currentStats.churnRate > 10 ? 'red' : 'green'}
-        /> */}
+        <StatCard
+          title={t("ui.current_debt")}
+          value={formatCurrency(cards.currentDebt)}
+          subValue={t("ui.members_with_debt", { count: cards.membersWithDebt })}
+          icon={<CreditCard className="w-6 h-6" />}
+          color="red"
+        />
+        <StatCard
+          title={t("ui.frozen_members")}
+          value={cards.frozenMembers}
+          subValue={t("ui.expired_count", { count: cards.expiredMembers })}
+          icon={<Snowflake className="w-6 h-6" />}
+          color="blue"
+        />
+        <StatCard
+          title={t("ui.expiring_soon")}
+          value={cards.expiringSoon}
+          subValue={t("ui.within_next_days", { count: 5 })}
+          icon={<AlertTriangle className="w-6 h-6" />}
+          color="orange"
+        />
+        <StatCard
+          title={t("ui.attendance_today")}
+          value={cards.attendanceToday}
+          subValue={t("ui.session_members_count", { count: cards.sessionMembers })}
+          icon={<Activity className="w-6 h-6" />}
+          color="green"
+        />
       </div>
 
-      {/* 🚀 NEW SECTION: OPERATIONAL & FINANCIAL PULSE */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 animate-fadeIn delay-150">
-
-        {/* 1. Peak Hours (2/3 width) */}
-        <div className="lg:col-span-2 h-[400px] relative group">
-          <div className="absolute top-4 right-6 z-10 opacity-50 group-hover:opacity-100 transition-opacity">
-            <Clock className="w-5 h-5 text-gray-400" />
-          </div>
-          <PeakHoursChart data={peakHoursData} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="lg:col-span-2 h-[400px] relative">
+          <Clock className="absolute top-4 right-6 z-10 w-5 h-5 text-gray-400" />
+          <PeakHoursChart data={graphs.peakHours} />
         </div>
-
-        {/* 2. Recent Transactions (1/3 width) */}
-        <div className="h-[400px] relative group">
-          <RecentActivityFeed transactions={recentTx} />
+        <div className="h-[400px]">
+          <RecentActivityFeed transactions={stats.lists.recentActivity} />
         </div>
       </div>
 
-      {/* 📉 DEEP DIVE CHARTS */}
       <div className="mb-8">
-        <BusinessCharts revenueTrend={trendData} expenseBreakdown={expenseData} />
+        <BusinessCharts
+          revenueTrend={graphs.financialTrendLast6Months}
+          expenseBreakdown={graphs.expenseBreakdown}
+        />
       </div>
 
-      {/* 🧠 INSIGHTS GRID */}
-      <div className="relative"> {/* حاوية رئيسية للتحكم في الطبقة */}
-
-
-
-
-        <DemoFeatureGate label="Business insights are available in the full version">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-          {/* 1. Financial Health Check */}
-          <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6 relative overflow-hidden group hover:border-blue-500/30 transition-colors">
-            <div className="absolute -top-6 -right-6 p-4 opacity-5 rotate-12 group-hover:opacity-10 transition-opacity">
-              <Activity className="w-48 h-48 text-blue-400" />
-            </div>
-
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-blue-900/30 rounded-lg">
-                <Stethoscope className="w-6 h-6 text-blue-400" />
-              </div>
-              <h3 className="text-xl font-bold text-white">{t('dashboard.financial_health_title')}</h3>
-            </div>
-
-            <div className="space-y-4 relative z-10">
-              <div className="flex justify-between items-center p-3 bg-gray-800 rounded-lg border border-gray-700">
-                <span className="text-gray-400 flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4" /> {t('dashboard.profit_margin')}
-                </span>
-                <span className={`text-xl font-bold ${getFinancialHealthColor(currentStats.profitMargin)}`}>
-                  {currentStats.profitMargin.toFixed(1)}%
-                </span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-gray-800 rounded-lg border border-gray-700">
-                <span className="text-gray-400 flex items-center gap-2">
-                  <Scale className="w-4 h-4" /> {t('dashboard.salary_ratio')}
-                </span>
-                <span className="text-white font-bold">
-                  {currentStats.revenue > 0
-                    ? ((trainers.reduce((a, b) => a + (b.salaryAfterDiscount || b.salary), 0) / currentStats.revenue) * 100).toFixed(1)
-                    : 0}%
-                </span>
-              </div>
-              <div className="mt-4 p-3 bg-blue-900/10 rounded-lg border border-blue-500/10">
-                <p className="text-xs text-blue-400 uppercase font-bold mb-1 flex items-center gap-1">
-                  <Zap className="w-3 h-3" /> {t('dashboard.ai_recommendation')}
-                </p>
-                <p className="text-sm text-gray-300 italic">
-                  {currentStats.profitMargin < 10
-                    ? t('dashboard.tight_margins_message')
-                    : t('dashboard.healthy_margins_message')}
-                </p>
-              </div>
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6">
+          <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+            <Activity className="w-6 h-6 text-blue-400" /> {t("ui.financial_health")}
+          </h3>
+          <div className="space-y-3">
+            <Metric
+              label={t("dashboard.profit_margin")}
+              value={`${financials.profitMargin.toFixed(1)}%`}
+              valueClass={financialHealthColor(financials.profitMargin)}
+            />
+            <Metric
+              label={t("ui.estimated_salary_ratio")}
+              value={`${financials.salaryRatio.toFixed(1)}%`}
+            />
+            <Metric label={t("ui.arpu")} value={formatCurrency(financials.arpu)} />
+            <Metric
+              label={t("ui.lifetime_net_revenue")}
+              value={formatCurrency(financials.lifetimeNetRevenue)}
+            />
+            <p className="text-xs text-gray-500 pt-2">
+              {t("ui.payroll_estimate_note")}
+            </p>
           </div>
-
-          {/* 2. Customer LTV & Segments (Top Members) */}
-          <div className="lg:col-span-2 bg-gray-900 rounded-2xl border border-gray-800 p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-purple-900/30 rounded-lg">
-                <Crown className="w-6 h-6 text-purple-400" />
-              </div>
-              <h3 className="text-xl font-bold text-white">{t('dashboard.high_value_members')}</h3>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="text-gray-500 border-b border-gray-700 text-sm">
-                    <th className="p-3 font-medium">Name</th>
-                    <th className="p-3 font-medium">Plan Type</th>
-                    <th className="p-3 font-medium">Total Spend</th>
-                    <th className="p-3 font-medium">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="text-sm">
-                  {topMembers.map(t => (
-                    <tr key={t._id} className="border-b border-gray-800 hover:bg-gray-800/50 transition last:border-0">
-                      <td className="p-3 font-semibold text-white flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 flex items-center justify-center text-[10px] text-white">
-                          {t.name.charAt(0)}
-                        </div>
-                        {t.name}
-                      </td>
-                      <td className="p-3">
-                        <span className={`px-2 py-1 rounded text-xs border ${t.isSession ? 'bg-purple-900/20 border-purple-500/30 text-purple-300' : 'bg-blue-900/20 border-blue-500/30 text-blue-300'}`}>
-                          {t.isSession ? 'Session Pack' : 'Monthly Sub'}
-                        </span>
-                      </td>
-                      <td className="p-3 text-green-400 font-mono font-bold">{t.totalCost.toLocaleString()} EGP</td>
-                      <td className="p-3">
-                        {getOutstandingBalance(t) > 0
-                          ? <span className="text-red-400 text-xs font-semibold bg-red-900/20 px-2 py-1 rounded">Owes {getOutstandingBalance(t)} EGP</span>
-                          : <span className="text-green-500 text-xs font-semibold bg-green-900/20 px-2 py-1 rounded">Settled</span>}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* 3. 🔥 ACTION CENTER WIDGET 🔥 */}
-          <div className="bg-gradient-to-br from-blue-900/20 to-purple-900/20 rounded-2xl border border-blue-500/30 p-6 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-3xl rounded-full"></div>
-
-            <div className="flex items-center gap-2 mb-6 relative z-10">
-              <Zap className="w-6 h-6 text-yellow-400 fill-yellow-400" />
-              <h3 className="text-xl font-bold text-white">Action Center</h3>
-            </div>
-
-            <div className="space-y-3 relative z-10">
-              {/* Smart Alert 1 */}
-              {currentStats.profitMargin < 15 && (
-                <div className="bg-red-900/20 border border-red-500/30 p-3 rounded-lg flex gap-3 items-start backdrop-blur-sm">
-                  <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-bold text-white">Low Margins Alert</p>
-                    <p className="text-xs text-gray-300">Expenses are eating {100 - parseInt(currentStats.profitMargin.toFixed(0))}% of revenue.</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Smart Alert 2 */}
-              {currentStats.churnRate > 5 && (
-                <div className="bg-orange-900/20 border border-orange-500/30 p-3 rounded-lg flex gap-3 items-start backdrop-blur-sm">
-                  <TrendingDown className="w-5 h-5 text-orange-400 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-bold text-white">Churn Risk</p>
-                    <p className="text-xs text-gray-300">Retention dropped this month. Contact expired members.</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Positive Reinforcement */}
-              {currentStats.newSignups > 5 && (
-                <div className="bg-green-900/20 border border-green-500/30 p-3 rounded-lg flex gap-3 items-start backdrop-blur-sm">
-                  <Rocket className="w-5 h-5 text-green-400 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-bold text-white">Momentum!</p>
-                    <p className="text-xs text-gray-300">{currentStats.newSignups} new members joined. Keep it up!</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Default State if no alerts */}
-              {currentStats.profitMargin >= 15 && currentStats.churnRate <= 5 && currentStats.newSignups <= 5 && (
-                <div className="bg-gray-800/50 border border-gray-700 p-3 rounded-lg flex gap-3 items-center">
-                  <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
-                    <Activity className="w-4 h-4 text-green-400" />
-                  </div>
-                  <p className="text-sm text-gray-400">System is running smoothly. No critical actions needed.</p>
-                </div>
-              )}
-            </div>
-          </div>
-
         </div>
-        </DemoFeatureGate>
+
+        <div className="lg:col-span-2 bg-gray-900 rounded-2xl border border-gray-800 p-6">
+          <h3 className="text-xl font-bold mb-6">
+            {t("ui.high_value_members_actual")}
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="text-gray-500 border-b border-gray-700">
+                  <th className="p-3">{t("ui.name")}</th>
+                  <th className="p-3">{t("ui.plan")}</th>
+                  <th className="p-3">{t("ui.lifetime_spend")}</th>
+                  <th className="p-3">{t("ui.current_balance")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lists.topMembers.map((member) => (
+                  <tr
+                    key={member._id}
+                    className="border-b border-gray-800 last:border-0"
+                  >
+                    <td className="p-3 font-semibold">{member.name}</td>
+                    <td className="p-3 text-gray-400">
+                      {member.isSession ? t("ui.session_pack") : t("ui.monthly")}
+                    </td>
+                    <td className="p-3 text-green-400 font-mono">
+                      {formatCurrency(member.lifetimeSpend)}
+                    </td>
+                    <td
+                      className={`p-3 font-mono ${member.outstandingBalance > 0 ? "text-red-400" : "text-green-500"}`}
+                    >
+                      {member.outstandingBalance > 0
+                        ? formatCurrency(member.outstandingBalance)
+                        : t("ui.settled")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="lg:col-span-2 bg-gray-900 rounded-2xl border border-gray-800 p-6">
+          <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <Zap className="w-5 h-5 text-yellow-400" /> {t("ui.expiring_next_days", { count: 5 })}
+          </h3>
+          <div className="grid sm:grid-cols-2 gap-3">
+            {lists.expiringMembers.length === 0 && (
+              <p className="text-gray-500">{t("ui.no_expiring_members")}</p>
+            )}
+            {lists.expiringMembers.map((member) => (
+              <div
+                key={member._id}
+                className="bg-gray-800/60 border border-gray-700 rounded-xl p-3 flex justify-between gap-3"
+              >
+                <div>
+                  <p className="font-semibold">{member.name}</p>
+                  <p className="text-xs text-gray-500">
+                    #{member.memberId || "—"} · {member.phone}
+                  </p>
+                </div>
+                <span className="text-sm text-orange-400">
+                  {formatGymDate(member.subscriptionEndDate)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6">
+          <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <UserMinus className="w-5 h-5" /> {t("ui.period_pulse")}
+          </h3>
+          <div className="space-y-3">
+            <Metric
+              label={t("ui.active_during_period")}
+              value={formatNumber(financials.activeInPeriod)}
+            />
+            <Metric
+              label={t("ui.expirations")}
+              value={formatNumber(cards.expirationsInPeriod)}
+            />
+            <Metric
+              label={t("ui.expiration_rate")}
+              value={`${financials.expirationRate.toFixed(1)}%`}
+            />
+            <Metric
+              label={t("ui.adjustments")}
+              value={formatCurrency(financials.adjustments)}
+            />
+            <Metric
+              label={t("ui.monthly_session")}
+              value={`${cards.monthlyMembers} / ${cards.sessionMembers}`}
+            />
+          </div>
+        </div>
       </div>
-
     </div>
-
   );
 };
+
+const Metric = ({
+  label,
+  value,
+  valueClass = "text-white",
+}: {
+  label: string;
+  value: string;
+  valueClass?: string;
+}) => (
+  <div className="flex justify-between items-center p-3 bg-gray-800 rounded-lg border border-gray-700">
+    <span className="text-gray-400 flex items-center gap-2">
+      <Scale className="w-4 h-4" />
+      {label}
+    </span>
+    <span className={`font-bold ${valueClass}`}>{value}</span>
+  </div>
+);
 
 export default Dashboard;

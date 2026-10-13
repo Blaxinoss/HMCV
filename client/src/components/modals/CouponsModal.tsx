@@ -5,6 +5,8 @@ import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next'; // Import added
 import { AppDispatch, RootState } from '../../store';
 import { addCoupon, deleteCoupon, fetchCoupons } from '../../slices/couponSlice';
+import { formatGymDate, isGymDateExpired } from '../../utils/dateTime';
+import { formatCurrency } from '../../utils/format';
 
 interface CouponsModalProps {
     isOpen: boolean;
@@ -230,20 +232,20 @@ export const CouponsModal: React.FC<CouponsModalProps> = ({ isOpen, onClose }) =
                                             <div>
                                                 <p className="text-white font-bold text-sm tracking-wide">{coupon.code}</p>
                                                 <p className="text-xs text-gray-500 flex items-center gap-1">
-                                                    {t('coupons.modal.expires')}: {new Date(coupon.expiryDate).toLocaleDateString()}
-                                                    {new Date() > new Date(coupon.expiryDate) && (
+                                                    {t('coupons.modal.expires')}: {formatGymDate(coupon.expiryDate)}
+                                                    {isGymDateExpired(coupon.expiryDate) && (
                                                         <span className="text-red-400 font-bold ml-1">{t('coupons.modal.expired_tag')}</span>
                                                     )}
                                                 </p>
                                                 <p className="text-xs text-gray-500 flex items-center gap-1">
-                                                    {coupon.usedCount} used out of {coupon.usageLimit}</p>
+                                                    {t('ui.coupon_usage', { used: coupon.usedCount, limit: coupon.usageLimit })}</p>
                                             </div>
                                         </div>
 
                                         {/* Right Info & Action */}
                                         <div className="flex items-center gap-4">
                                             <span className="text-sm font-mono font-bold text-green-400 bg-green-400/10 px-2 py-1 rounded-md border border-green-400/20">
-                                                {coupon.discountType === 'PERCENTAGE' ? `-${coupon.value}%` : `-${coupon.value} EGP`}
+                                                {coupon.discountType === 'PERCENTAGE' ? `-${coupon.value}%` : `-${formatCurrency(coupon.value)}`}
                                             </span>
 
                                             <button

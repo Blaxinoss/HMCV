@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { deleteUser, fetchUsers, updateUser, createAdmin } from '../slices/userSlice';
 import { AppDispatch, RootState } from '../store';
 import { User } from '../types';
+import { formatGymDate } from '../utils/dateTime';
 import {
   Settings as SettingsIcon,
   User as UserIcon,
@@ -51,7 +52,7 @@ const Settings: React.FC = () => {
   // ✅ 3. دالة الحفظ الجديدة (User + Password)
   const handleUpdateUser = async (userId: string) => {
     if (!newUsername.trim()) {
-      toast.error('Username cannot be empty');
+      toast.error(t('ui.username_required'));
       return;
     }
 
@@ -65,14 +66,14 @@ const Settings: React.FC = () => {
       }
 
       await dispatch(updateUser(updateData)).unwrap();
-      toast.success('User updated successfully');
+      toast.success(t('ui.user_updated'));
 
       // Reset
       setNewPassword('');
       setNewUsername('');
       setEditingUserId(null);
     } catch (error) {
-      toast.error('Failed to update user');
+      toast.error(t('ui.user_update_failed'));
     }
   };
 
@@ -80,9 +81,9 @@ const Settings: React.FC = () => {
     showConfirm(userId, async () => {
       try {
         await dispatch(deleteUser(userId)).unwrap();
-        toast.success(t('settings.user_removed', 'User removed'));
+        toast.success(t('settings.user_removed'));
       } catch (error) {
-        toast.error(t('settings.delete_failed', 'Failed to delete user'));
+        toast.error(t('settings.delete_failed'));
       }
     });
   };
@@ -181,7 +182,7 @@ const Settings: React.FC = () => {
                             <h4 className="text-lg font-bold text-white">{user.username}</h4>
                             <div className="flex items-center gap-1 text-xs text-gray-500">
                               <Calendar className="w-3 h-3" />
-                              {new Date(user.createdAt).toLocaleDateString()}
+                              {formatGymDate(user.createdAt)}
                             </div>
                           </div>
                         </div>
@@ -190,14 +191,14 @@ const Settings: React.FC = () => {
                           <button
                             onClick={() => startEditing(user)} // ✅ استدعاء دالة التعديل الجديدة
                             className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-                            title="Edit User"
+                            title={t('ui.edit_user')}
                           >
                             <Edit2 className="w-4 h-4" /> {/* غيرت الايقونة لـ Edit لأننا هنعدل الاسم كمان */}
                           </button>
                           <button
                             onClick={() => handleDeleteUser(user._id)}
                             className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                            title="Delete User"
+                            title={t('ui.delete_user')}
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -220,7 +221,7 @@ const Settings: React.FC = () => {
 
 
 
-        <DemoFeatureGate label="Additional admin accounts are available in the full version">
+        <DemoFeatureGate label={t('ui.additional_admins_feature')}>
           <div>
           <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6 sticky top-24 relative overflow-hidden group">
 

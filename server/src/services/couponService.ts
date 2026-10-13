@@ -1,6 +1,7 @@
 import { DiscountType, type ICoupon } from '../models/Coupons.js';
 import type mongoose from 'mongoose';
 import type { Model } from 'mongoose';
+import { startOfGymDay, utcNow } from '../utils/dateTime.js';
 
 export interface RedeemedCoupon {
     coupon: ICoupon;
@@ -44,7 +45,7 @@ export async function redeemCoupon(
         {
             code: code.trim().toUpperCase(),
             isActive: true,
-            expiryDate: { $gte: new Date() },
+            expiryDate: { $gte: startOfGymDay(utcNow()) },
             $or: [
                 { usageLimit: null },
                 { $expr: { $lt: ['$usedCount', '$usageLimit'] } },

@@ -7,6 +7,7 @@ import { Trainer } from '../../types';
 import useMessage from '../../utils/useMessageHook';
 import toast from 'react-hot-toast';
 import { User, Phone, DollarSign, TrendingDown, Save, X } from 'lucide-react';
+import { formatCurrency } from '../../utils/format';
 
 interface TrainersFormProps {
   trainer?: Trainer | null;
@@ -49,7 +50,7 @@ const TrainersForm: React.FC<TrainersFormProps> = ({ trainer, onSuccess, onCance
     e.preventDefault();
 
     if (!formData.name || !formData.phone || !formData.salary) {
-      toast.error(t('trainers.validation_error', 'Please fill all required fields'));
+      toast.error(t('trainers.validation_error'));
       return;
     }
 
@@ -62,10 +63,10 @@ const TrainersForm: React.FC<TrainersFormProps> = ({ trainer, onSuccess, onCance
     try {
       if (trainer) {
         await dispatch(updateTrainer({ id: trainer._id, data: payload })).unwrap();
-        toast.success(t('trainers.update_success', 'Trainer updated successfully'));
+        toast.success(t('trainers.update_success'));
       } else {
         await dispatch(addTrainer(payload)).unwrap();
-        toast.success(t('trainers.add_success', 'Trainer added successfully'));
+        toast.success(t('trainers.add_success'));
       }
 
       onSuccess();
@@ -75,7 +76,7 @@ const TrainersForm: React.FC<TrainersFormProps> = ({ trainer, onSuccess, onCance
 
       const errorMessage = typeof error === 'string'
         ? error
-        : error?.message || t('common.error_occurred', 'Something went wrong');
+        : error?.message || t('common.error_occurred');
 
       toast.error(errorMessage);
     }
@@ -146,7 +147,7 @@ const TrainersForm: React.FC<TrainersFormProps> = ({ trainer, onSuccess, onCance
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-400 flex items-center gap-2">
-              <TrendingDown className="w-4 h-4" /> {t('trainers.deduction', 'Deduction / Raise')}
+              <TrendingDown className="w-4 h-4" /> {t('trainers.deduction')}
             </label>
             <input
               type="number"
@@ -168,7 +169,7 @@ const TrainersForm: React.FC<TrainersFormProps> = ({ trainer, onSuccess, onCance
           <span className="text-xs text-gray-500">{t('trainers.estimated_net_salary_hint')}</span>
         </div>
         <div className="text-3xl font-mono font-bold text-green-400">
-          {Math.max(0, formData.salary - formData.raise).toLocaleString()} EGP
+          {formatCurrency(Math.max(0, formData.salary - formData.raise))}
         </div>
       </div>
 

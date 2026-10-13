@@ -6,6 +6,7 @@ import { db } from '../models/index.js';
 import { validateExpenseInput } from '../utils/validation.js';
 import mongoose from 'mongoose';
 import { recordAudit } from '../services/auditService.js';
+import { parseGymDate, utcNow } from '../utils/dateTime.js';
 const router: Router = express.Router();
 
 // Apply JWT verification to all routes
@@ -51,7 +52,7 @@ router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
             name,
             category,
             amount,
-            dateOfPayment,
+            dateOfPayment: parseGymDate(dateOfPayment, 'start'),
             description: description || ""
         });
 
@@ -91,7 +92,9 @@ router.put('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
         if (req.body.name !== undefined) expense.name = req.body.name;
         if (req.body.category !== undefined) expense.category = req.body.category;
         if (req.body.amount !== undefined) expense.amount = req.body.amount;
-        if (req.body.dateOfPayment !== undefined) expense.dateOfPayment = req.body.dateOfPayment;
+        if (req.body.dateOfPayment !== undefined) {
+            expense.dateOfPayment = parseGymDate(req.body.dateOfPayment, 'start')!;
+        }
         if (req.body.description !== undefined) expense.description = req.body.description;
 
         const updatedExpense = await expense.save();
@@ -116,7 +119,7 @@ router.delete('/:id', async (req: AuthRequest, res: Response): Promise<void> => 
             req.params.id,
             {
                 deleteFlag: true,
-                deletedAt: new Date(),
+                deletedAt: utcNow(),
                 deletedBy: req.user?.id,
             },
             { new: true },

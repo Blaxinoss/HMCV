@@ -36,7 +36,7 @@ const Register: React.FC = () => {
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    toast.error('Not implemented Logic');
+    toast.error(t('ui.feature_not_available'));
     // if (formData.password !== formData.confirmPassword) {
     //   toast.error('Passwords do not match');
     //   return;

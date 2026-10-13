@@ -51,14 +51,14 @@ const Login: React.FC = () => {
 
       // 3. لو وصلنا هنا يبقى الدخول نجح 100%
       // مش محتاجين نعمل check على user.isAuthenticated لأن unwrap لو فشل هيروح للـ catch
-      toast.success(`Welcome back, ${user.username}!`);
+      toast.success(t('ui.welcome_back_user', { name: user.username }));
       navigate('/');
 
     } catch (error: any) {
       // 4. لو الباسورد غلط هيدخل هنا
       // الـ error هنا هو الرسالة الـ string اللي جاية من rejectWithValue
       console.error("Login Error:", error);
-      toast.error(error || 'Invalid username or password');
+      toast.error(error || t('ui.invalid_credentials'));
 
       // هنا مفيش ريلود هيحصل، مجرد توست هيظهر
     }

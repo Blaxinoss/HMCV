@@ -41,6 +41,7 @@ const PeakHoursChart: React.FC<PeakHoursChartProps> = ({ data }) => {
                         <Area
                             type="monotone"
                             dataKey="count"
+                            name={t('charts.attendance_count')}
                             stroke="#F59E0B"
                             fillOpacity={1}
                             fill="url(#colorHeat)"
@@ -53,7 +54,7 @@ const PeakHoursChart: React.FC<PeakHoursChartProps> = ({ data }) => {
             {/* Legend / Insight */}
             <div className=" p-3 bg-gray-700/30 rounded-lg flex items-center gap-3 ">
                 <p className="text-xs text-gray-300">
-                    {/* {t('charts.operational_tip')} */}Operational tip : ...
+                    {t('charts.operational_tip')}
                 </p>
             </div>
         </div>

@@ -4,7 +4,10 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 const LanguageSwitcher: React.FC = () => {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const targetLanguage = i18n.language === 'en'
+    ? t('languageSwitcher.arabic')
+    : t('languageSwitcher.english');
 
   const toggleLanguage = () => {
     const newLang = i18n.language === 'en' ? 'ar' : 'en';
@@ -16,9 +19,9 @@ const LanguageSwitcher: React.FC = () => {
     <button
       onClick={toggleLanguage}
       className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-white font-semibold text-sm transition"
-      title={`Switch to ${i18n.language === 'en' ? 'العربية' : 'English'}`}
+      title={t('languageSwitcher.switch_to', { language: targetLanguage })}
     >
-      {i18n.language === 'en' ? 'العربية' : 'English'}
+      {targetLanguage}
     </button>
   );
 };

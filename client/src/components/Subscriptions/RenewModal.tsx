@@ -21,7 +21,7 @@ const RenewModal: React.FC<RenewModalProps> = ({ traineeId, traineeName, isSessi
     const [loading, setLoading] = useState(false);
 
     const [formData, setFormData] = useState({
-        durationMonths: 1, // اليوزر بيختار شهور، واحنا هنحولها أيام
+        durationMonths: 1,
         totalCost: 0,
         amountPaid: 0,
         sessionsCount: isSession ? 12 : 0, // لو نظام حصص
@@ -32,14 +32,11 @@ const RenewModal: React.FC<RenewModalProps> = ({ traineeId, traineeName, isSessi
         e.preventDefault();
         setLoading(true);
 
-        // تحويل الشهور لأيام عشان الباك إند
-        const durationInDays = formData.durationMonths * 30;
-
         try {
             await dispatch(renewTrainee({
                 id: traineeId,
                 data: {
-                    durationInDays: durationInDays,
+                    durationInMonths: formData.durationMonths,
                     totalCost: formData.totalCost,
                     paymentAmountMinor: Math.round(formData.amountPaid * 100),
                     couponCode: formData.couponCode,
@@ -47,7 +44,7 @@ const RenewModal: React.FC<RenewModalProps> = ({ traineeId, traineeName, isSessi
                 }
             })).unwrap(); // unwrap عشان لو في ايرور (زي الديون) يروح للـ catch
 
-            toast.success(t('trainees.renew_success', 'Renewed Successfully!'));
+            toast.success(t('trainees.renew_success'));
             onClose();
         } catch (error: any) {
             // هنا هيظهر الايرور بتاع الباك إند (مثلاً: عليه ديون)

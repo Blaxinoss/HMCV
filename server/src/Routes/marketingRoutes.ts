@@ -3,6 +3,7 @@ import type { Request, Response } from 'express'
 import { Router } from 'express';
 import { type ICoupon } from '../models/Coupons.js';
 import { db } from '../models/index.js';
+import { isExpired, utcNow } from '../utils/dateTime.js';
 
 
 
@@ -72,7 +73,7 @@ router.post("/log/:id", async (req: Request, res: Response) => {
         // تحديث سجل التواصل
         await Trainees.findByIdAndUpdate(id, {
             $set: {
-                'crmInfo.lastMessageSent': new Date(), // سجلنا تاريخ اللحظة دي
+                'crmInfo.lastMessageSent': utcNow(), // Store the communication instant in UTC.
                 'crmInfo.lastMessageType': messageType || 'general'
             }
         });
@@ -113,7 +114,7 @@ router.post('/validate-coupon', async (req: Request, res: Response): Promise<voi
         }
 
         // 3. التحقق من التاريخ
-        if (new Date() > coupon.expiryDate) {
+        if (isExpired(coupon.expiryDate, utcNow())) {
             res.status(400).json({ success: false, message: "Coupon Expired" });
             return;
         }

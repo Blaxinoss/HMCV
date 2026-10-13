@@ -4,8 +4,10 @@ import { useDispatch } from 'react-redux';
 import { deleteExpense } from '../../slices/expensesSlice';
 import { AppDispatch } from '../../store';
 import { Expense } from '../../types';
+import { formatGymDate } from '../../utils/dateTime';
 import { useConfirmToast } from '../toasters/deleteToaster';
 import { Edit2, Trash2, ChevronDown, ChevronUp, AlertCircle, FileText } from 'lucide-react';
+import { formatCurrency } from '../../utils/format';
 
 interface ExpenseTableProps {
   expenses: Expense[];
@@ -77,17 +79,17 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({
                   <tr className="hover:bg-gray-800/50 transition-colors duration-150 group">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getCategoryStyle(expense.category)}`}>
-                        {expense.category}
+                        {t(`expense_categories.${expense.category.toLowerCase()}`)}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-200 font-medium">
                       {expense.name || <span className="text-gray-600 italic">{t('expenses.no_name')}</span>}
                     </td>
                     <td className="px-6 py-4 text-sm font-bold text-white">
-                      {expense.amount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} EGP
+                      {formatCurrency(expense.amount || 0)}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-400">
-                      {new Date(expense.dateOfPayment).toLocaleDateString()}
+                      {formatGymDate(expense.dateOfPayment)}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
@@ -123,13 +125,13 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({
                                 {t('expenses.description')}
                               </h4>
                               <p className="text-sm text-gray-200 leading-relaxed">
-                                {expense.description || "No additional notes provided."}
+                                {expense.description || t('expenses.no_notes')}
                               </p>
                             </div>
                           </div>
 
                           <div className="flex items-center gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-700 w-full sm:w-auto mt-2 sm:mt-0 justify-end">
-                            <span className="text-xs text-gray-500 uppercase font-bold mr-2">Danger Zone:</span>
+                            <span className="text-xs text-gray-500 uppercase font-bold mr-2">{t('expenses.danger_zone')}:</span>
                             <button
                               onClick={() => handleDelete(expense._id)}
                               className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 hover:border-red-500/40 rounded-lg transition-all text-sm font-semibold"

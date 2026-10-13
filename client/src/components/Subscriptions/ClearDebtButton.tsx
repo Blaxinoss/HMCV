@@ -7,6 +7,8 @@ import toast from 'react-hot-toast';
 import { Trainee } from '../../types';
 import { useConfirmToast } from '../toasters/deleteToaster';
 import { getOutstandingBalance } from '../../utils/finance';
+import { useTranslation } from 'react-i18next';
+import { formatCurrency } from '../../utils/format';
 
 interface ClearDebtButtonProps {
     trainee: Trainee;
@@ -15,6 +17,7 @@ interface ClearDebtButtonProps {
 const ClearDebtButton: React.FC<ClearDebtButtonProps> = ({ trainee }) => {
     const [loading, setLoading] = useState(false);
     const dispatch = useDispatch<AppDispatch>();
+    const { t } = useTranslation();
 
     // بنستخدم الهوك بتاع التوستر
     const { showConfirm } = useConfirmToast();
@@ -36,13 +39,13 @@ const ClearDebtButton: React.FC<ClearDebtButtonProps> = ({ trainee }) => {
                     reason: 'Debt cleared',
                 })).unwrap();
 
-                toast.success("Debt Cleared Successfully! 💸");
+                toast.success(t('ui.debt_cleared'));
 
                 // ملحوظة: لو الـ Slice بيحدث الـ State أوتوماتيك مش محتاج fetchTrainees
                 // dispatch(fetchTrainees(...)); 
 
             } catch (error: any) {
-                toast.error(error || "Failed to clear debt");
+                toast.error(error || t('ui.debt_clear_failed'));
             } finally {
                 setLoading(false);
             }
@@ -54,10 +57,10 @@ const ClearDebtButton: React.FC<ClearDebtButtonProps> = ({ trainee }) => {
             onClick={handleClearDebt}
             disabled={loading}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 hover:bg-green-500 text-green-500 hover:text-white border border-green-500/20 rounded-lg text-xs font-bold transition-all disabled:opacity-50"
-            title={`Pay outstanding ${outstandingBalance} EGP`}
+            title={t('ui.pay_outstanding', { amount: formatCurrency(outstandingBalance) })}
         >
             {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
-            PAY FULL ({outstandingBalance})
+            {t('ui.pay_full')} ({formatCurrency(outstandingBalance)})
         </button>
     );
 };

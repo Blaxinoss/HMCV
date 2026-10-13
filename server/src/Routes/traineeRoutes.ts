@@ -10,6 +10,13 @@ import { redeemCoupon } from '../services/couponService.js';
 import { createTransaction, getLedgerSummary, getLedgerSummaryMap, getNetPriceMinor, toMinorUnits } from '../services/financeService.js';
 import { calculateFreezeStart, calculateUnfreezeEndDate, sameGymDay } from '../utils/freezePolicy.js';
 import { recordAudit } from '../services/auditService.js';
+import {
+    addGymCalendarMonths,
+    isExpired,
+    parseGymDate,
+    startOfGymDay,
+    utcNow,
+} from '../utils/dateTime.js';
 // GET: Fetch all trainees
 router.get('/', async (req: Request, res: Response) => {
     try {
@@ -39,12 +46,13 @@ router.get('/', async (req: Request, res: Response) => {
             query.$or = searchConditions;
         }
 
-        const today = new Date();
+        const today = utcNow();
+        const todayStart = startOfGymDay(today);
         if (status === 'active') {
-            query.subscriptionEndDate = { $gt: today };
+            query.subscriptionEndDate = { $gte: todayStart };
             query.accountFreezeStatus = false;
         } else if (status === 'expired') {
-            query.subscriptionEndDate = { $lt: today };
+            query.subscriptionEndDate = { $lt: todayStart };
             query.accountFreezeStatus = false;
         } else if (status === 'frozen') {
             query.accountFreezeStatus = true;
@@ -108,6 +116,13 @@ router.post('/', async (req: Request, res: Response) => {
             program,
         } = req.body;
 
+        const normalizedStartDate = parseGymDate(subscriptionStartDate, 'start');
+        const normalizedEndDate = parseGymDate(subscriptionEndDate, 'end');
+        if (!normalizedStartDate || !normalizedEndDate || normalizedEndDate < normalizedStartDate) {
+            res.status(400).json({ error: 'A valid subscription date range is required' });
+            return;
+        }
+
         let discountAmount = 0;
         let finalUsedCouponCode = null;
         const appliedDiscountData = {
@@ -139,8 +154,8 @@ router.post('/', async (req: Request, res: Response) => {
             memberId: newMemberId,
             name,
             phone,
-            subscriptionStartDate,
-            subscriptionEndDate,
+            subscriptionStartDate: normalizedStartDate,
+            subscriptionEndDate: normalizedEndDate,
             totalCost,
             isSession,
             sessionsRemaining: isSession ? sessionsCount : 0,
@@ -331,7 +346,7 @@ router.put('/:id/freeze', async (req: AuthRequest, res: Response): Promise<void>
             return;
         }
 
-        const currentDate = new Date();
+        const currentDate = utcNow();
         const beforeFreeze = {
             accountFreezeStatus: trainee.accountFreezeStatus,
             freezeStartDate: trainee.freezeStartDate,
@@ -340,7 +355,7 @@ router.put('/:id/freeze', async (req: AuthRequest, res: Response): Promise<void>
         const reason = typeof req.body.reason === 'string' && req.body.reason.trim()
             ? req.body.reason.trim()
             : 'Manual membership freeze';
-        const previousEndDate = new Date(trainee.subscriptionEndDate);
+        const previousEndDate = trainee.subscriptionEndDate;
 
         // -------------------------------------------------------
         //(Unfreeze)
@@ -371,7 +386,7 @@ router.put('/:id/freeze', async (req: AuthRequest, res: Response): Promise<void>
             // (Freeze)
             // -------------------------------------------------------
         } else {
-            if (new Date(trainee.subscriptionEndDate) < currentDate) {
+            if (isExpired(trainee.subscriptionEndDate, currentDate)) {
                 res.status(400).json({ error: 'Cannot freeze an expired subscription' });
                 return;
             }
@@ -464,8 +479,8 @@ router.post("/check-in/:id", async (req: Request, res: Response) => {
 
 
 
-    const today = new Date();
-    if (new Date(trainee.subscriptionEndDate) < today) {
+    const today = utcNow();
+    if (isExpired(trainee.subscriptionEndDate, today)) {
         return res.status(400).json({ error: "Cannot check-in: Subscription EXPIRED ⏳" });
     }
 
@@ -564,7 +579,7 @@ router.delete('/:id', async (req: AuthRequest, res: Response) => {
             req.params.id,
             {
                 deleteFlag: true,
-                deletedAt: new Date(),
+                deletedAt: utcNow(),
                 deletedBy: req.user?.id,
             },
             { new: true },
@@ -590,7 +605,7 @@ router.delete('/:id', async (req: AuthRequest, res: Response) => {
 // PUT: Update trainee details
 router.put('/:id', async (req: Request, res: Response) => {
     try {
-        const { Trainees, Coupon, PaymentTransaction } = db(req);
+        const { Trainees, PaymentTransaction } = db(req);
         const { id } = req.params;
 
         const trainee = await Trainees.findById(id);
@@ -599,88 +614,33 @@ router.put('/:id', async (req: Request, res: Response) => {
             return res.status(404).json({ error: 'Trainee not found' });
         }
 
-        const currentSummary = await getLedgerSummary(
-            PaymentTransaction,
-            trainee._id,
-            trainee.billingCycleId,
-            getNetPriceMinor(trainee),
-        );
-
-        const {
-            name,
-            phone,
-            subscriptionStartDate,
-            totalCost,
-            program,
-            couponCode, // 🔥 لازم نستقبله هنا
-            sessionsCount // لو بيعدل عدد الحصص
-        } = req.body;
-
-        // 1. تحديث البيانات الأساسية
-        if (name) trainee.name = name;
-        if (phone) trainee.phone = phone;
-        if (subscriptionStartDate) trainee.subscriptionStartDate = subscriptionStartDate;
-        if (program !== undefined) trainee.program = program;
-        if (totalCost !== undefined) trainee.totalCost = totalCost;
-        if (sessionsCount !== undefined && trainee.isSession) trainee.sessionsRemaining = sessionsCount;
-
-        // ---------------------------------------------------------
-        // 2. منطق الكوبون (De-apply & Apply) 🔥 هذا هو الجزء الناقص
-        // ---------------------------------------------------------
-
-        // الحالة الأولى: حذف الكوبون (De-apply)
-        if (couponCode === "") {
-            trainee.discount = 0;
-            trainee.usedCoupon = undefined; // أو undefined حسب السكيما
-            trainee.appliedDiscount = {
-                hasCustomDiscount: false,
-                discountValue: 0,
-                discountType: 'fixed' // قيمة افتراضية
-            };
-        }
-        // الحالة الثانية: تغيير الكوبون أو إضافته لأول مرة
-        else if (couponCode && couponCode !== trainee.usedCoupon) {
-            const coupon = await Coupon.findOne({
-                code: couponCode.toUpperCase(),
-                isActive: true
-            });
-
-            if (coupon) {
-                // (اختياري) ممكن تزود شروط الصلاحية هنا لو عايز تمنع الكوبونات المنتهية
-                let discountAmount = 0;
-
-                // تحديث الـ Metadata
-                trainee.appliedDiscount = {
-                    hasCustomDiscount: true,
-                    discountValue: coupon.value,
-                    discountType: coupon.discountType === 'PERCENTAGE' ? 'percentage' : 'fixed'
-                };
-
-                // حساب القيمة المالية
-                if (coupon.discountType === 'PERCENTAGE') {
-                    discountAmount = (trainee.totalCost * coupon.value) / 100;
-                } else {
-                    discountAmount = coupon.value;
-                }
-
-                trainee.discount = discountAmount;
-                trainee.usedCoupon = coupon.code;
-            }
-        }
-
-        // الحالة الثالثة: لو الكوبون هو هو ومسحناش حاجة -> مش بنعمل حاجة (بس لازم نعيد حساب الخصم لو السعر اتغير)
-        // دي نقطة ذكية: لو انا مغيرتش الكوبون بس غيرت السعر من 1000 لـ 2000 والخصم نسبة مئوية؟
-        // الـ Pre-save hook اللي عملناه زمان المفروض يظبط دي لو اعتمدنا عليه، أو نحسبها هنا يدوي للأمان:
-        if (trainee.appliedDiscount?.hasCustomDiscount && trainee.appliedDiscount.discountType === 'percentage') {
-            trainee.discount = (trainee.totalCost * trainee.appliedDiscount.discountValue) / 100;
-        }
-
-        const newNetPriceMinor = getNetPriceMinor(trainee);
-        if (currentSummary.netPaidMinor > newNetPriceMinor) {
+        const protectedFields = [
+            'subscriptionStartDate',
+            'subscriptionEndDate',
+            'totalCost',
+            'discount',
+            'couponCode',
+            'appliedDiscount',
+            'usedCoupon',
+            'isSession',
+            'sessionsCount',
+            'sessionsRemaining',
+            'billingCycleId',
+            'accountFreezeStatus',
+            'freezeStartDate',
+        ];
+        const attemptedProtectedFields = protectedFields.filter(field => field in req.body);
+        if (attemptedProtectedFields.length > 0) {
             return res.status(400).json({
-                error: 'The new subscription price is below the recorded paid balance. Record a refund first.',
+                error: 'Subscription terms cannot be changed from the regular edit endpoint. Use the renewal, freeze, or transaction endpoint.',
+                fields: attemptedProtectedFields,
             });
         }
+
+        const { name, phone, program } = req.body;
+        if (name !== undefined) trainee.name = name;
+        if (phone !== undefined) trainee.phone = phone;
+        if (program !== undefined) trainee.program = program;
 
         const updatedTrainee = await trainee.save();
 
@@ -717,17 +677,36 @@ router.post('/:id/renew', async (req: Request, res: Response): Promise<void> => 
 
 
         const {
-            durationInDays, // مدة التجديد (30 يوم مثلاً)
+            durationInMonths,
+            durationInDays, // Legacy client compatibility: 30 days represents one calendar month.
             totalCost,      // سعر الباقة الجديد
             paymentAmountMinor = 0,
             couponCode,      // الكوبون (اختياري)
             sessionsCount
         } = req.body;
 
+        const renewalMonths = durationInMonths ?? (
+            Number.isInteger(durationInDays) && durationInDays > 0 && durationInDays % 30 === 0
+                ? durationInDays / 30
+                : null
+        );
+        if (!Number.isInteger(renewalMonths) || renewalMonths <= 0) {
+            res.status(400).json({ error: 'durationInMonths must be a positive integer' });
+            return;
+        }
+
         const trainee = await Trainees.findById(id);
 
         if (!trainee) {
             res.status(404).json({ error: "Trainee not found" });
+            return;
+        }
+
+        if (trainee.accountFreezeStatus) {
+            res.status(409).json({
+                success: false,
+                error: 'Cannot renew a frozen subscription. Unfreeze the trainee first.',
+            });
             return;
         }
 
@@ -748,19 +727,18 @@ router.post('/:id/renew', async (req: Request, res: Response): Promise<void> => 
 
 
         // 1. منطق التواريخ (Date Logic)
-        const today = new Date();
-        let newStartDate = today;
-        let currentEndDate = new Date(trainee.subscriptionEndDate);
+        const today = utcNow();
+        let newStartDate = startOfGymDay(today);
+        const currentEndDate = trainee.subscriptionEndDate;
 
         // لو اشتراكه لسه ساري، ابدأ التجديد من بعد ما يخلص
-        if (currentEndDate > today) {
+        if (!isExpired(currentEndDate, today)) {
             newStartDate = currentEndDate;
         }
         // لو منتهي، ابدأ من النهاردة (newStartDate already = today)
 
         // حساب تاريخ الانتهاء الجديد
-        const newEndDate = new Date(newStartDate);
-        newEndDate.setDate(newEndDate.getDate() + durationInDays);
+        const newEndDate = addGymCalendarMonths(newStartDate, renewalMonths);
 
 
 
@@ -810,12 +788,6 @@ router.post('/:id/renew', async (req: Request, res: Response): Promise<void> => 
 
             // لو عايز تراكمي: trainee.sessionsRemaining += sessionsCount;
         }
-
-
-        // فك التجميد لو كان مجمد
-        trainee.accountFreezeStatus = false;
-        trainee.freezeStartDate = null;
-
         await trainee.save();
 
         if (normalizedPaymentMinor > 0) {
@@ -856,7 +828,16 @@ router.patch('/:id', async (req: Request, res: Response) => {
     try {
         const { Trainees, PaymentTransaction } = db(req);
         const { id } = req.params;
-        const updates = req.body;
+        const updates = { ...req.body };
+
+        const allowedUpdates = ['name', 'phone', 'program', 'crmInfo'];
+        const rejectedUpdates = Object.keys(updates).filter(key => !allowedUpdates.includes(key));
+        if (rejectedUpdates.length > 0) {
+            return res.status(400).json({
+                error: 'Subscription terms cannot be changed from the regular patch endpoint. Use the dedicated endpoint.',
+                fields: rejectedUpdates,
+            });
+        }
 
         // 1. هات المشترك الأول
         const trainee = await Trainees.findById(id);
@@ -865,51 +846,14 @@ router.patch('/:id', async (req: Request, res: Response) => {
             return res.status(404).json({ error: 'Trainee not found' });
         }
 
-        const currentSummary = await getLedgerSummary(
-            PaymentTransaction,
-            trainee._id,
-            trainee.billingCycleId,
-            getNetPriceMinor(trainee),
-        );
-
-        // 2. قائمة الحقول المسموح بتعديلها (عشان محدش يلعب في الـ ID أو التواريخ الحساسة بالغلط)
-        const allowedUpdates = [
-            'name',
-            'phone',
-            'totalCost',
-            'sessionsRemaining',
-            'subscriptionEndDate',
-            'program',
-            'discount', // لو حبيت تعدل الخصم يدوياً
-            'appliedDiscount', // لو حبيت تشيل الكوبون
-            'crmInfo' // لو حبيت تحدث حالة الواتساب
-        ];
-
-        // 3. تطبيق التعديلات
         const updatesKeys = Object.keys(updates);
 
         updatesKeys.forEach((key) => {
             if (allowedUpdates.includes(key)) {
-                // @ts-ignore: عشان التايب سكريبت ميرخمش في الـ dynamic assignment
+                // @ts-ignore Dynamic assignment is restricted by allowedUpdates.
                 trainee[key] = updates[key];
             }
         });
-
-        // 5. حالة خاصة: لو بنعدل الـ appliedDiscount (مثلاً بنمسح الكوبون)
-        // لازم نتأكد إننا مش بنبوظ الـ Schema
-        if (updates.appliedDiscount) {
-            trainee.appliedDiscount = {
-                ...trainee.appliedDiscount,
-                ...updates.appliedDiscount
-            };
-        }
-
-        const updatedNetPriceMinor = getNetPriceMinor(trainee);
-        if (currentSummary.netPaidMinor > updatedNetPriceMinor) {
-            return res.status(400).json({
-                error: 'The new subscription price is below the recorded paid balance. Record a refund first.',
-            });
-        }
 
         const updatedTrainee = await trainee.save();
 

@@ -6,6 +6,7 @@ import { AppDispatch, RootState } from '../../store';
 import ExpenseForm from './ExpenseForm';
 import ExpenseTable from './ExpenseTable';
 import { Plus, Search, Filter, DollarSign, TrendingUp, Receipt } from 'lucide-react';
+import { formatCurrency } from '../../utils/format';
 
 const ExpenseManager: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -90,7 +91,7 @@ const ExpenseManager: React.FC = () => {
           </div>
           <div>
             <p className="text-sm text-gray-400">{t('expenses.total_label')}</p>
-            <h3 className="text-2xl font-bold text-white">{stats.total.toLocaleString()} EGP</h3>
+            <h3 className="text-2xl font-bold text-white">{formatCurrency(stats.total)}</h3>
           </div>
         </div>
         <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl flex items-center gap-4 shadow-lg">
@@ -108,7 +109,7 @@ const ExpenseManager: React.FC = () => {
           </div>
           <div>
             <p className="text-sm text-gray-400">{t('expenses.average_cost_label')}</p>
-            <h3 className="text-2xl font-bold text-white">{stats.avg.toFixed(2)} EGP</h3>
+            <h3 className="text-2xl font-bold text-white">{formatCurrency(stats.avg)}</h3>
           </div>
         </div>
       </div>
@@ -139,7 +140,7 @@ const ExpenseManager: React.FC = () => {
             onChange={(e) => setSelectedCategory(e.target.value)}
             className="px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer"
           >
-            {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+            {categories.map(cat => <option key={cat} value={cat}>{t(`expense_categories.${cat.toLowerCase()}`)}</option>)}
           </select>
         </div>
       </div>

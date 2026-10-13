@@ -25,10 +25,10 @@ const CRMManager: React.FC = () => {
             if (response.data.count > 0) {
                 toast.success(t('crm.success_message', { count: response.data.count }));
             } else {
-                toast('No targets found for this category today.', { icon: 'ℹ️' });
+                toast(t('ui.no_campaign_targets'), { icon: 'ℹ️' });
             }
         } catch (error: any) {
-            toast.error(error.response?.data?.message || "Failed to trigger campaign");
+            toast.error(error.response?.data?.message || t('ui.campaign_failed'));
         } finally {
             setLoadingType(null);
         }
@@ -69,7 +69,7 @@ const CRMManager: React.FC = () => {
     ];
 
     return (
-        <DemoFeatureGate label="Campaign automation is available in the full version">
+        <DemoFeatureGate label={t('ui.campaign_automation_feature')}>
           <div className="relative max-h-screen">
             <div className="p-6 lg:p-10 bg-gray-950 text-white font-sans">
                 <div className="p-6 lg:p-10 bg-gray-950 min-h-screen text-white font-sans ">

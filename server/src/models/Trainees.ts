@@ -1,5 +1,6 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 import { randomUUID } from 'node:crypto';
+import { calculateMembershipDaysLeft, utcNow } from '../utils/dateTime.js';
 
 // 1. Define Interfaces for Sub-documents (Cleanliness)
 interface IAppliedDiscount {
@@ -147,7 +148,7 @@ export const TraineeSchema = new Schema<ITrainee, TraineeModel, ITraineeMethods>
                 effectiveDate: { type: Date, required: true },
                 previousEndDate: { type: Date, required: true },
                 resultingEndDate: { type: Date, required: true },
-                createdAt: { type: Date, default: Date.now },
+                createdAt: { type: Date, default: utcNow },
             },
         ],
         program: {
@@ -160,12 +161,6 @@ export const TraineeSchema = new Schema<ITrainee, TraineeModel, ITraineeMethods>
             type: Boolean,
             default: false,
         },
-        daysLeft: {
-            type: Number,
-            min: 0,
-            default: 0
-
-        },
         sessionsRemaining: { type: Number, default: 0 },
         appliedDiscount: {
             hasCustomDiscount: { type: Boolean, default: false },
@@ -176,7 +171,7 @@ export const TraineeSchema = new Schema<ITrainee, TraineeModel, ITraineeMethods>
         },
         attendanceHistory: [
             {
-                checkIn: { type: Date, default: Date.now },
+                checkIn: { type: Date, default: utcNow },
             },
         ],
         lastAttendance: { type: Date },
@@ -195,43 +190,19 @@ export const TraineeSchema = new Schema<ITrainee, TraineeModel, ITraineeMethods>
     }
 );
 
-// // 7. Implement Virtuals
-// TraineeSchema.virtual('daysLeft').get(function (this: ITrainee) {
-//     if (!this.subscriptionEndDate) return null;
-//     const today = new Date();
-//     const difference = new Date(this.subscriptionEndDate).getTime() - today.getTime();
-//     const daysLeft = Math.ceil(difference / (1000 * 60 * 60 * 24));
-//     return daysLeft;
-// });
+TraineeSchema.virtual('daysLeft').get(function (this: ITrainee) {
+    if (!this.subscriptionEndDate) return 0;
+
+    return calculateMembershipDaysLeft(
+        this.subscriptionEndDate,
+        utcNow(),
+        this.accountFreezeStatus ? this.freezeStartDate : null,
+    );
+});
 
 TraineeSchema.pre('save', function (next) {
-
     // ---------------------------------------------------
-    // 1. Calculate Days Left (Logic: Freeze & Active) ⏳
-    // ---------------------------------------------------
-    if (this.isModified('subscriptionEndDate') ||
-        this.isModified('accountFreezeStatus') ||
-        this.isModified('freezeStartDate')) {
-
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const endDate = new Date(this.subscriptionEndDate);
-        endDate.setHours(23, 59, 59, 999);
-
-        if (this.accountFreezeStatus && this.freezeStartDate) {
-            const freezeStart = new Date(this.freezeStartDate);
-            freezeStart.setHours(0, 0, 0, 0);
-            const frozenDiff = endDate.getTime() - freezeStart.getTime();
-            this.daysLeft = Math.max(0, Math.ceil(frozenDiff / (1000 * 60 * 60 * 24)));
-        } else {
-            const activeDiff = endDate.getTime() - today.getTime();
-            this.daysLeft = Math.max(0, Math.ceil(activeDiff / (1000 * 60 * 60 * 24)));
-        }
-    }
-
-    // ---------------------------------------------------
-    // 3. Update Last Attendance (For Smart Freeze) 🏃‍♂️
+    // Update Last Attendance (For Smart Freeze)
     // ---------------------------------------------------
     if (this.isModified('attendanceHistory') && this.attendanceHistory?.length > 0) {
         const lastEntry = this.attendanceHistory[this.attendanceHistory.length - 1];

@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Clock3, Loader2, ReceiptText } from 'lucide-react';
 import api from '../../utils/api';
 import { LedgerSummary, PaymentTransaction } from '../../types';
+import { formatGymDateTime } from '../../utils/dateTime';
+import { useTranslation } from 'react-i18next';
+import { formatCurrency } from '../../utils/format';
 
 interface TransactionHistoryProps {
   traineeId: string;
@@ -11,6 +14,7 @@ const formatAmount = (amountMinor: number, currency: string) =>
   `${(amountMinor / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })} ${currency}`;
 
 const TransactionHistory: React.FC<TransactionHistoryProps> = ({ traineeId }) => {
+  const { t } = useTranslation();
   const [transactions, setTransactions] = useState<PaymentTransaction[]>([]);
   const [summary, setSummary] = useState<LedgerSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,7 +36,7 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ traineeId }) =>
         setSummary(response.data.data.summary);
       } catch (requestError: any) {
         if (active) {
-          setError(requestError.message || 'Unable to load financial history');
+          setError(requestError.message || t('ui.financial_history_failed'));
         }
       } finally {
         if (active) setLoading(false);
@@ -43,12 +47,12 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ traineeId }) =>
     return () => {
       active = false;
     };
-  }, [traineeId]);
+  }, [traineeId, t]);
 
   if (loading) {
     return (
       <div className="flex items-center gap-2 text-gray-400 text-sm">
-        <Loader2 className="w-4 h-4 animate-spin" /> Loading financial history...
+        <Loader2 className="w-4 h-4 animate-spin" /> {t('ui.loading_financial_history')}
       </div>
     );
   }
@@ -61,25 +65,25 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ traineeId }) =>
     <div className="space-y-3">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-gray-800 rounded-lg p-3">
-          <span className="block text-[10px] uppercase text-gray-500">Net collected</span>
-          <strong className="text-green-400">{((summary?.netPaidMinor || 0) / 100).toLocaleString()} EGP</strong>
+          <span className="block text-[10px] uppercase text-gray-500">{t('ui.net_collected')}</span>
+          <strong className="text-green-400">{formatCurrency((summary?.netPaidMinor || 0) / 100)}</strong>
         </div>
         <div className="bg-gray-800 rounded-lg p-3">
-          <span className="block text-[10px] uppercase text-gray-500">Outstanding</span>
-          <strong className="text-red-400">{((summary?.outstandingMinor || 0) / 100).toLocaleString()} EGP</strong>
+          <span className="block text-[10px] uppercase text-gray-500">{t('ui.outstanding')}</span>
+          <strong className="text-red-400">{formatCurrency((summary?.outstandingMinor || 0) / 100)}</strong>
         </div>
         <div className="bg-gray-800 rounded-lg p-3">
-          <span className="block text-[10px] uppercase text-gray-500">Refunded</span>
-          <strong className="text-yellow-400">{((summary?.refundedMinor || 0) / 100).toLocaleString()} EGP</strong>
+          <span className="block text-[10px] uppercase text-gray-500">{t('ui.refunded')}</span>
+          <strong className="text-yellow-400">{formatCurrency((summary?.refundedMinor || 0) / 100)}</strong>
         </div>
         <div className="bg-gray-800 rounded-lg p-3">
-          <span className="block text-[10px] uppercase text-gray-500">Entries</span>
+          <span className="block text-[10px] uppercase text-gray-500">{t('ui.entries')}</span>
           <strong className="text-white">{transactions.length}</strong>
         </div>
       </div>
 
       {transactions.length === 0 ? (
-        <p className="text-sm text-gray-500">No ledger transactions recorded yet.</p>
+        <p className="text-sm text-gray-500">{t('ui.no_ledger_entries')}</p>
       ) : (
         <div className="space-y-2">
           {transactions.map((transaction) => (
@@ -89,7 +93,7 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ traineeId }) =>
                 <div className="min-w-0">
                   <p className="text-gray-200 capitalize truncate">{transaction.type}</p>
                   <p className="text-xs text-gray-500 flex items-center gap-1">
-                    <Clock3 className="w-3 h-3" /> {new Date(transaction.createdAt).toLocaleString()}
+                    <Clock3 className="w-3 h-3" /> {formatGymDateTime(transaction.createdAt)}
                   </p>
                 </div>
               </div>

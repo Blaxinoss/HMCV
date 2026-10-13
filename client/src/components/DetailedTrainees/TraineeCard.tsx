@@ -3,6 +3,8 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trainee } from '../../types';
 import { getOutstandingBalance } from '../../utils/finance';
+import { isGymDateExpired } from '../../utils/dateTime';
+import { formatCurrency } from '../../utils/format';
 import {
   Clock,
   AlertCircle,
@@ -24,7 +26,7 @@ const TraineeCard: React.FC<TraineeCardProps> = ({ trainee, isSelected, onSelect
   const { t } = useTranslation();
 
   // Logic for Expired State
-  const isExpired = !trainee.accountFreezeStatus && new Date() > new Date(trainee.subscriptionEndDate);
+  const isExpired = !trainee.accountFreezeStatus && isGymDateExpired(trainee.subscriptionEndDate);
 
   // Helper to determine card border/bg styles based on status
   const getStatusStyles = () => {
@@ -69,7 +71,7 @@ const TraineeCard: React.FC<TraineeCardProps> = ({ trainee, isSelected, onSelect
           <div className="bg-red-500/20 p-3 rounded-full mb-2 border border-red-500/30 shadow-lg shadow-red-900/20 animate-pulse-slow">
             <XCircle className="w-8 h-8 text-red-500" />
           </div>
-          <span className="text-red-400 font-bold text-sm uppercase tracking-wider">Expired</span>
+          <span className="text-red-400 font-bold text-sm uppercase tracking-wider">{t('ui.expired')}</span>
         </div>
       )}
 
@@ -101,7 +103,7 @@ const TraineeCard: React.FC<TraineeCardProps> = ({ trainee, isSelected, onSelect
         {/* Status Badge */}
         {isExpired ? (
           <span className="bg-red-500/10 text-red-500 border border-red-500/20 text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
-            <XCircle className="w-3 h-3" /> {t('trainees.expired', 'Expired')}
+            <XCircle className="w-3 h-3" /> {t('trainees.expired')}
           </span>
         ) : trainee.accountFreezeStatus ? (
           <span className="bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
@@ -126,10 +128,10 @@ const TraineeCard: React.FC<TraineeCardProps> = ({ trainee, isSelected, onSelect
           <div className="flex justify-between items-end mb-1.5">
             <span className="text-xs text-gray-400 flex items-center gap-1.5">
               {isSession ? <Ticket className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
-              {isSession ? t('trainees.sessions_left', 'Sessions') : t('trainees.days_left', 'Days Left')}
+              {isSession ? t('trainees.sessions_left') : t('trainees.days_left')}
             </span>
             <span className={`text-sm font-bold font-mono ${isExpired ? 'text-red-500' : metricColor}`}>
-              {remainingValue} <span className="text-[10px] text-gray-500 font-normal">/ {isSession ? 'Left' : 'Days'}</span>
+              {remainingValue} <span className="text-[10px] text-gray-500 font-normal">/ {isSession ? t('ui.left') : t('trainees.days_left')}</span>
             </span>
           </div>
 
@@ -146,7 +148,7 @@ const TraineeCard: React.FC<TraineeCardProps> = ({ trainee, isSelected, onSelect
         {getOutstandingBalance(trainee) > 0 && (
           <div className="flex justify-between items-center text-xs bg-red-500/10 border border-red-500/10 px-3 py-2 rounded-lg">
             <span className="text-red-400 font-medium opacity-80">{t('trainees.remaining')}:</span>
-            <span className="text-red-400 font-bold font-mono tracking-wide">{getOutstandingBalance(trainee)} EGP</span>
+            <span className="text-red-400 font-bold font-mono tracking-wide">{formatCurrency(getOutstandingBalance(trainee))}</span>
           </div>
         )}
       </div>
@@ -154,7 +156,7 @@ const TraineeCard: React.FC<TraineeCardProps> = ({ trainee, isSelected, onSelect
       {/* --- FOOTER: Action --- */}
       <div className={`mt-4 pt-3 border-t border-gray-800/50 flex justify-between items-center opacity-60 group-hover:opacity-100 transition-opacity relative z-10 ${isExpired ? 'opacity-50 group-hover:opacity-50' : ''}`}>
         <span className="text-[10px] text-gray-500">
-          {isSession ? 'Pay per session' : 'Monthly Plan'}
+          {isSession ? t('ui.pay_per_session') : t('ui.monthly_plan')}
         </span>
         <button
           className="text-xs font-semibold text-blue-400 hover:text-white flex items-center gap-1 transition-colors"

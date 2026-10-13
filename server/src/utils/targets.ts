@@ -4,6 +4,7 @@ import type { Model } from 'mongoose';
 import type { ITrainee } from '../models/Trainees.js';
 import type { IPaymentTransaction } from '../models/PaymentTransaction.js';
 import { getLedgerSummaryMap } from '../services/financeService.js';
+import { endOfGymDay, startOfGymDay, toGymDateTime, utcNow, utcNowIso } from './dateTime.js';
 
 export const getTargets = async (
     type: string,
@@ -13,22 +14,12 @@ export const getTargets = async (
 
 
     let query = {}
-    const today = new Date();
-
-    const threeDaysFromNow = new Date();
-    threeDaysFromNow.setDate(today.getDate() + 3);
-
-    const yesterday = new Date();
-    yesterday.setDate(today.getDate() - 1);
-
-    const threeDaysAgo = new Date();
-    threeDaysAgo.setDate(today.getDate() - 3);
-
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(today.getDate() - 7);
-
-    const fourteenDaysAgo = new Date();
-    fourteenDaysAgo.setDate(today.getDate() - 14);
+    const now = utcNow();
+    const todayStart = startOfGymDay(now);
+    const threeDaysFromNow = endOfGymDay(toGymDateTime(now).plus({ days: 3 }).toJSDate());
+    const threeDaysAgo = toGymDateTime(now).minus({ days: 3 }).toUTC().toJSDate();
+    const sevenDaysAgo = startOfGymDay(toGymDateTime(now).minus({ days: 7 }).toJSDate());
+    const fourteenDaysAgo = toGymDateTime(now).minus({ days: 14 }).toUTC().toJSDate();
 
     switch (type) {
 
@@ -39,14 +30,14 @@ export const getTargets = async (
             query = {
                 subscriptionEndDate: {
                     $lte: threeDaysFromNow,
-                    $gt: yesterday
+                    $gte: todayStart
                 },
                 'crmInfo.whatsappOptIn': true,
 
                 $or: [
                     { 'crmInfo.lastMessageSent': null },
                     { 'crmInfo.lastMessageSent': { $exists: false } },
-                    { 'crmInfo.lastMessageSent': { $lt: yesterday } }
+                    { 'crmInfo.lastMessageSent': { $lt: todayStart } }
                 ]
             }
             break;
@@ -73,7 +64,7 @@ export const getTargets = async (
         case "absence":
             query = {
                 lastAttendance: { $lt: sevenDaysAgo },
-                subscriptionEndDate: { $gt: today },
+                subscriptionEndDate: { $gte: todayStart },
                 $or: [
                     { 'crmInfo.lastMessageType': { $ne: 'absent' } },
                     { 'crmInfo.lastMessageSent': { $lt: fourteenDaysAgo } } //14 days
@@ -89,7 +80,7 @@ export const getTargets = async (
 
 
     const results = await Trainees.find({ ...query, deleteFlag: false })
-        .select('name phone subscriptionEndDate memberId totalCost discount billingCycleId daysLeft');
+        .select('name phone subscriptionEndDate accountFreezeStatus freezeStartDate memberId totalCost discount billingCycleId');
     const summaries = await getLedgerSummaryMap(PaymentTransaction, results);
     const withSummaries = type === 'debt'
         ? results.filter(t => (summaries.get(String(t._id))?.outstandingMinor ?? 0) > 0)
@@ -122,7 +113,7 @@ export const sendToN8N = async (targets: any[], webhookUrl: string) => {
         }
         await axios.post(webhookUrl, {
             batch: targets,
-            timestamp: new Date().toISOString()
+            timestamp: utcNowIso()
         }, {
             headers: { "key": process.env.N8N_API_SECRET }
         });

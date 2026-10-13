@@ -104,7 +104,7 @@ const Navbar: React.FC = () => {
                 title="Manage Coupons"
               >
                 <Ticket className="w-4 h-4" />
-                <span className="hidden lg:inline">{t('navbar.coupons', 'Coupons')}</span>
+                <span className="hidden lg:inline">{t('navbar.coupons')}</span>
               </button>
 
               {/* Quick Check-In Button */}
@@ -187,7 +187,7 @@ const Navbar: React.FC = () => {
               className="w-full flex items-center gap-2 px-4 py-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition-all font-medium text-sm"
             >
               <Ticket className="w-4 h-4 text-purple-400" />
-              {t('navbar.coupons', 'Manage Coupons')}
+              {t('navbar.coupons')}
             </button>
 
 

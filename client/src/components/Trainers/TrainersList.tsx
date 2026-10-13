@@ -6,6 +6,7 @@ import { AppDispatch } from '../../store';
 import { Trainer } from '../../types';
 import { useConfirmToast } from '../toasters/deleteToaster';
 import { Edit, Trash2, Phone, DollarSign } from 'lucide-react';
+import { formatCurrency } from '../../utils/format';
 
 interface TrainersListProps {
     trainers: Trainer[];
@@ -30,7 +31,7 @@ const TrainersList: React.FC<TrainersListProps> = ({ trainers, loading, onEdit }
         return (
             <div className="flex flex-col items-center justify-center py-20 bg-gray-800/50 rounded-2xl border border-gray-700/50 border-dashed">
                 <div className="text-6xl mb-4 grayscale opacity-50">🏋️‍♂️</div>
-                <p className="text-gray-400 text-lg font-medium">{t('trainers.no_trainers', 'No trainers found.')}</p>
+                <p className="text-gray-400 text-lg font-medium">{t('trainers.no_trainers')}</p>
             </div>
         );
     }
@@ -67,20 +68,20 @@ const TrainersList: React.FC<TrainersListProps> = ({ trainers, loading, onEdit }
                             <span className="text-gray-400 flex items-center gap-1">
                                 <DollarSign className="w-3 h-3" /> {t('trainers.base_salary')}
                             </span>
-                            <span className="text-white font-medium">{trainer.salary.toLocaleString()} EGP</span>
+                            <span className="text-white font-medium">{formatCurrency(trainer.salary)}</span>
                         </div>
 
                         <div className="flex justify-between items-center text-sm">
                             <span className="text-gray-400">{t('trainers.deduction')}  </span>
                             <span className={`font-medium ${trainer.raise > 0 ? 'text-red-400' : 'text-gray-600'}`}>
-                                - {trainer.raise.toLocaleString()} EGP
+                                - {formatCurrency(trainer.raise)}
                             </span>
                         </div>
 
                         <div className="pt-4 border-t border-gray-800 flex justify-between items-end">
                             <span className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">{t('trainers.net_salary')}</span>
                             <span className="text-2xl font-bold text-green-400 font-mono">
-                                {(trainer.salaryAfterDiscount ?? (trainer.salary - trainer.raise)).toLocaleString()}EGP
+                                {formatCurrency(trainer.salaryAfterDiscount ?? (trainer.salary - trainer.raise))}
                             </span>
                         </div>
                     </div>

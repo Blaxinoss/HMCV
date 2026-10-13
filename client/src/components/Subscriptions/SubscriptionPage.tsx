@@ -4,11 +4,13 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
-import { fetchTrainees } from '../../slices/subscriptionSlice';
+import { fetchDashboardStats } from '../../slices/dashboardSlice';
 import { Trainee } from '../../types';
 import TraineeList from './TraineeList';
 import SubscriptionForm from './SubscriptionForm';
 import ClearDebtButton from './ClearDebtButton';
+import { currentGymMonth } from '../../utils/dateTime';
+import { formatCurrency } from '../../utils/format';
 import {
   Users,
   UserPlus,
@@ -24,36 +26,30 @@ const Skeleton = ({ className }: { className?: string }) => (
 
 const SubscriptionPage: React.FC = () => {
   const { t } = useTranslation();
+  const dispatch = useDispatch<AppDispatch>();
 
   // 1. Fetch data for Stats
-  const { raw, loading } = useSelector((state: RootState) => state.dashboard);
+  const { stats: dashboardStats, loading, needsRefresh } = useSelector((state: RootState) => state.dashboard);
   const [showForm, setShowForm] = useState(false);
   const [editingTrainee, setEditingTrainee] = useState<Trainee | null>(null);
 
   // 2. Real-time Stats Calculation
   const stats = useMemo(() => {
-    // لو الداتا لسه مجاتش من الـ GlobalDataLoader، رجع أصفار
-    if (!raw || !raw.trainees) {
+    if (!dashboardStats) {
       return { total: 0, active: 0, debt: 0 };
     }
+    return {
+      total: dashboardStats.cards.totalMembers,
+      active: dashboardStats.cards.activeMembers,
+      debt: dashboardStats.cards.currentDebt,
+    };
+  }, [dashboardStats]);
 
-    const allTrainees = raw.trainees; // دي كل الداتا مش بس الـ 10 بتوع الصفحة
-
-    const total = allTrainees.length;
-
-    // حسبة النشطين (شاملة التحقق من التجميد والانتهاء)
-    const active = allTrainees.filter((t: Trainee) =>
-      new Date(t.subscriptionEndDate) > new Date() && !t.accountFreezeStatus
-    ).length;
-
-    // حسبة الديون
-    const debt = allTrainees.reduce(
-      (sum: number, trainee: Trainee) => sum + trainee.ledgerSummary.outstandingMinor / 100,
-      0,
-    );
-
-    return { total, active, debt };
-  }, [raw]); // الاعتماد هنا على raw ككل
+  useEffect(() => {
+    if (!dashboardStats || needsRefresh) {
+      dispatch(fetchDashboardStats({ month: currentGymMonth() }));
+    }
+  }, [dispatch, dashboardStats, needsRefresh]);
 
   const handleAddNew = () => {
     setEditingTrainee(null);
@@ -162,7 +158,7 @@ const SubscriptionPage: React.FC = () => {
             <div>
               <p className="text-sm text-gray-400 font-medium">{t('subscription.outstanding_debt_label')}</p>
               <h3 className="text-2xl font-bold text-white font-mono">
-                {loading ? '...' : stats.debt.toLocaleString()} EGP
+                {loading ? '...' : formatCurrency(stats.debt)}
               </h3>
             </div>
           </div>
@@ -178,8 +174,8 @@ const SubscriptionPage: React.FC = () => {
                 <ShieldCheck className="w-6 h-6 text-purple-500" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-white">Membership Details</h2>
-                <p className="text-sm text-gray-400">Ensure all fields are correct before saving.</p>
+                <h2 className="text-xl font-bold text-white">{t('ui.membership_details')}</h2>
+                <p className="text-sm text-gray-400">{t('ui.membership_details_hint')}</p>
               </div>
             </div>
             <SubscriptionForm

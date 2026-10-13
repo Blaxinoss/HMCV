@@ -1,7 +1,7 @@
 import express from 'express';
 import { db } from '../models/index.js';
 import type { ICoupon } from '../models/Coupons.js';
-import { isValid } from 'date-fns';
+import { isExpired, parseGymDate, utcNow } from '../utils/dateTime.js';
 
 const router = express.Router();
 
@@ -27,6 +27,10 @@ router.post('/', async (req, res) => {
         const { Coupon } = db(req);
 
         const { code, discountType, value, expiryDate, usageLimit } = req.body;
+        const normalizedExpiryDate = parseGymDate(expiryDate, 'end');
+        if (!normalizedExpiryDate) {
+            return res.status(400).json({ message: 'expiryDate must be a valid date' });
+        }
 
         // التأكد إن الكود مش موجود قبل كده
         const existingCoupon = await Coupon.findOne({ code: code.toUpperCase() });
@@ -38,7 +42,7 @@ router.post('/', async (req, res) => {
             code: code.toUpperCase(),
             discountType,
             value,
-            expiryDate,
+            expiryDate: normalizedExpiryDate,
             usageLimit: usageLimit || 10
         });
 
@@ -93,7 +97,7 @@ router.post('/validate-coupon', async (req, res) => {
         }
 
         // 3. التحقق من التاريخ
-        if (new Date() > coupon.expiryDate) {
+        if (isExpired(coupon.expiryDate, utcNow())) {
             res.status(400).json({ success: false, message: "Coupon Expired" });
             return;
         }

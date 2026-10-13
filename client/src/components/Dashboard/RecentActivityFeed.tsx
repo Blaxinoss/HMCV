@@ -8,14 +8,18 @@ import {
     History,
     ChevronRight
 } from 'lucide-react';
+import { formatGymDate } from '../../utils/dateTime';
+import { formatCurrency } from '../../utils/format';
 
 interface Transaction {
     id: string;
     type: string; // 'INCOME' or 'EXPENSE'
     label: string;
     amount: number;
-    date: Date;
-    category: string;
+    date: string;
+    category?: string;
+    kind?: 'payment' | 'refund' | 'adjustment' | 'expense';
+    memberName?: string;
 }
 
 interface RecentActivityFeedProps {
@@ -25,16 +29,6 @@ interface RecentActivityFeedProps {
 
 const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({ transactions, onViewAll }) => {
     const { t } = useTranslation();
-
-    // Helper for cleaner currency format
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'EGP',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-        }).format(amount);
-    };
 
     return (
         <div className="bg-gray-900 p-6 rounded-2xl border border-gray-800 shadow-xl h-full flex flex-col">
@@ -59,6 +53,11 @@ const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({ transactions, o
                 ) : (
                     transactions.map((tx) => {
                         const isIncome = tx.type === 'INCOME';
+                        const isLedgerEntry = tx.kind && tx.kind !== 'expense';
+                        const label = isLedgerEntry
+                            ? `${t(`ui.activity_${tx.kind}`)}: ${tx.memberName || t('ui.activity_member')}`
+                            : tx.label;
+                        const category = tx.category || t('ui.activity_subscription');
                         return (
                             <div
                                 key={tx.id}
@@ -76,15 +75,15 @@ const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({ transactions, o
 
                                     {/* Text Info */}
                                     <div>
-                                        <p className="text-sm font-bold text-white leading-tight mb-1">{tx.label}</p>
+                                        <p className="text-sm font-bold text-white leading-tight mb-1">{label}</p>
                                         <div className="flex items-center gap-2 text-xs text-gray-400">
                                             <span className="flex items-center gap-1">
                                                 <Calendar className="w-3 h-3" />
-                                                {tx.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                                {formatGymDate(tx.date)}
                                             </span>
                                             <span className="w-1 h-1 rounded-full bg-gray-600"></span>
                                             <span className="uppercase tracking-wider text-[10px] font-medium opacity-80">
-                                                {tx.category}
+                                                {category}
                                             </span>
                                         </div>
                                     </div>

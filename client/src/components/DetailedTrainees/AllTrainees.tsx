@@ -58,7 +58,7 @@ const AllTrainees: React.FC = () => {
         <div>
           <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500 flex items-center gap-3">
             <Users className="w-8 h-8 text-blue-500" />
-            {t('trainees.header', 'All Members')}
+            {t('trainees.header')}
           </h1>
           <p className="text-gray-400 mt-1">{t('trainees.manage_subtitle')}</p>
         </div>

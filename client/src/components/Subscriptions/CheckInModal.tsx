@@ -89,7 +89,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                             </>
                         ) : (
                             <>
-                                {t('trainees.confirm_check_in', 'Confirm')}
+                                {t('trainees.confirm_check_in')}
                             </>
                         )}
                     </button>

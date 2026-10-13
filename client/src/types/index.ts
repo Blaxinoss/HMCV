@@ -5,8 +5,8 @@ export interface User {
   _id: string;
   username: string;
   role: string;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface UserCredentials {
@@ -39,12 +39,34 @@ export interface ApiResponse<T> {
 export interface DashboardCards {
   totalMembers: number;
   activeMembers: number;
+  frozenMembers: number;
+  expiredMembers: number;
   expiringSoon: number;
   attendanceToday: number;
-  totalDebt: number;
-  totalRevenue: number;
+  newMembers: number;
+  expirationsInPeriod: number;
+  sessionMembers: number;
+  monthlyMembers: number;
+  currentDebt: number;
+  membersWithDebt: number;
+}
+
+export interface DashboardFinancials {
+  payments: number;
+  refunds: number;
+  adjustments: number;
+  netRevenue: number;
+  operatingExpenses: number;
+  estimatedTrainerPayroll: number;
   totalExpenses: number;
   netProfit: number;
+  profitMargin: number;
+  salaryRatio: number;
+  arpu: number;
+  activeInPeriod: number;
+  expirationRate: number;
+  lifetimeNetRevenue: number;
+  lifetimeOperatingExpenses: number;
 }
 
 export interface TrendPoint {
@@ -63,31 +85,64 @@ export interface PeakHourPoint {
 }
 
 export interface DashboardGraphs {
-  attendanceLast7Days: AttendancePoint[];
-  revenueLast6Months: {
-    _id: number;
-    monthName: number;
-    totalRevenue: number;
-    count: number;
-  }[];
+  attendanceLast7Days: Array<{ date: string; label: string; count: number }>;
+  peakHours: Array<{ hour: string; count: number }>;
+  financialTrendLast6Months: Array<{
+    month: string;
+    label: string;
+    payments: number;
+    refunds: number;
+    adjustments: number;
+    revenue: number;
+    operatingExpenses: number;
+    estimatedTrainerPayroll: number;
+    expenses: number;
+    netProfit: number;
+    margin: number;
+    transactionCount: number;
+    expenseCount: number;
+  }>;
+  expenseBreakdown: Array<{ name: string; value: number; count?: number; estimated: boolean }>;
 }
 
 export interface TopMember {
   _id: string;
   name: string;
-  memberId: number;
-  totalCost: number;
+  memberId?: number;
   isSession: boolean;
-  ledgerSummary: LedgerSummary;
+  lifetimeSpend: number;
+  outstandingBalance: number;
 }
 
 export interface DashboardLists {
   topMembers: TopMember[];
-  recentTransactions: any[];
+  recentActivity: Array<{
+    id: string;
+    type: 'INCOME' | 'EXPENSE';
+    kind: 'payment' | 'refund' | 'adjustment' | 'expense';
+    label: string;
+    amount: number;
+    date: string;
+    category: string;
+  }>;
+  expiringMembers: Array<{
+    _id: string;
+    name: string;
+    memberId?: number;
+    phone: string;
+    subscriptionEndDate: string;
+  }>;
 }
 
 export interface DashboardData {
+  meta: {
+    timezone: string;
+    selectedMonth: string;
+    generatedAt: string;
+    payrollIsEstimated: boolean;
+  };
   cards: DashboardCards;
+  financials: DashboardFinancials;
   graphs: DashboardGraphs;
   lists: DashboardLists;
 }
@@ -227,12 +282,12 @@ export interface Coupon {
   code: string;
   discountType: 'PERCENTAGE' | 'FIXED';
   value: number;
-  expiryDate: Date;
+  expiryDate: string;
   isActive: boolean;
   usageLimit: number | null;
   usedCount: number;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 // export interface DashboardData {
 //   cards: {

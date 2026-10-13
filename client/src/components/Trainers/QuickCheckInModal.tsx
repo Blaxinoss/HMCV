@@ -6,6 +6,7 @@ import { checkInTrainee } from '../../slices/subscriptionSlice';
 import toast from 'react-hot-toast';
 import { Blocks, Zap } from 'lucide-react';
 import { getOutstandingBalance } from '../../utils/finance';
+import { isGymDateExpired } from '../../utils/dateTime';
 
 interface QuickCheckInModalProps {
   onClose: () => void;
@@ -68,7 +69,7 @@ const QuickCheckInModal: React.FC<QuickCheckInModalProps> = ({ onClose }) => {
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
 
-            <Zap className="w-6 h-6 text-orange-500" /> {t('trainees.quick_check_in', 'Quick Check-in')}
+            <Zap className="w-6 h-6 text-orange-500" /> {t('trainees.quick_check_in')}
 
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white">✕</button>
@@ -77,13 +78,13 @@ const QuickCheckInModal: React.FC<QuickCheckInModalProps> = ({ onClose }) => {
         {/* Search Input */}
         <div className="mb-6">
           <label className="block text-sm text-gray-400 mb-2">
-            {t('trainees.search_placeholder', 'Enter Member ID, Phone, or Name')}
+            {t('trainees.quick_checkin_input_placeholder')}
           </label>
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => handleSearch(e.target.value)}
-            placeholder="Ex: 101"
+            placeholder={t('trainees.quick_checkin_example')}
             className="w-full px-4 py-3 bg-gray-900 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-lg tracking-wide"
             autoFocus
           />
@@ -102,13 +103,13 @@ const QuickCheckInModal: React.FC<QuickCheckInModalProps> = ({ onClose }) => {
 
                 {/* حالة الاشتراك */}
                 <div className="mt-2">
-                  {getOutstandingBalance(selectedTrainee) > 0 && <span className="text-red-400 text-xs bg-red-900/30 px-2 py-1 rounded mx-1">Debt</span>}
-                  {selectedTrainee.accountFreezeStatus && <span className="text-yellow-400 text-xs bg-yellow-900/30 px-2 py-1 rounded mx-1">Frozen</span>}
-                  {new Date(selectedTrainee.subscriptionEndDate) < new Date() && <span className="text-red-400 text-xs bg-red-900/30 px-2 py-1 rounded mx-1">Expired</span>}
+                  {getOutstandingBalance(selectedTrainee) > 0 && <span className="text-red-400 text-xs bg-red-900/30 px-2 py-1 rounded mx-1">{t('ui.debt')}</span>}
+                  {selectedTrainee.accountFreezeStatus && <span className="text-yellow-400 text-xs bg-yellow-900/30 px-2 py-1 rounded mx-1">{t('ui.frozen')}</span>}
+                  {isGymDateExpired(selectedTrainee.subscriptionEndDate) && <span className="text-red-400 text-xs bg-red-900/30 px-2 py-1 rounded mx-1">{t('ui.expired')}</span>}
                 </div>
               </div>
             ) : (
-              <p className="text-gray-500 flex gap-2"><Blocks></Blocks> {t('trainees.not_found', 'User not found')}</p>
+              <p className="text-gray-500 flex gap-2"><Blocks></Blocks> {t('trainees.not_found')}</p>
             )}
           </div>
         )}

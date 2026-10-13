@@ -1,6 +1,7 @@
 // src/components/Common/Pagination.tsx
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface PaginationProps {
     currentPage: number;
@@ -19,12 +20,14 @@ const Pagination: React.FC<PaginationProps> = ({
     totalItems,
     onItemsPerPageChange
 }) => {
+    const { t } = useTranslation();
+    const firstItem = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+    const lastItem = Math.min(currentPage * itemsPerPage, totalItems);
+
     return (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4 px-6 border-t border-gray-800 bg-gray-900/50">
             <div className="text-sm text-gray-400">
-                Showing <span className="font-bold text-white">{(currentPage - 1) * itemsPerPage + 1}</span> to{' '}
-                <span className="font-bold text-white">{Math.min(currentPage * itemsPerPage, totalItems)}</span> of{' '}
-                <span className="font-bold text-white">{totalItems}</span> results
+                {t('ui.pagination_summary', { from: firstItem, to: lastItem, total: totalItems })}
             </div>
 
             <div className="flex items-center gap-2">
@@ -33,10 +36,9 @@ const Pagination: React.FC<PaginationProps> = ({
                     onChange={(e) => onItemsPerPageChange(Number(e.target.value))}
                     className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg p-2 outline-none focus:border-blue-500"
                 >
-                    <option value={10}>10 / page</option>
-                    <option value={20}>20 / page</option>
-                    <option value={50}>50 / page</option>
-                    <option value={100}>100 / page</option>
+                    {[10, 20, 50, 100].map((count) => (
+                        <option key={count} value={count}>{t('ui.per_page', { count })}</option>
+                    ))}
                 </select>
 
                 <div className="flex items-center gap-1 bg-gray-800 rounded-lg p-1 border border-gray-700">

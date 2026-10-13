@@ -2,6 +2,8 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trainee } from '../../types';
 import { getNetCollected, getOutstandingBalance } from '../../utils/finance';
+import { formatGymDate, formatGymTime } from '../../utils/dateTime';
+import { formatCurrency } from '../../utils/format';
 import {
   X,
   User,
@@ -28,10 +30,7 @@ const TraineeDetailsModal: React.FC<TraineeDetailsModalProps> = ({ trainee, isOp
 
   if (!isOpen || !trainee) return null;
 
-  const formatDate = (dateString?: string | null) => {
-    if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('en-GB');
-  };
+  const formatDate = formatGymDate;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
@@ -72,7 +71,7 @@ const TraineeDetailsModal: React.FC<TraineeDetailsModalProps> = ({ trainee, isOp
                 )}
                 {getOutstandingBalance(trainee) > 0 && (
                   <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-500/10 text-red-500 border border-red-500/20 flex items-center gap-1">
-                    <DollarSign className="w-3 h-3" /> {t('trainees.debt')}: {getOutstandingBalance(trainee)} EGP
+                    <DollarSign className="w-3 h-3" /> {t('trainees.debt')}: {formatCurrency(getOutstandingBalance(trainee))}
                   </span>
                 )}
                 {trainee.daysLeft !== null && trainee.daysLeft !== 0 && trainee.daysLeft < 5 && (
@@ -98,21 +97,21 @@ const TraineeDetailsModal: React.FC<TraineeDetailsModalProps> = ({ trainee, isOp
           <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
             <div className="p-5 border-b border-gray-800 bg-gray-800/30 flex justify-between items-center">
               <h3 className="font-bold text-white flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-blue-500" /> Plan Overview
+                <Calendar className="w-5 h-5 text-blue-500" /> {t('trainees.plan_overview')}
               </h3>
               <span className={`text-xs px-2 py-1 rounded font-mono ${trainee.isSession ? 'bg-blue-500/20 text-blue-400' : 'bg-purple-500/20 text-purple-400'}`}>
-                {trainee.isSession ? 'SESSION-BASED' : 'TIME-BASED'}
+                {trainee.isSession ? t('trainees.session_based') : t('trainees.time_based')}
               </span>
             </div>
 
             <div className="p-6 space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs text-gray-500 uppercase font-bold mb-1">Start Date</p>
+                  <p className="text-xs text-gray-500 uppercase font-bold mb-1">{t('ui.start_date')}</p>
                   <p className="text-white font-medium">{formatDate(trainee.subscriptionStartDate)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500 uppercase font-bold mb-1">End Date</p>
+                  <p className="text-xs text-gray-500 uppercase font-bold mb-1">{t('ui.end_date')}</p>
                   <p className="text-white font-medium">{formatDate(trainee.subscriptionEndDate)}</p>
                 </div>
               </div>
@@ -122,7 +121,7 @@ const TraineeDetailsModal: React.FC<TraineeDetailsModalProps> = ({ trainee, isOp
                 {trainee.isSession ? (
                   <div className="flex justify-between items-center">
                     <div>
-                      <p className="text-sm text-gray-400 mb-1">Sessions Remaining</p>
+                      <p className="text-sm text-gray-400 mb-1">{t('ui.sessions_remaining')}</p>
                       <p className={`text-3xl font-bold ${(trainee.sessionsRemaining || 0) <= 2 ? 'text-red-500' : 'text-white'}`}>
                         {trainee.sessionsRemaining ?? 0}
                       </p>
@@ -132,7 +131,7 @@ const TraineeDetailsModal: React.FC<TraineeDetailsModalProps> = ({ trainee, isOp
                 ) : (
                   <div>
                     <div className="flex justify-between items-end mb-2">
-                      <p className="text-sm text-gray-400">Days Remaining</p>
+                      <p className="text-sm text-gray-400">{t('ui.days_remaining')}</p>
                       <p className={`text-2xl font-bold ${trainee.daysLeft !== undefined && trainee.daysLeft !== null && trainee.daysLeft < 5 ? 'text-red-500' : 'text-green-500'}`}>
                         {trainee.daysLeft ?? 0}
                       </p>
@@ -153,32 +152,34 @@ const TraineeDetailsModal: React.FC<TraineeDetailsModalProps> = ({ trainee, isOp
           <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
             <div className="p-5 border-b border-gray-800 bg-gray-800/30">
               <h3 className="font-bold text-white flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-green-500" /> Financial Summary
+                <DollarSign className="w-5 h-5 text-green-500" /> {t('ui.financial_summary')}
               </h3>
             </div>
             <div className="p-6">
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="p-4 bg-gray-800 rounded-xl text-center">
-                  <p className="text-xs text-gray-500 uppercase mb-1">Total Cost</p>
-                  <p className="text-xl font-bold text-white">{trainee.totalCost} EGP</p>
+                  <p className="text-xs text-gray-500 uppercase mb-1">{t('ui.total_cost')}</p>
+                  <p className="text-xl font-bold text-white">{formatCurrency(trainee.totalCost)}</p>
                 </div>
                 <div className="p-4 bg-gray-800 rounded-xl text-center">
-                  <p className="text-xs text-gray-500 uppercase mb-1">Net collected</p>
-                  <p className="text-xl font-bold text-green-400">{getNetCollected(trainee)} EGP</p>
+                  <p className="text-xs text-gray-500 uppercase mb-1">{t('ui.net_collected')}</p>
+                  <p className="text-xl font-bold text-green-400">{formatCurrency(getNetCollected(trainee))}</p>
                 </div>
               </div>
 
               <div className="flex justify-between items-center p-4 bg-gray-800/50 rounded-xl border border-gray-800">
-                <span className="text-sm text-gray-400">Outstanding Balance</span>
+                <span className="text-sm text-gray-400">{t('ui.outstanding')}</span>
                 <span className={`text-xl font-mono font-bold ${getOutstandingBalance(trainee) > 0 ? 'text-red-500' : 'text-gray-500'}`}>
-                  {getOutstandingBalance(trainee)} EGP
+                  {formatCurrency(getOutstandingBalance(trainee))}
                 </span>
               </div>
 
               {trainee.appliedDiscount?.hasCustomDiscount && (
                 <div className="mt-4 flex items-center gap-2 text-xs text-indigo-400 bg-indigo-500/10 p-2 rounded-lg border border-indigo-500/20">
                   <CheckCircle className="w-3 h-3" />
-                  Discount Applied: {trainee.appliedDiscount.discountValue}{trainee.appliedDiscount.discountType === 'percentage' ? '%' : 'EGP'}
+                  {t('ui.discount_applied')}: {trainee.appliedDiscount.discountType === 'percentage'
+                    ? `${trainee.appliedDiscount.discountValue}%`
+                    : formatCurrency(trainee.appliedDiscount.discountValue)}
                 </div>
               )}
             </div>
@@ -201,7 +202,7 @@ const TraineeDetailsModal: React.FC<TraineeDetailsModalProps> = ({ trainee, isOp
                 <div className="flex-1 min-w-0">
                   {/* Label */}
                   <h4 className="text-[10px] uppercase tracking-wider font-bold text-gray-500 mb-1 flex justify-between items-center">
-                    {t('trainees.program_label', 'Current Program')}
+                    {t('trainees.program_label')}
                     {/* Optional: Edit Icon that appears on hover */}
                     {/* <Pencil className="w-3 h-3 text-gray-600 group-hover:text-blue-400 cursor-pointer transition-colors" /> */}
                   </h4>
@@ -234,11 +235,11 @@ const TraineeDetailsModal: React.FC<TraineeDetailsModalProps> = ({ trainee, isOp
           <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden lg:col-span-2">
             <div className="p-5 border-b border-gray-800 bg-gray-800/30 flex justify-between items-center">
               <h3 className="font-bold text-white flex items-center gap-2">
-                <Clock className="w-5 h-5 text-orange-500" /> Activity Log
+                <Clock className="w-5 h-5 text-orange-500" /> {t('trainees.activity_log')}
               </h3>
               <div className="flex items-center gap-2 text-xs text-gray-400">
                 <MessageSquare className="w-3 h-3" />
-                Last Contact: {trainee.crmInfo.lastMessageSent ? formatDate(trainee.crmInfo.lastMessageSent) : 'Never'}
+                {t('trainees.last_contact')} {trainee.crmInfo.lastMessageSent ? formatDate(trainee.crmInfo.lastMessageSent) : t('trainees.never')}
               </div>
             </div>
 
@@ -248,17 +249,17 @@ const TraineeDetailsModal: React.FC<TraineeDetailsModalProps> = ({ trainee, isOp
                   <table className="w-full text-left text-sm">
                     <thead className="bg-gray-800/50 text-gray-500 sticky top-0">
                       <tr>
-                        <th className="px-6 py-3 font-medium">Type</th>
-                        <th className="px-6 py-3 font-medium">Date</th>
-                        <th className="px-6 py-3 font-medium">Time</th>
+                        <th className="px-6 py-3 font-medium">{t('ui.type')}</th>
+                        <th className="px-6 py-3 font-medium">{t('ui.date')}</th>
+                        <th className="px-6 py-3 font-medium">{t('ui.time')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-800">
                       {trainee.attendanceHistory.slice().reverse().map((record, idx) => (
                         <tr key={idx} className="hover:bg-gray-800/30 transition-colors">
-                          <td className="px-6 py-3 text-blue-400 font-medium">Check-in</td>
-                          <td className="px-6 py-3 text-gray-300">{new Date(record.checkIn).toLocaleDateString()}</td>
-                          <td className="px-6 py-3 text-gray-500 font-mono">{new Date(record.checkIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                          <td className="px-6 py-3 text-blue-400 font-medium">{t('ui.check_in')}</td>
+                          <td className="px-6 py-3 text-gray-300">{formatGymDate(record.checkIn)}</td>
+                          <td className="px-6 py-3 text-gray-500 font-mono">{formatGymTime(record.checkIn)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -266,7 +267,7 @@ const TraineeDetailsModal: React.FC<TraineeDetailsModalProps> = ({ trainee, isOp
                 ) : (
                   <div className="p-10 text-center text-gray-500 flex flex-col items-center">
                     <Clock className="w-8 h-8 mb-2 opacity-50" />
-                    No attendance records found yet.
+                    {t('ui.no_attendance')}
                   </div>
                 )}
               </div>
