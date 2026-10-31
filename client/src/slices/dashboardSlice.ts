@@ -4,6 +4,7 @@ import { DashboardData } from '../types';
 import { addTrainee, checkInTrainee, deleteTrainee, freezeTrainee, patchTrainee, renewTrainee, updateTrainee } from './subscriptionSlice';
 import { addExpense, deleteExpense, updateExpense } from './expensesSlice';
 import { addTrainer, deleteTrainer, updateTrainer } from './trainersSlice';
+import { parseDashboardData } from '../utils/dashboardData';
 
 interface DashboardSliceState {
     stats: DashboardData | null;
@@ -21,9 +22,11 @@ export const fetchDashboardStats = createAsyncThunk<
     async ({ month }, { rejectWithValue }) => {
         try {
             const response = await api.get('/dashboard/stats', { params: { month } });
-            return response.data.data as DashboardData;
+            return parseDashboardData(response.data.data);
         } catch (error: any) {
-            return rejectWithValue(error.response?.data?.error || 'Failed to fetch dashboard');
+            return rejectWithValue(
+                error.response?.data?.error || error.message || 'Failed to fetch dashboard',
+            );
         }
     },
 );
